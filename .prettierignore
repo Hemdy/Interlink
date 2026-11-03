@@ -1,0 +1,3 @@
+pnpm-lock.yaml
+Docs/**
+packages/database/drizzle/**

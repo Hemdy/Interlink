@@ -1,0 +1,29 @@
+{
+  "name": "@interlink/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "dev": "dotenv -e ../../.env -- expo start",
+    "android": "dotenv -e ../../.env -- expo start --android",
+    "ios": "dotenv -e ../../.env -- expo start --ios",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "expo": "~58.0.23",
+    "nativewind": "^4.1.23",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-reanimated": "~4.7.1",
+    "react-native-css-interop": "0.2.7",
+    "react-native-safe-area-context": "~5.11.1"
+  },
+  "devDependencies": {
+    "@interlink/typescript-config": "workspace:*",
+    "@types/react": "~19.3.0",
+    "babel-preset-expo": "~58.0.0",
+    "tailwindcss": "^3.4.17"
+  }
+}

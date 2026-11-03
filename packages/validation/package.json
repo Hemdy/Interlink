@@ -1,0 +1,20 @@
+{
+  "name": "@interlink/validation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@interlink/types": "workspace:*",
+    "zod": "^3.25.76"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@interlink/typescript-config": "workspace:*"
+  }
+}

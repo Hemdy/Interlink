@@ -1,0 +1,2784 @@
+INTERLINK
+PRODUCT REQUIREMENTS DOCUMENT (PRD)
+Product Name: Interlink
+Tagline: Get Linked with experienced mentors who can guide you as you advance in your career journey.
+Brand Motto: Empowerment. Growth. Connection.
+Product Category: Mentorship, Career Development, Professional Networking and Personal Growth.
+Document Type: Product Requirements Document
+Version: 2.0
+Status: Proposed – Revised Product Specification
+Product Stage: Pre-development / MVP Planning
+Initial Delivery Platform: Responsive Web Application / Progressive Web Application (PWA)
+Initial Market Focus: Nigeria, with potential expansion into other African markets and international communities.
+
+TABLE OF CONTENTS
+Executive Summary
+Product Vision, Mission and Philosophy
+Problem Statement and Market Opportunity
+Product Goals and Strategic Objectives
+Target Audience and User Personas
+Competitive Landscape and Market Positioning
+Value Proposition and Differentiation
+Product Strategy and Core Experience
+Functional Requirements
+Trust, Safety and Platform Governance
+User Experience and User Journeys
+Information Architecture
+UI/UX Requirements and Design System
+MVP Scope and Feature Prioritisation
+Business Rules and Platform Policies
+Technical Architecture
+Database Architecture and Core Entities
+API and Third-Party Integrations
+Privacy, Security and Compliance
+Monetisation and Business Model
+Product Roadmap and Delivery Strategy
+Success Metrics and Product Analytics
+Risks, Assumptions and Dependencies
+Quality Assurance and Testing Requirements
+MVP Definition of Done and Launch Criteria
+Future Product Opportunities
+Final Product Recommendations
+Conclusion
+
+1. EXECUTIVE SUMMARY
+1.1 Product Overview
+Interlink is a digital mentorship and career development platform designed to connect individuals seeking professional guidance with experienced professionals willing to share their knowledge, skills, experiences and industry insights.
+The platform addresses the challenges faced by students, recent graduates, early-career professionals, career changers and aspiring entrepreneurs who often struggle to access meaningful professional mentorship.
+Unlike conventional professional networking platforms that primarily facilitate connections and content sharing, Interlink focuses on building structured, purposeful and accountable mentorship relationships.
+The platform enables mentees to:
+Discover credible professionals.
+Identify mentors based on their career aspirations.
+Request structured mentorship.
+Establish development goals.
+Schedule mentorship sessions.
+Communicate with mentors.
+Access relevant learning resources.
+Track progress and development milestones.
+Receive feedback and professional guidance.
+Mentors can:
+Create professional profiles.
+Establish their areas of mentorship expertise.
+Define their availability and mentee capacity.
+Receive and manage mentorship requests.
+Accept or decline requests.
+Manage active mentorship relationships.
+Create and review development goals.
+Schedule sessions.
+Communicate with mentees.
+Monitor mentee progress.
+Build professional recognition.
+Administrators will oversee platform operations, mentor verification, user management, complaints, content moderation, reporting and platform quality.
+1.2 Product Purpose
+Interlink aims to make professional mentorship:
+Accessible to individuals regardless of their existing professional networks.
+Credible through professional verification and transparent profiles.
+Relevant through industry and career-based discovery.
+Structured through agreed objectives and mentorship plans.
+Accountable through milestones and scheduled sessions.
+Measurable through progress reviews and outcome tracking.
+1.3 Product Philosophy
+Interlink will operate around six principles:
+1. Accessibility
+Professional mentorship should not be limited to people with existing professional connections or privileged access to industry networks.
+2. Credibility
+Users should have access to reliable information about mentors' professional backgrounds, experience and verification status.
+3. Compatibility
+Successful mentorship depends on more than professional seniority. Industry relevance, expertise, career objectives, communication preferences and availability matter.
+4. Accountability
+Mentorship should involve agreed expectations, consistent engagement and measurable objectives.
+5. Growth
+The platform should prioritise professional development and meaningful outcomes rather than superficial engagement.
+6. Safety
+Users must be able to participate in an environment that promotes respect, confidentiality, responsible conduct and appropriate safeguarding.
+1.4 Product Definition
+Interlink is a structured mentorship ecosystem that facilitates the following journey:
+Discover → Connect → Establish Goals → Learn → Apply → Track Progress → Grow.
+1.5 Core Product Differentiator
+Interlink is not simply a directory of experienced professionals.
+Its defining feature is the ability to convert a professional introduction into a structured mentorship relationship with:
+Defined expectations.
+Agreed objectives.
+Scheduled sessions.
+Documented milestones.
+Ongoing communication.
+Progress reviews.
+Feedback.
+Measurable outcomes.
+1.6 MVP Strategic Recommendation
+The MVP should validate three fundamental assumptions:
+Individuals are willing to seek structured professional mentorship.
+Experienced professionals are willing to provide guidance through a managed platform.
+Structured mentorship relationships can generate meaningful engagement and measurable development.
+The MVP should prioritise the complete mentorship lifecycle.
+Advanced AI, payments, built-in video conferencing, corporate programmes, social feeds and extensive learning management capabilities should not delay the initial launch.
+
+2. PRODUCT VISION, MISSION AND PHILOSOPHY
+2.1 Vision
+To become a trusted digital ecosystem that connects people with the guidance, knowledge and professional relationships they need to unlock their potential and achieve meaningful career growth.
+2.2 Mission
+To make mentorship accessible, intentional and impactful by connecting aspiring individuals with experienced professionals through structured relationships that promote learning, accountability and professional advancement.
+2.3 Brand Promise
+Interlink promises to help individuals find the right guidance, develop meaningful professional relationships and make measurable progress towards their aspirations.
+2.4 Brand Identity
+Brand: Interlink
+Tagline: Get Linked with experienced mentors who can guide you as you advance in your career journey.
+Motto: Empowerment. Growth. Connection.
+Brand Personality:
+Professional.
+Approachable.
+Trustworthy.
+Empowering.
+Forward-thinking.
+Inclusive.
+Human-centred.
+2.5 Product Positioning
+Interlink should be positioned as a structured mentorship and career development platform.
+It should differentiate itself from general professional networking platforms by focusing on the quality, continuity and outcomes of mentorship relationships.
+
+3. PROBLEM STATEMENT AND MARKET OPPORTUNITY
+3.1 The Problem
+Many individuals have professional ambitions but lack access to experienced people who can provide practical guidance.
+Students often struggle to understand the realities of their intended careers.
+Recent graduates face difficulties transitioning from academic environments into employment.
+Early-career professionals may lack the direction and industry exposure needed to progress.
+Career changers need guidance on acquiring new skills and navigating unfamiliar industries.
+Aspiring entrepreneurs often require practical advice from people who have already experienced the challenges of building businesses.
+At the same time, experienced professionals possess valuable knowledge but may lack structured opportunities to share it effectively.
+3.2 Existing Challenges
+Challenge
+Description
+Interlink Solution
+Limited access
+Mentorship depends heavily on personal connections.
+Searchable mentor directory.
+Poor discovery
+Finding relevant professionals is difficult.
+Industry and expertise filters.
+Low credibility
+Professional claims are difficult to evaluate.
+Verification and transparent profiles.
+Unstructured relationships
+Expectations are often unclear.
+Structured mentorship plans.
+Low accountability
+Mentorship engagement may decline.
+Goals, milestones and reminders.
+Scheduling difficulties
+Coordinating sessions can be challenging.
+Availability and session management.
+Fragmented communication
+Conversations and resources are scattered.
+Centralised mentorship workspace.
+Limited feedback
+Progress is difficult to evaluate.
+Reviews and progress assessments.
+Geographic limitations
+Traditional mentorship often requires proximity.
+Remote mentorship capabilities.
+Limited continuity
+Mentorship relationships may end without documented outcomes.
+Relationship history and completion summaries.
+
+3.3 Market Opportunity
+Interlink can establish a differentiated position by combining:
+Professional mentor discovery.
+Structured mentorship relationships.
+Career development objectives.
+Communication and collaboration.
+Scheduling and accountability.
+Professional credibility.
+Measurable development outcomes.
+3.4 Initial Market Strategy
+The initial market should be deliberately focused.
+Recommended launch communities:
+University students and recent graduates.
+Early-career professionals.
+Technology and digital professionals.
+Business and entrepreneurship communities.
+Experienced professionals interested in giving back.
+The platform should begin with a manageable number of industry communities rather than attempting to serve every professional sector immediately.
+
+4. PRODUCT GOALS AND STRATEGIC OBJECTIVES
+4.1 Primary Goals
+Simplify access to credible mentors.
+Increase meaningful mentorship relationships.
+Improve mentor–mentee compatibility.
+Encourage consistent mentorship engagement.
+Make professional development measurable.
+Build a trusted professional community.
+Establish sustainable operational and monetisation models.
+4.2 Strategic Objectives
+Objective
+Expected Outcome
+Improve discovery
+Mentees find relevant mentors efficiently.
+Improve conversion
+More mentorship requests become active relationships.
+Improve relationship quality
+Participants establish expectations before beginning.
+Increase engagement
+Mentors and mentees maintain consistent communication.
+Improve accountability
+Goals and milestones are regularly reviewed.
+Establish trust
+Users understand verification and platform safeguards.
+Improve retention
+Mentorship relationships continue long enough to create value.
+Support sustainability
+The platform develops viable revenue opportunities.
+
+4.3 Proposed Initial Targets
+These are provisional targets for the first six months after public launch.
+100 registered mentees.
+25 registered mentors.
+30 established mentorship relationships.
+40% or higher request acceptance rate.
+70% of accepted relationships progressing to a first completed session.
+60% of active mentees recording measurable development progress.
+Average mentee satisfaction of at least 4/5.
+At least 70% of mentors responding to new requests within the defined response period.
+Targets should be reviewed after the first month of actual usage.
+4.4 Product North Star
+The primary measure of Interlink's success should be:
+Meaningful Active Mentorship Relationships (MAMR).
+A relationship qualifies when:
+A mentorship request has been accepted.
+Both participants have established at least one development objective.
+At least one mentorship session has been completed.
+The relationship remains active.
+The relationship has recorded a meaningful engagement event within the previous 30 days.
+This is more meaningful than registrations, profile views or messages exchanged.
+
+5. TARGET AUDIENCE AND USER PERSONAS
+Interlink has three principal user categories: mentees, mentors and administrators.
+5.1 Mentees
+Persona 1: University Student
+Profile: A student preparing to enter professional life.
+Needs:
+Career direction.
+Industry exposure.
+Practical skills development.
+Professional guidance.
+Understanding workplace expectations.
+Pain Points:
+Limited professional experience.
+Uncertainty about career options.
+Difficulty accessing industry professionals.
+Limited awareness of employment opportunities.
+Interlink Value: Access to professionals who can provide career direction and practical industry knowledge.
+Persona 2: Recent Graduate
+Profile: A graduate transitioning from education into employment.
+Needs:
+CV and portfolio guidance.
+Interview preparation.
+Career direction.
+Professional networking.
+Employment readiness.
+Interlink Value: Guidance from professionals who understand industry expectations and recruitment processes.
+Persona 3: Early-Career Professional
+Profile: An individual with approximately 1–5 years of professional experience.
+Needs:
+Career progression.
+Skill development.
+Professional confidence.
+Leadership preparation.
+Industry insights.
+Interlink Value: Structured mentorship supporting professional advancement.
+Persona 4: Career Changer
+Profile: An individual transitioning into a new professional field.
+Needs:
+Skills gap identification.
+Industry knowledge.
+Career transition guidance.
+Learning recommendations.
+Portfolio development.
+Interlink Value: Access to experienced professionals within the intended career field.
+Persona 5: Aspiring Entrepreneur
+Profile: An individual developing a business idea or starting a business.
+Needs:
+Business guidance.
+Market understanding.
+Financial and operational insights.
+Entrepreneurial confidence.
+Strategic direction.
+Interlink Value: Practical guidance from experienced business owners and entrepreneurs.
+5.2 Mentors
+Persona 6: Experienced Professional
+Profile: A professional with substantial industry experience.
+Needs:
+Share knowledge.
+Support emerging talent.
+Build meaningful professional relationships.
+Manage mentorship commitments.
+Receive recognition for contributions.
+Interlink Value: A structured environment for managing mentorship responsibilities.
+Persona 7: Entrepreneur or Business Owner
+Profile: An established entrepreneur interested in supporting aspiring business owners.
+Needs:
+Share practical business experience.
+Support upcoming entrepreneurs.
+Build professional relationships.
+Manage mentorship requests.
+Interlink Value: A platform for connecting with individuals seeking practical business guidance.
+5.3 Administrators
+Platform personnel responsible for:
+User management.
+Mentor verification.
+Trust and safety.
+Complaint management.
+Content moderation.
+Platform configuration.
+Engagement monitoring.
+Operational reporting.
+
+6. COMPETITIVE LANDSCAPE AND MARKET POSITIONING
+6.1 Reference Platforms
+Platform
+Primary Focus
+Product Insight
+MentorCruise
+Professional mentorship
+Structured mentor discovery and paid relationships.
+ADPList
+Accessible mentorship
+Community-based mentor discovery.
+GrowthMentor
+Business and growth mentorship
+Specialist mentor discovery.
+LinkedIn
+Professional networking
+Professional identity and discovery.
+SCORE
+Business mentorship
+Structured entrepreneurial guidance.
+
+These platforms should inform product research and user experience decisions, without requiring Interlink to reproduce all their capabilities.
+6.2 Competitive Differentiation
+Interlink should focus on:
+Accessible mentorship.
+Credible professional profiles.
+Structured relationship management.
+Goal and milestone tracking.
+Session continuity.
+Transparent mentor availability.
+Career development outcomes.
+Strong trust and safety mechanisms.
+6.3 Strategic Positioning
+Interlink should avoid becoming another platform focused on followers, public posts and superficial connections.
+The core user experience should revolve around active mentorship relationships.
+
+7. VALUE PROPOSITION AND PRODUCT DIFFERENTIATION
+7.1 Mentee Value Proposition
+Discover experienced professionals.
+Access practical industry guidance.
+Receive structured career mentorship.
+Establish development objectives.
+Track personal progress.
+Build professional confidence.
+Access relevant resources and opportunities.
+7.2 Mentor Value Proposition
+Share valuable experience.
+Support emerging professionals.
+Manage mentees efficiently.
+Control availability.
+Structure mentorship activities.
+Monitor development.
+Build professional recognition.
+7.3 Organisational Value Proposition
+Future organisational customers may use Interlink for:
+Employee mentorship programmes.
+Leadership development.
+Graduate development.
+Knowledge transfer.
+Talent retention.
+Programme reporting.
+Organisational capabilities should be developed only after validating the individual mentorship experience.
+
+8. PRODUCT STRATEGY AND CORE EXPERIENCE
+8.1 The Core Mentorship Lifecycle
+Interlink's entire architecture and user experience should support seven stages.
+Stage 1: Discover
+Users explore mentors based on professional expertise, industry, experience and availability.
+Stage 2: Connect
+Mentees submit structured requests and mentors review them.
+Stage 3: Establish
+Both participants agree on expectations, communication preferences, objectives and duration.
+Stage 4: Learn
+Participants communicate, schedule sessions and exchange relevant resources.
+Stage 5: Apply
+Mentees work towards agreed development objectives.
+Stage 6: Track
+Progress is documented through milestones, feedback and reviews.
+Stage 7: Grow
+The relationship generates measurable outcomes and can be completed, renewed or extended.
+8.2 Mentorship Relationship as the Central Product Entity
+The mentorship relationship must be the central organising entity within the platform.
+Goals, milestones, conversations, sessions, resources and reviews should all be associated with a specific mentorship relationship.
+This ensures that activity is contextualised and that users do not lose track of the purpose of individual interactions.
+8.3 Dedicated Mentorship Workspace
+Every accepted mentorship relationship should create a dedicated workspace.
+The workspace should contain:
+Mentor and mentee information.
+Relationship status.
+Mentorship objectives.
+Goals and milestones.
+Upcoming sessions.
+Conversation history.
+Shared resources.
+Progress updates.
+Relationship activity history.
+Completion and feedback options.
+8.4 Relationship Lifecycle
+The system must support:
+Pending activation.
+Active.
+Paused.
+Completed.
+Terminated.
+A relationship should not automatically become completed simply because there has been no activity.
+Inactive relationships should instead be identified for review.
+
+9. FUNCTIONAL REQUIREMENTS
+All requirements are assigned priorities:
+P0 – Must Have: Required for MVP launch.
+P1 – Should Have: Important but may follow the initial launch.
+P2 – Could Have: Future enhancement.
+9.1 User Registration and Authentication
+Feature Description
+A secure authentication system allowing individuals to create accounts, select roles and access the appropriate platform experience.
+Functional Requirements
+FR-AUTH-01: Users must register using email and password.
+FR-AUTH-02: Users must provide their full name.
+FR-AUTH-03: Email verification must be required before protected platform activities.
+FR-AUTH-04: Users must be able to log in and log out.
+FR-AUTH-05: Users must be able to recover forgotten passwords.
+FR-AUTH-06: Optional social authentication may be supported.
+FR-AUTH-07: Users must select an initial role: Mentor or Mentee.
+FR-AUTH-08: Users must complete role-specific onboarding.
+FR-AUTH-09: Authentication sessions must be securely managed.
+FR-AUTH-10: Users must be able to update account information.
+FR-AUTH-11: The system must enforce role-based permissions on the backend.
+FR-AUTH-12: Users must be able to request account deactivation or deletion.
+FR-AUTH-13: Authentication attempts must be rate-limited.
+FR-AUTH-14: The system must support appropriate administrative account controls.
+Acceptance Criteria
+Valid registration creates an account.
+Duplicate email registrations are rejected.
+Email verification works.
+Password recovery works.
+Users cannot access unauthorised role-specific resources.
+Sessions expire according to configured security policies.
+Account deletion requests are recorded and processed appropriately.
+Priority: P0.
+9.2 User Profiles and Onboarding
+Feature Description
+A structured profile system that establishes the professional identity, interests, credibility and mentorship preferences of each user.
+Mentor Profile
+Required or recommended fields:
+Field
+Description
+Full name
+Professional name.
+Profile photograph
+Professional image.
+Biography
+Professional introduction.
+Current position
+Present role.
+Organisation
+Current or previous employer, where disclosed.
+Industry
+Primary professional industry.
+Experience
+Years of relevant experience.
+Expertise
+Areas in which guidance is offered.
+Skills
+Professional competencies.
+Qualifications
+Relevant educational and professional qualifications.
+Mentorship interests
+Topics the mentor is willing to support.
+Availability
+Preferred days and times.
+Capacity
+Maximum active mentees.
+Session preference
+Online or in-person.
+Languages
+Spoken languages.
+Professional links
+LinkedIn, portfolio or website.
+Verification status
+Registered, reviewed or verified.
+Mentorship approach
+Description of mentoring style.
+
+Mentee Profile
+Field
+Description
+Full name
+Mentee's name.
+Profile photograph
+Optional image.
+Education
+Educational background.
+Current occupation
+Employment or study status.
+Industry interest
+Preferred professional sectors.
+Career aspirations
+Long-term objectives.
+Existing skills
+Current competencies.
+Skills to develop
+Development priorities.
+Current challenges
+Areas requiring support.
+Mentorship expectations
+Expected guidance.
+Learning objectives
+Development goals.
+Preferred mentor
+Desired experience and expertise.
+Preferred language
+Communication preference.
+Session preference
+Online or in-person.
+
+Functional Requirements
+FR-PROFILE-01: Users can create and edit profiles.
+FR-PROFILE-02: Profiles support structured fields.
+FR-PROFILE-03: Mentors can define their expertise and mentorship categories.
+FR-PROFILE-04: Mentees can define career interests and development objectives.
+FR-PROFILE-05: Users can upload profile photographs.
+FR-PROFILE-06: Users can manage profile visibility.
+FR-PROFILE-07: Verification status must be displayed accurately.
+FR-PROFILE-08: The system calculates profile completion.
+FR-PROFILE-09: Users can preview their public profiles.
+FR-PROFILE-10: Users can save onboarding progress and resume later.
+FR-PROFILE-11: The platform should distinguish required profile fields from optional information.
+FR-PROFILE-12: Mentor profiles should display whether the mentor is currently accepting new mentees.
+FR-PROFILE-13: Mentors can pause their availability without deleting their profiles.
+FR-PROFILE-14: The system should display the date of the mentor's most recent profile update or verification review where appropriate.
+Acceptance Criteria
+Profiles can be created and updated.
+Required fields are validated.
+Profile completion is calculated accurately.
+Private information remains private.
+Incomplete onboarding can be resumed.
+Unavailable mentors are clearly identified.
+Priority: P0.
+9.3 Mentor Discovery and Search
+Feature Description
+A searchable directory allowing mentees to discover relevant professionals.
+Functional Requirements
+FR-DISC-01: Display available mentor profiles.
+FR-DISC-02: Support keyword searches.
+FR-DISC-03: Filter by:
+Industry.
+Expertise.
+Skills.
+Experience.
+Mentorship category.
+Language.
+Availability.
+Session preference.
+Location, where applicable.
+Accepting-new-mentees status.
+FR-DISC-04: Allow users to sort results.
+FR-DISC-05: Display relevant information on mentor cards.
+FR-DISC-06: Allow mentees to save favourite mentors.
+FR-DISC-07: Display verification status.
+FR-DISC-08: Display ratings only when based on eligible completed mentorship experiences.
+FR-DISC-09: Support pagination or incremental loading.
+FR-DISC-10: Respect profile visibility settings.
+FR-DISC-11: Allow mentees to compare mentor profiles.
+FR-DISC-12: Provide useful empty states.
+FR-DISC-13: Show when a mentor is not accepting requests.
+FR-DISC-14: Provide alternative mentor suggestions when search results are limited.
+Mentor Card Requirements
+Each card should display:
+Profile photograph.
+Full name.
+Professional title.
+Industry.
+Experience.
+Expertise.
+Verification status.
+Brief biography.
+Availability.
+Acceptance of new mentees.
+Profile completion or credibility indicators where appropriate.
+Primary actions:
+View Profile.
+Request Mentorship.
+Save Mentor.
+Acceptance Criteria
+Search results are relevant.
+Filters can be combined.
+Unavailable mentors cannot receive new requests unless explicitly permitted.
+Profiles respect visibility preferences.
+Empty searches provide alternative actions.
+Priority: P0.
+9.4 Mentor Matching and Recommendations
+Feature Description
+A recommendation engine that identifies mentors based on mentee career interests and professional compatibility.
+MVP Approach
+Use transparent rule-based matching.
+Proposed scoring:
+Matching Criterion
+Weight
+Industry alignment
+25%
+Expertise alignment
+30%
+Career goal alignment
+20%
+Skills development alignment
+10%
+Language and session preference
+10%
+Availability and capacity
+5%
+Total
+100%
+
+The score should represent relevance, not guarantee mentorship success.
+Functional Requirements
+FR-MATCH-01: Compare mentee interests with mentor expertise.
+FR-MATCH-02: Evaluate relevant professional experience.
+FR-MATCH-03: Generate recommendations.
+FR-MATCH-04: Explain why each mentor is recommended.
+FR-MATCH-05: Exclude inactive and unavailable mentors.
+FR-MATCH-06: Allow users to search independently.
+FR-MATCH-07: Do not penalise new mentors simply because they have no reviews.
+FR-MATCH-08: Allow mentees to dismiss irrelevant recommendations.
+FR-MATCH-09: Allow mentors to update their matching preferences.
+FR-MATCH-10: Monitor recommendation engagement and request conversion.
+Priority: P1.
+9.5 Mentorship Requests and Relationship Management
+Feature Description
+A structured request system for establishing mentorship relationships.
+Request Information
+Every request should contain:
+Selected mentor.
+Introduction message.
+Career objective.
+Reason for selecting the mentor.
+Expected outcomes.
+Preferred duration or commitment.
+Relevant background.
+Preferred session format.
+Functional Requirements
+FR-REQUEST-01: Mentees can send requests.
+FR-REQUEST-02: Mentors can accept requests.
+FR-REQUEST-03: Mentors can reject requests.
+FR-REQUEST-04: Mentors can request additional information.
+FR-REQUEST-05: Mentees can cancel pending requests.
+FR-REQUEST-06: Users receive status notifications.
+FR-REQUEST-07: Duplicate active requests are prevented.
+FR-REQUEST-08: Request history is maintained.
+FR-REQUEST-09: Accepted requests create exactly one mentorship relationship.
+FR-REQUEST-10: Relationships can be paused or terminated.
+FR-REQUEST-11: Mentors can set maximum mentee capacity.
+FR-REQUEST-12: Mentors can define request acceptance preferences.
+FR-REQUEST-13: The system should support request expiration.
+FR-REQUEST-14: The system should display pending requests and their age.
+FR-REQUEST-15: Mentors should be able to communicate with applicants for clarification through a controlled request process.
+FR-REQUEST-16: Mentors should be able to decline requests with optional standardised reasons.
+Request Statuses
+Pending.
+Additional Information Requested.
+Accepted.
+Rejected.
+Cancelled.
+Expired.
+Relationship Statuses
+Active.
+Paused.
+Completed.
+Terminated.
+Important Business Rules
+A mentor cannot mentor themselves.
+A mentee cannot establish duplicate active relationships with the same mentor.
+An accepted request must not generate multiple relationships.
+Mentors cannot exceed configured active mentee capacity.
+Only authorised participants can manage their relationship.
+Acceptance Criteria
+All request actions update the correct status, generate appropriate notifications and maintain an auditable history.
+Priority: P0.
+9.6 Mentorship Plans, Goals and Milestones
+Feature Description
+A shared workspace where mentors and mentees establish development objectives and monitor progress.
+Functional Requirements
+FR-GOAL-01: Mentors and mentees can create goals.
+FR-GOAL-02: Goals contain:
+Title.
+Description.
+Expected outcome.
+Target date.
+Responsible participant.
+Status.
+FR-GOAL-03: Goals can contain multiple milestones.
+FR-GOAL-04: Milestones contain descriptions and deadlines.
+FR-GOAL-05: Mentees can submit progress updates.
+FR-GOAL-06: Mentors can review progress.
+FR-GOAL-07: Mentors can provide feedback.
+FR-GOAL-08: Users receive deadline reminders.
+FR-GOAL-09: Completed goals remain accessible.
+FR-GOAL-10: Goal modifications are recorded.
+FR-GOAL-11: Users can add evidence or links to completed milestones.
+FR-GOAL-12: Participants can review goals periodically.
+FR-GOAL-13: The system must distinguish overdue goals from goals awaiting review.
+FR-GOAL-14: Goal completion must be based on explicit status changes rather than merely passing a deadline.
+Goal Statuses
+Not Started.
+In Progress.
+Submitted for Review.
+Under Review.
+Completed.
+Overdue.
+Cancelled.
+Example Mentorship Plan
+Objective: Become employable as a Frontend Developer.
+Milestones:
+Identify required frontend competencies.
+Complete HTML and CSS assessments.
+Improve JavaScript proficiency.
+Build two practical projects.
+Review and improve CV.
+Prepare for technical interviews.
+Apply for relevant opportunities.
+Progress Measurement
+The platform should calculate progress from completed milestones.
+Example:
+Progress = Completed Milestones / Total Milestones × 100.
+Progress must not be represented as an objective measure of professional competence.
+Priority: P0.
+9.7 Communication and Collaboration
+Feature Description
+A private communication environment for mentorship participants.
+MVP Requirements
+FR-COM-01: Active mentorship participants can exchange messages.
+FR-COM-02: New messages generate notifications.
+FR-COM-03: Messages include timestamps.
+FR-COM-04: Participants can access conversation history.
+FR-COM-05: Users can share approved attachments.
+FR-COM-06: Users can report inappropriate messages.
+FR-COM-07: Conversations are restricted to authorised participants.
+FR-COM-08: Messages support delivery and read status where implemented.
+FR-COM-09: Users can block or report other users.
+FR-COM-10: Message history must be governed by retention and privacy policies.
+FR-COM-11: Conversations must be associated with a valid mentorship relationship or explicitly authorised request workflow.
+FR-COM-12: Users should receive an appropriate warning before sharing sensitive personal information.
+Phase 2 Enhancements
+Real-time messaging.
+Typing indicators.
+Read receipts.
+Improved attachment previews.
+Video meeting integration.
+Voice communication.
+Priority: P0 for basic messaging.
+9.8 Session Scheduling and Calendar Management
+Feature Description
+A scheduling system that allows mentors and mentees to coordinate mentorship sessions.
+Functional Requirements
+FR-SESSION-01: Mentors can define availability.
+FR-SESSION-02: Mentees can propose session dates and times.
+FR-SESSION-03: Mentors can accept or propose alternative times.
+FR-SESSION-04: Sessions must be associated with a mentorship relationship.
+FR-SESSION-05: Sessions contain:
+Title.
+Description.
+Date.
+Start time.
+End time.
+Timezone.
+Session format.
+Meeting link.
+Status.
+FR-SESSION-06: Users receive confirmations.
+FR-SESSION-07: Users receive reminders.
+FR-SESSION-08: Sessions can be rescheduled or cancelled.
+FR-SESSION-09: Completed sessions are recorded.
+FR-SESSION-10: The system prevents conflicting confirmed sessions for a mentor.
+FR-SESSION-11: Session participants can record attendance.
+FR-SESSION-12: Participants can record a brief session summary.
+FR-SESSION-13: Participants can propose the next session.
+FR-SESSION-14: Session reminders must respect user notification preferences.
+Session Statuses
+Proposed.
+Confirmed.
+Rescheduled.
+Completed.
+Cancelled.
+Missed.
+MVP Session Format
+Online through external meeting links.
+In-person, where mutually agreed.
+Interlink should not develop its own video conferencing infrastructure for the MVP.
+Priority: P0.
+9.9 Reviews and Feedback
+Feature Description
+A controlled feedback system that supports mentorship quality and platform trust.
+Functional Requirements
+FR-REVIEW-01: Mentees can review mentors after eligible completed mentorship experiences.
+FR-REVIEW-02: Mentors can provide private feedback on mentees.
+FR-REVIEW-03: Eligible participants can rate completed mentorship experiences.
+FR-REVIEW-04: Ratings use a five-star scale.
+FR-REVIEW-05: Written comments may be included.
+FR-REVIEW-06: Users can report inappropriate reviews.
+FR-REVIEW-07: Administrators can moderate reports.
+FR-REVIEW-08: Only verified participants can submit reviews.
+FR-REVIEW-09: Reviews must be linked to an eligible relationship.
+FR-REVIEW-10: Users must not be able to manipulate ratings through duplicate submissions.
+FR-REVIEW-11: Private mentor feedback must never appear on public profiles.
+FR-REVIEW-12: Public review policies must address retaliation and conflicts of interest.
+Review Dimensions
+Potential dimensions:
+Professional knowledge.
+Communication.
+Reliability.
+Practical guidance.
+Overall mentorship experience.
+A basic satisfaction survey should be included in the MVP.
+Public ratings and detailed reviews can follow in Phase 2.
+Priority: P1.
+9.10 Career Development and Learning
+MVP Scope
+Mentorship objectives.
+Skills development goals.
+Basic resource sharing.
+CV and portfolio guidance through mentorship.
+Saved resources.
+Phase 2
+Career development roadmaps.
+Skills tracking.
+Learning recommendations.
+CV review workflows.
+Portfolio review workflows.
+Curated opportunities.
+Phase 3
+AI-powered recommendations.
+Skills gap analysis.
+Personalised learning pathways.
+Advanced development analytics.
+Priority: Basic resource sharing P1.
+9.11 Notifications
+Feature Description
+A notification system for important platform events.
+Notification Events
+Registration.
+Email verification.
+Mentorship request received.
+Request accepted or rejected.
+Additional information requested.
+New message.
+Session scheduled.
+Session rescheduled.
+Session reminder.
+Goal created.
+Milestone approaching.
+Progress submitted.
+Mentor feedback received.
+Relationship paused.
+Relationship completed.
+Account verification status changed.
+Functional Requirements
+FR-NOTIFY-01: Generate notifications for defined events.
+FR-NOTIFY-02: Display in-app notifications.
+FR-NOTIFY-03: Allow users to mark notifications as read.
+FR-NOTIFY-04: Support notification preferences.
+FR-NOTIFY-05: Support transactional email notifications.
+FR-NOTIFY-06: Support web push as an enhancement.
+FR-NOTIFY-07: Prevent duplicate notifications.
+FR-NOTIFY-08: Record delivery failures.
+FR-NOTIFY-09: Provide a notification history.
+FR-NOTIFY-10: Allow users to distinguish important system notifications from optional reminders.
+Priority: P0 for in-app and essential email notifications.
+9.12 Role-Based Dashboards
+A. Mentee Dashboard
+Purpose: Provide an overview of mentorship and professional development.
+Components:
+Welcome section.
+Profile completion.
+Active mentors.
+Pending requests.
+Upcoming sessions.
+Active goals.
+Goal progress.
+Recommended mentors.
+Recent messages.
+Saved resources.
+Recent activity.
+Primary CTA: Find a Mentor.
+Secondary CTA: Update My Goals.
+The dashboard should prioritise the next meaningful action rather than simply displaying statistics.
+B. Mentor Dashboard
+Purpose: Help mentors manage their mentorship commitments.
+Components:
+Welcome section.
+Profile verification status.
+Incoming requests.
+Active mentees.
+Upcoming sessions.
+Availability management.
+Capacity indicator.
+Mentee progress overview.
+Recent messages.
+Session history.
+Recent activity.
+Primary CTA: Review Requests.
+Secondary CTA: Manage Availability.
+C. Administrator Dashboard
+Purpose: Support platform-wide oversight.
+Components:
+Total registered users.
+Registered mentors.
+Registered mentees.
+Active mentorship relationships.
+Pending verifications.
+Pending requests.
+Completed sessions.
+Reported complaints.
+User engagement.
+Recent platform activities.
+Verification turnaround time.
+System health indicators.
+Functional Requirements
+FR-DASH-01: Provide role-specific dashboards.
+FR-DASH-02: Display actual database information.
+FR-DASH-03: Identify outstanding actions.
+FR-DASH-04: Provide navigation to related modules.
+FR-DASH-05: Restrict administrative metrics.
+FR-DASH-06: Provide useful empty states for new accounts.
+FR-DASH-07: Avoid displaying misleading statistics when insufficient data exists.
+Priority: P0.
+9.13 Administrator and Platform Management
+Functional Requirements
+FR-ADMIN-01: View registered users.
+FR-ADMIN-02: Search and filter users.
+FR-ADMIN-03: Review mentor credentials.
+FR-ADMIN-04: Approve or reject verification requests.
+FR-ADMIN-05: Suspend or deactivate accounts.
+FR-ADMIN-06: Review mentorship relationships.
+FR-ADMIN-07: Investigate reports.
+FR-ADMIN-08: Manage industry and expertise categories.
+FR-ADMIN-09: Manage platform resources.
+FR-ADMIN-10: Manage opportunity listings.
+FR-ADMIN-11: Access engagement reports.
+FR-ADMIN-12: Record administrative activities.
+FR-ADMIN-13: Manage account appeals where applicable.
+FR-ADMIN-14: Manage community guidelines and policy versions.
+FR-ADMIN-15: Manage platform notification templates.
+Administrative Roles
+Super Administrator.
+Platform Administrator.
+Community Manager.
+Programme Coordinator.
+Each role must have explicitly defined permissions.
+Administrative privileges must follow the principle of least privilege.
+Priority: P0 for essential administration.
+
+10. TRUST, SAFETY AND PLATFORM GOVERNANCE
+Trust and safety must be part of the initial architecture rather than a feature added after launch.
+10.1 Mentor Verification Framework
+Interlink should distinguish between account registration, profile review and verified professional credentials.
+Verification Levels
+Level 1: Registered Mentor
+The user has registered and completed a mentor profile.
+Level 2: Profile Reviewed
+The platform has reviewed the submitted professional information.
+Level 3: Verified Mentor
+The mentor has passed the platform's defined verification checks.
+Verification should not be represented as a guarantee of competence, character or future conduct.
+Verification Methods
+Depending on the mentor's professional background:
+Professional profile review.
+Employment or organisation confirmation.
+Professional website or portfolio review.
+Qualification verification where relevant.
+Professional references where appropriate.
+Other reasonable supporting evidence.
+The platform should collect only the minimum information necessary for verification.
+Sensitive verification documents must not be publicly accessible.
+10.2 Reporting and Blocking
+Users must be able to report:
+Harassment.
+Discrimination.
+Fraud.
+Impersonation.
+Misrepresentation.
+Inappropriate solicitation.
+Unprofessional conduct.
+Suspicious messages.
+Unsafe behaviour.
+Inappropriate profile content.
+Users should be able to block another user.
+Blocking must restrict relevant communication and interaction features while preserving necessary records for legitimate investigations.
+10.3 Dispute Management
+Administrators must be able to:
+Receive complaints.
+Review relevant evidence.
+Communicate with participants.
+Record investigation outcomes.
+Issue warnings.
+Suspend accounts.
+Escalate serious matters.
+Close resolved cases.
+Reports must have documented statuses and resolution records.
+10.4 Community Guidelines
+All users must agree to:
+Treat other participants respectfully.
+Maintain professional conduct.
+Respect confidentiality.
+Avoid harassment and discrimination.
+Avoid misrepresenting qualifications.
+Avoid inappropriate financial or personal solicitation.
+Respect intellectual property.
+Report suspicious activities.
+Maintain appropriate professional boundaries.
+10.5 Mentorship Boundaries
+Interlink should clearly communicate that:
+Mentors are not automatically responsible for securing employment for mentees.
+Mentorship is not a guarantee of career success.
+Mentors should not request unnecessary sensitive personal information.
+Mentees should not be pressured into paid services.
+Financial arrangements must be transparent and governed by platform policy.
+Mentorship should not be misrepresented as formal therapy, legal advice or financial advice.
+10.6 User Protection
+The platform must provide:
+Reporting and blocking.
+Account suspension procedures.
+Privacy controls.
+Secure communications.
+Clear complaint escalation.
+Access to relevant community policies.
+Account deactivation and deletion processes.
+
+11. USER EXPERIENCE AND USER JOURNEYS
+11.1 Registration and Onboarding Principles
+Onboarding should be progressive rather than unnecessarily lengthy.
+Users should first provide the information required to establish their account and basic profile.
+Additional information can be collected when users discover mentors or begin a mentorship relationship.
+The system should:
+Save onboarding progress.
+Clearly indicate completion.
+Explain why information is required.
+Avoid asking for information that is not needed.
+Allow users to skip optional fields.
+Guide users towards the next meaningful action.
+11.2 Mentee Registration Journey
+Visit Interlink.
+Select Create Account.
+Enter name, email and password.
+Verify email.
+Select Mentee.
+Complete introductory onboarding.
+Provide education and professional background.
+Select career interests.
+Identify development priorities.
+Define mentorship expectations.
+Review profile.
+Complete onboarding.
+Enter Mentee Dashboard.
+Discover mentors.
+If onboarding is incomplete, the user should be able to continue later.
+11.3 Mentor Registration Journey
+Visit Interlink.
+Create account.
+Verify email.
+Select Mentor.
+Complete professional profile.
+Provide expertise and experience.
+Define mentorship categories.
+Set availability.
+Set maximum mentee capacity.
+Submit verification information where required.
+Administrator reviews profile.
+Mentor receives verification outcome.
+Approved profile becomes eligible for the appropriate discovery visibility.
+11.4 Mentor Discovery Journey
+Open Mentee Dashboard.
+Select Find a Mentor.
+Search or explore recommendations.
+Apply filters.
+Review mentor cards.
+Open a mentor profile.
+Review experience, expertise and verification.
+Save mentor or request mentorship.
+If the mentor is unavailable, the platform should suggest alternatives.
+11.5 Mentorship Request Journey
+Open mentor profile.
+Select Request Mentorship.
+Complete request details.
+Explain career objectives.
+Explain why the mentor was selected.
+Define expected outcomes.
+Submit request.
+System records pending request.
+Mentor receives notification.
+Mentor reviews request.
+Mentor accepts, rejects or requests additional information.
+If accepted, a mentorship relationship and workspace are created.
+If rejected, the mentee is notified and can continue discovering other mentors.
+11.6 Mentorship Activation Journey
+After acceptance:
+Both participants receive confirmation.
+Mentorship workspace becomes available.
+Participants review expectations.
+They agree on communication preferences.
+They establish an initial development objective.
+They schedule their first session.
+The system records the relationship's activation.
+11.7 First Session Journey
+Open mentorship workspace.
+Review agreed objectives.
+Propose session time.
+Confirm availability.
+Confirm session.
+Receive reminders.
+Conduct session.
+Record completion and attendance.
+Add session summary.
+Establish next actions.
+Update mentorship goals.
+11.8 Goal Establishment Journey
+Open active mentorship workspace.
+Select Goals.
+Create a development objective.
+Define expected outcome.
+Establish milestones.
+Assign deadlines.
+Begin development activities.
+Submit progress updates.
+Mentor reviews progress.
+Complete milestones.
+Review overall goal outcome.
+11.9 Relationship Completion Journey
+The platform must support intentional relationship closure.
+Mentor or mentee initiates completion.
+The other participant is notified.
+Both participants review objectives.
+Progress is summarised.
+Outstanding milestones are recorded.
+Participants provide feedback.
+Relationship status changes to Completed.
+Workspace history remains accessible according to retention policies.
+Participants may initiate a new mentorship request if they wish to continue working together.
+This process is important because mentorship should have a defined outcome, not simply remain active indefinitely.
+11.10 Administrator Journey
+Administrator logs in.
+System validates administrative permissions.
+Administrator opens dashboard.
+Reviews platform metrics.
+Reviews pending mentor verifications.
+Reviews complaints.
+Manages users and platform content.
+Records relevant decisions.
+System logs administrative activities.
+
+12. INFORMATION ARCHITECTURE
+12.1 Public Navigation
+Home.
+About.
+Find a Mentor.
+How It Works.
+Become a Mentor.
+Sign In.
+Get Started.
+12.2 Mentee Navigation
+Dashboard.
+Discover Mentors.
+My Mentors.
+Mentorship Requests.
+Messages.
+Sessions.
+Goals and Progress.
+Resources.
+Saved Mentors.
+Notifications.
+My Profile.
+Settings.
+12.3 Mentor Navigation
+Dashboard.
+My Mentees.
+Incoming Requests.
+Mentorship Workspace.
+Messages.
+Sessions.
+Availability.
+Resources.
+Notifications.
+My Profile.
+Settings.
+12.4 Administrator Navigation
+Overview.
+Users.
+Mentors.
+Mentees.
+Verification.
+Mentorships.
+Reports and Complaints.
+Resources.
+Opportunities.
+Categories.
+Analytics.
+Audit Logs.
+Platform Settings.
+12.5 Navigation Principles
+Navigation must be role-aware.
+Important actions must be easily accessible.
+Users should not see irrelevant modules.
+Mobile navigation must prioritise essential tasks.
+Every major module should have a clear entry and return path.
+
+13. UI/UX REQUIREMENTS AND DESIGN SYSTEM
+13.1 Design Direction
+Interlink should communicate:
+Trust.
+Professionalism.
+Human connection.
+Growth.
+Accessibility.
+Personal development.
+The interface should feel modern and welcoming without resembling a generic social media platform.
+13.2 Proposed Colour Palette
+Purpose
+Colour
+Hex
+Primary
+Deep Navy
+#142D4E
+Secondary
+Teal
+#168C8C
+Accent
+Warm Gold
+#E6B65C
+Background
+Soft White
+#F7F9FC
+Surface
+White
+#FFFFFF
+Primary Text
+Dark Slate
+#202B3C
+Secondary Text
+Muted Grey
+#748094
+Success
+Green
+#269B68
+Warning
+Amber
+#E5A63B
+Error
+Red
+#D9534F
+
+The palette should be validated against accessibility contrast requirements.
+13.3 Typography
+Recommended:
+Primary font: Inter.
+Headings: Inter SemiBold or Bold.
+Body: Inter Regular.
+Labels: Inter Medium.
+13.4 Component Library
+Buttons
+Primary.
+Secondary.
+Outline.
+Text.
+Destructive.
+Disabled.
+Cards
+Mentor profile.
+Mentee profile.
+Session.
+Goal.
+Milestone.
+Notification.
+Resource.
+Statistics.
+Forms
+Text input.
+Password input.
+Search.
+Select.
+Multi-select.
+Date picker.
+Time picker.
+File upload.
+Text area.
+Navigation
+Desktop sidebar.
+Mobile navigation.
+Top navigation.
+Breadcrumbs.
+Tabs.
+Feedback
+Toast notifications.
+Confirmation dialogs.
+Error messages.
+Loading indicators.
+Empty states.
+Progress indicators.
+13.5 Important UX Requirements
+Dashboards must guide users towards meaningful actions.
+Mentor profiles must prioritise credibility and relevance.
+Mentorship requests must be simple but informative.
+Active mentorship relationships must have dedicated workspaces.
+Progress must be easy to understand.
+Empty states must explain what users should do next.
+Forms must provide helpful validation.
+Destructive actions must require confirmation.
+Important actions must provide immediate feedback.
+The interface must not encourage irrelevant social engagement.
+13.6 Mobile Experience
+The responsive interface must prioritise:
+Mentor discovery.
+Simple request submission.
+Quick access to messages.
+Upcoming sessions.
+Goal tracking.
+Notifications.
+Profile management.
+The application should initially be responsive across desktop, tablet and mobile devices.
+
+14. MVP SCOPE AND FEATURE PRIORITISATION
+14.1 MVP Objective
+Launch a functional mentorship ecosystem that validates whether mentors and mentees can discover each other, establish relationships and sustain meaningful development activities.
+14.2 Phase 1 – MVP
+P0: Must Have
+Module
+MVP Requirement
+Authentication
+Registration, login, logout, email verification and recovery.
+Roles
+Mentor and mentee roles.
+Profiles
+Role-specific professional profiles.
+Onboarding
+Progressive onboarding and profile completion.
+Discovery
+Mentor search and basic filters.
+Mentor profiles
+Professional profiles and verification indicators.
+Requests
+Submit, accept, reject and cancel.
+Relationships
+Create and manage active mentorships.
+Workspace
+Dedicated mentorship workspace.
+Messaging
+Basic private messaging.
+Sessions
+Propose, confirm and manage sessions.
+Goals
+Create goals and milestones.
+Notifications
+Essential in-app and email notifications.
+Dashboards
+Basic mentor and mentee dashboards.
+Administration
+User management and mentor verification.
+Safety
+Reporting, blocking and basic complaint management.
+Security
+Authentication and access control.
+
+P1: Should Have
+Mentor availability calendar.
+Saved mentors.
+Profile completion indicators.
+Basic resource sharing.
+Session attendance.
+Basic feedback surveys.
+Mentor capacity management.
+Basic platform analytics.
+P2: Could Have
+Automated mentor recommendations.
+Compatibility scoring.
+Real-time messaging.
+Web push notifications.
+Advanced progress analytics.
+Explicitly Excluded From MVP
+AI-powered career recommendations.
+Built-in video conferencing.
+Paid mentorship subscriptions.
+Complex corporate programme management.
+Advanced learning management systems.
+Public social feed.
+Gamification.
+Native Android and iOS applications.
+Advanced AI mentor matching.
+Full career opportunity marketplace.
+14.3 Phase 2 – Product Enhancement
+Objective: Improve engagement, quality and mentorship effectiveness.
+Features:
+Intelligent mentor recommendations.
+Advanced matching.
+Real-time messaging.
+Calendar integrations.
+Video meeting integrations.
+Advanced analytics.
+Public reviews and ratings.
+Career development roadmaps.
+Skills tracking.
+CV and portfolio workflows.
+Opportunity management.
+Improved notification preferences.
+14.4 Phase 3 – Product Expansion
+Objective: Expand Interlink into a broader professional development ecosystem.
+Features:
+AI career assistant.
+Skills gap analysis.
+Personalised learning pathways.
+Corporate mentorship.
+University partnerships.
+Sponsored mentorship.
+Premium mentorship.
+Enterprise administration.
+Advanced reporting.
+Native mobile applications where justified.
+
+15. BUSINESS RULES AND PLATFORM POLICIES
+This section defines platform-wide rules that must be implemented consistently across the frontend, backend and database.
+15.1 Account Rules
+Email addresses must be unique.
+Email verification is required for protected interactions.
+Users must have valid account status.
+Suspended accounts cannot initiate normal platform activities.
+Administrative access requires explicit permission.
+15.2 Mentor Rules
+Mentors must complete required professional profile information before discovery.
+Verification must be represented accurately.
+Mentors must define whether they are accepting new mentees.
+Mentors may establish maximum mentee capacity.
+Mentors may pause new requests.
+Mentors must not receive requests beyond their configured capacity unless the platform explicitly allows a waitlist.
+15.3 Mentee Rules
+Mentees must provide sufficient information to submit meaningful mentorship requests.
+Mentees must not create duplicate active relationships with the same mentor.
+Mentees can manage multiple mentorship relationships where appropriate.
+Mentees can withdraw pending requests.
+15.4 Mentorship Rules
+Every active relationship must reference a valid mentor and mentee.
+Every accepted request must generate no more than one relationship.
+Goals must belong to a valid mentorship.
+Sessions must belong to a valid mentorship.
+Conversations must be restricted to authorised participants.
+Completed relationships retain their historical records according to policy.
+15.5 Notification Rules
+Notifications must be associated with real system events.
+Duplicate notifications should be prevented.
+Failed email deliveries must be logged.
+Optional notifications must respect user preferences.
+Security and account-related notifications may be mandatory.
+15.6 Review Rules
+Reviews must reference eligible mentorship participants.
+Only eligible participants may submit reviews.
+Private feedback must not appear publicly.
+Administrators must be able to moderate reported reviews.
+Reviews must not be silently altered by administrators.
+
+16. TECHNICAL ARCHITECTURE
+16.1 Recommended Technology Stack
+The architecture should prioritise maintainability, security, affordability and scalability.
+Frontend
+Recommended: Angular.
+Responsibilities:
+Responsive user interface.
+Authentication.
+Role-based navigation.
+Mentor discovery.
+Dashboards.
+Mentorship workspaces.
+Messaging.
+Scheduling.
+Goal tracking.
+Administration.
+Supporting technologies:
+Angular Material or a custom component system.
+SCSS or Tailwind CSS.
+RxJS.
+Angular Router.
+Reactive Forms.
+Angular HTTP Client.
+A Progressive Web App approach is recommended.
+Backend
+Recommended: NestJS.
+Responsibilities:
+Authentication.
+User management.
+Profiles.
+Mentor discovery.
+Matching.
+Mentorship requests.
+Relationship management.
+Messaging.
+Scheduling.
+Goals and milestones.
+Notifications.
+Administration.
+Reporting.
+Supporting technologies:
+TypeScript.
+REST API.
+Prisma ORM.
+PostgreSQL.
+Socket.IO for future real-time messaging.
+Background job processing where necessary.
+Database
+Recommended: PostgreSQL.
+PostgreSQL is suitable for structured relationships between users, mentorship requests, relationships, goals, sessions, conversations and feedback.
+Recommended ORM: Prisma.
+File Storage
+Use S3-compatible object storage for:
+Profile photographs.
+Verification documents.
+CVs.
+Portfolio attachments.
+Shared mentorship resources.
+Private files should use controlled access or time-limited signed URLs.
+Authentication
+Use NestJS-managed authentication or an established authentication provider.
+If JWT is used, implement short-lived access tokens and secure refresh-token rotation.
+Role-based access control must be enforced by the backend.
+Hosting
+Recommended initial approach:
+Frontend: Vercel or equivalent.
+Backend: Managed Node.js hosting.
+Database: Managed PostgreSQL.
+Storage: S3-compatible object storage.
+Email: Transactional email provider.
+Monitoring: Application performance monitoring service.
+The final provider selection should consider database connection limits, background job support, backups, hosting region, latency and total operating costs.
+16.2 High-Level Architecture
+USER
+↓
+ANGULAR WEB APPLICATION / PWA
+↓
+HTTPS / REST API
+↓
+NESTJS BACKEND
+↓
+BUSINESS MODULES
+Authentication.
+User Profiles.
+Mentor Discovery.
+Mentorship Requests.
+Relationships.
+Goals and Milestones.
+Messaging.
+Sessions.
+Notifications.
+Administration.
+Reporting.
+↓
+PRISMA ORM
+↓
+POSTGRESQL DATABASE
+Additional integrations:
+Email Provider.
+Object Storage.
+Notification Service.
+Calendar Integration.
+Video Meeting Provider.
+Monitoring and Logging.
+16.3 Backend Architecture
+Use a modular monolithic architecture for the MVP.
+Recommended modules:
+AuthModule.
+UsersModule.
+ProfilesModule.
+MentorsModule.
+DiscoveryModule.
+MatchingModule.
+RequestsModule.
+MentorshipsModule.
+GoalsModule.
+MessagesModule.
+SessionsModule.
+NotificationsModule.
+ResourcesModule.
+AdminModule.
+ReportsModule.
+AuditModule.
+A modular monolith reduces infrastructure and deployment complexity while allowing future extraction of independent services.
+16.4 Architectural Requirements
+Enforce clear module boundaries.
+Separate business logic from controllers.
+Validate incoming requests.
+Use database transactions for critical operations.
+Implement consistent API error handling.
+Use pagination for large collections.
+Record important administrative actions.
+Use background jobs for asynchronous operations.
+Implement structured logging.
+Use automated database migrations.
+Avoid unnecessary microservices.
+16.5 API Architecture
+Use RESTful APIs with versioning.
+Base URL:
+/api/v1
+Example:
+https://api.interlink.com/api/v1
+All protected endpoints must enforce authentication, authorisation and resource-level access controls.
+
+17. DATABASE ARCHITECTURE AND CORE ENTITIES
+The database should represent the relationships between users, mentorship requests, active mentorships and supporting activities.
+17.1 Core Entities
+Users
+Stores account information.
+Fields:
+id.
+email.
+passwordHash.
+firstName.
+lastName.
+profileImage.
+emailVerified.
+accountStatus.
+createdAt.
+updatedAt.
+Roles
+Fields:
+id.
+name.
+description.
+Initial roles:
+MENTEE.
+MENTOR.
+ADMIN.
+SUPER_ADMIN.
+UserRoles
+Fields:
+id.
+userId.
+roleId.
+assignedAt.
+A join table should support future multi-role accounts.
+MentorProfiles
+Fields:
+id.
+userId.
+biography.
+currentPosition.
+organisation.
+industryId.
+yearsOfExperience.
+qualifications.
+availabilityStatus.
+maximumMentees.
+verificationStatus.
+sessionPreference.
+mentorshipApproach.
+createdAt.
+updatedAt.
+MenteeProfiles
+Fields:
+id.
+userId.
+education.
+currentOccupation.
+careerInterests.
+careerAspirations.
+currentChallenges.
+mentorshipExpectations.
+createdAt.
+updatedAt.
+Industries
+Fields:
+id.
+name.
+description.
+status.
+Skills
+Fields:
+id.
+name.
+categoryId.
+UserSkills
+Fields:
+id.
+userId.
+skillId.
+proficiencyLevel.
+skillType.
+Skill type distinguishes existing skills from development priorities.
+MentorAvailability
+Fields:
+id.
+mentorId.
+dayOfWeek.
+startTime.
+endTime.
+timezone.
+isActive.
+SavedMentors
+Fields:
+id.
+menteeId.
+mentorId.
+createdAt.
+MentorshipRequests
+Fields:
+id.
+menteeId.
+mentorId.
+introductionMessage.
+careerObjective.
+reasonForSelection.
+expectedOutcome.
+preferredDuration.
+status.
+expiresAt.
+createdAt.
+updatedAt.
+MentorshipRequestHistory
+Fields:
+id.
+requestId.
+actorId.
+previousStatus.
+newStatus.
+notes.
+createdAt.
+Mentorships
+Fields:
+id.
+mentorId.
+menteeId.
+requestId.
+status.
+startDate.
+endDate.
+completionSummary.
+createdAt.
+updatedAt.
+MentorshipGoals
+Fields:
+id.
+mentorshipId.
+title.
+description.
+expectedOutcome.
+targetDate.
+status.
+createdBy.
+createdAt.
+updatedAt.
+GoalMilestones
+Fields:
+id.
+goalId.
+title.
+description.
+dueDate.
+status.
+completedAt.
+GoalProgressUpdates
+Fields:
+id.
+goalId.
+milestoneId.
+submittedBy.
+description.
+evidenceUrl.
+createdAt.
+Sessions
+Fields:
+id.
+mentorshipId.
+title.
+description.
+startTime.
+endTime.
+timezone.
+meetingLink.
+sessionType.
+status.
+attendanceStatus.
+summary.
+createdAt.
+updatedAt.
+Conversations
+Fields:
+id.
+mentorshipId.
+createdAt.
+updatedAt.
+Messages
+Fields:
+id.
+conversationId.
+senderId.
+content.
+messageType.
+attachmentUrl.
+createdAt.
+readAt.
+Notifications
+Fields:
+id.
+userId.
+title.
+message.
+type.
+relatedEntityId.
+isRead.
+createdAt.
+NotificationPreferences
+Fields:
+id.
+userId.
+notificationType.
+inAppEnabled.
+emailEnabled.
+pushEnabled.
+updatedAt.
+Reviews
+Fields:
+id.
+mentorshipId.
+reviewerId.
+revieweeId.
+rating.
+comment.
+visibility.
+createdAt.
+Resources
+Fields:
+id.
+title.
+description.
+resourceType.
+fileUrl.
+externalUrl.
+createdBy.
+createdAt.
+Reports
+Fields:
+id.
+reporterId.
+reportedUserId.
+relatedEntityId.
+reason.
+description.
+status.
+resolution.
+assignedTo.
+createdAt.
+resolvedAt.
+VerificationRecords
+Fields:
+id.
+mentorId.
+verificationType.
+documentReference.
+status.
+reviewedBy.
+reviewNotes.
+submittedAt.
+reviewedAt.
+AuditLogs
+Fields:
+id.
+actorId.
+action.
+entityType.
+entityId.
+metadata.
+createdAt.
+IP addresses should only be retained where appropriate, necessary and lawful.
+17.2 Core Database Relationships
+One User can have multiple assigned roles.
+One User can have one MentorProfile.
+One User can have one MenteeProfile.
+One Mentor can receive multiple requests.
+One Mentee can submit multiple requests.
+One accepted request can establish one mentorship.
+One Mentor can manage multiple mentorships.
+One Mentee can participate in multiple mentorships over time.
+One Mentorship can contain multiple Goals.
+One Goal can contain multiple Milestones.
+One Goal can contain multiple Progress Updates.
+One Mentorship can contain multiple Sessions.
+One Mentorship can have one Conversation.
+One Conversation can contain multiple Messages.
+One User can receive multiple Notifications.
+One Mentorship can have multiple eligible Reviews.
+One Mentor can have multiple Verification Records.
+17.3 Important Database Constraints
+The implementation must enforce:
+Unique email addresses.
+Valid role assignments.
+No mentor–self mentorship.
+No duplicate active mentor–mentee relationships.
+One relationship per accepted request.
+Goals must reference valid mentorships.
+Sessions must reference valid mentorships.
+Messages must belong to authorised conversations.
+Reviews must reference valid participants.
+Administrative permissions must not be determined solely by frontend navigation.
+17.4 Data Retention and Deletion
+The platform must establish retention policies for:
+Account information.
+Messages.
+Verification documents.
+Reports.
+Audit records.
+Completed mentorship records.
+Deletion workflows should distinguish between information that can be deleted, anonymised or must be retained for legitimate legal or security reasons.
+
+18. API AND THIRD-PARTY INTEGRATION REQUIREMENTS
+18.1 Authentication APIs
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+POST /api/v1/auth/logout
+POST /api/v1/auth/verify-email
+POST /api/v1/auth/forgot-password
+POST /api/v1/auth/reset-password
+GET /api/v1/auth/me
+18.2 Profile APIs
+GET /api/v1/users/me
+PATCH /api/v1/users/me
+GET /api/v1/mentors/:id
+POST /api/v1/mentors/profile
+PATCH /api/v1/mentors/profile
+POST /api/v1/mentees/profile
+PATCH /api/v1/mentees/profile
+18.3 Discovery APIs
+GET /api/v1/mentors
+GET /api/v1/mentors/search
+GET /api/v1/mentors/recommended
+GET /api/v1/mentors/:id
+POST /api/v1/mentors/:id/save
+DELETE /api/v1/mentors/:id/save
+18.4 Mentorship APIs
+POST /api/v1/mentorship-requests
+GET /api/v1/mentorship-requests
+GET /api/v1/mentorship-requests/:id
+PATCH /api/v1/mentorship-requests/:id/accept
+PATCH /api/v1/mentorship-requests/:id/reject
+PATCH /api/v1/mentorship-requests/:id/cancel
+GET /api/v1/mentorships
+GET /api/v1/mentorships/:id
+PATCH /api/v1/mentorships/:id/status
+18.5 Goals APIs
+POST /api/v1/mentorships/:id/goals
+GET /api/v1/mentorships/:id/goals
+PATCH /api/v1/goals/:id
+POST /api/v1/goals/:id/milestones
+PATCH /api/v1/milestones/:id
+POST /api/v1/goals/:id/progress
+18.6 Session APIs
+POST /api/v1/sessions
+GET /api/v1/sessions
+GET /api/v1/sessions/:id
+PATCH /api/v1/sessions/:id
+PATCH /api/v1/sessions/:id/cancel
+PATCH /api/v1/sessions/:id/complete
+18.7 Messaging APIs
+GET /api/v1/conversations
+GET /api/v1/conversations/:id/messages
+POST /api/v1/conversations/:id/messages
+18.8 Administration APIs
+GET /api/v1/admin/dashboard
+GET /api/v1/admin/users
+PATCH /api/v1/admin/users/:id/status
+GET /api/v1/admin/verifications
+PATCH /api/v1/admin/verifications/:id
+GET /api/v1/admin/reports
+PATCH /api/v1/admin/reports/:id
+GET /api/v1/admin/audit-logs
+18.9 Third-Party Integrations
+Email
+Potential providers:
+Resend.
+Amazon SES.
+SendGrid.
+Use for verification, recovery, reminders and transactional notifications.
+Video Conferencing
+Potential providers:
+Google Meet.
+Zoom.
+Microsoft Teams.
+Initially support external meeting links.
+Calendar
+Potential integrations:
+Google Calendar.
+Microsoft Outlook.
+Calendar integrations should be introduced after core scheduling is validated.
+Payment
+Potential providers for relevant launch markets:
+Paystack.
+Flutterwave.
+Stripe.
+Payment integration should be deferred until paid mentorship is introduced.
+Analytics
+Potential tools:
+PostHog.
+Google Analytics.
+Application performance monitoring services.
+File Storage
+Potential providers:
+Amazon S3.
+Cloudflare R2.
+Supabase Storage.
+The selected provider must support secure access control and file lifecycle management.
+
+19. PRIVACY, SECURITY AND COMPLIANCE
+19.1 Security Requirements
+The platform must implement:
+Argon2id or appropriately configured bcrypt password hashing.
+HTTPS across production environments.
+Secure authentication and session management.
+Role-based access control.
+Resource-level authorisation.
+Input validation.
+Protection against common web vulnerabilities.
+Rate limiting.
+Secure file upload validation.
+API access controls.
+Protection against unauthorised data access.
+Secure handling of sensitive information.
+Database backups.
+Audit logging.
+Dependency and vulnerability monitoring.
+19.2 Privacy Requirements
+Users must understand:
+What personal information is collected.
+Why information is collected.
+Which profile information is public.
+How mentorship conversations are handled.
+How verification information is processed.
+How long information is retained.
+How to request account deletion.
+How to raise privacy complaints.
+19.3 Regulatory Compliance
+Interlink should be designed to comply with applicable data protection laws, including the Nigeria Data Protection Act where applicable.
+The platform should:
+Publish a privacy policy.
+Obtain appropriate consent.
+Establish lawful processing purposes.
+Minimise personal data collection.
+Implement appropriate security safeguards.
+Support data subject rights.
+Establish breach response procedures.
+Assess cross-border data transfers where relevant.
+Legal review should be completed before public launch.
+19.4 Performance Requirements
+Requirement
+Proposed Target
+Initial page load
+Under 3 seconds on a reasonable connection.
+Typical API response
+Under 500ms for normal database operations.
+Mentor search
+Under 1 second under normal conditions.
+Dashboard loading
+Under 2 seconds under normal conditions.
+Image optimisation
+Responsive and compressed images.
+Error visibility
+Critical errors monitored and logged.
+
+Targets should be validated under realistic production conditions.
+19.5 Availability
+Proposed initial production availability target: 99.5% monthly.
+Availability should be monitored, with appropriate incident communication.
+19.6 Accessibility
+The platform should target WCAG 2.2 AA.
+Requirements:
+Keyboard navigation.
+Accessible form labels.
+Sufficient colour contrast.
+Screen-reader compatibility.
+Clear error messages.
+Responsive text sizing.
+Visible focus indicators.
+19.7 Backup and Recovery
+Requirements:
+Automated database backups.
+Secure backup storage.
+Defined backup retention.
+Tested restoration procedures.
+Documented incident response.
+Proposed initial targets:
+Recovery Point Objective: 24 hours.
+Recovery Time Objective: 8 hours.
+These must be validated against the actual hosting and backup arrangements.
+19.8 Monitoring
+Monitor:
+Application errors.
+API failures.
+Authentication failures.
+Database performance.
+Notification delivery.
+Background job failures.
+Storage errors.
+Unusual administrative activities.
+
+20. MONETISATION AND BUSINESS MODEL
+20.1 Monetisation Philosophy
+Interlink should prioritise trust, value and community development before introducing aggressive monetisation.
+The platform must preserve accessible mentorship opportunities for individuals who cannot afford premium services.
+20.2 MVP Monetisation
+Recommendation: Launch with free core mentorship.
+Benefits:
+Reduces registration friction.
+Attracts initial mentors.
+Encourages early adoption.
+Validates demand.
+Builds trust.
+Provides real usage data.
+Sponsored mentorship programmes may be introduced where an organisation funds access for selected mentees.
+20.3 Phase 2 Monetisation
+Paid Mentor Services
+Mentors may optionally offer paid sessions.
+Interlink may charge a transparent service fee or commission on completed transactions.
+Premium Mentee Services
+Potential benefits:
+Advanced mentor discovery.
+Enhanced progress reporting.
+Additional career resources.
+Priority support.
+Expanded career development tools.
+Core free mentorship should remain available.
+20.4 Phase 3 Monetisation
+Corporate Programmes
+Organisations pay for managed employee mentorship programmes.
+Institutional Partnerships
+Universities and educational institutions pay for mentorship access and programme management.
+Sponsored Mentorship
+Organisations sponsor mentorship opportunities for selected communities.
+Premium Career Development
+Paid career assessments, learning programmes and advanced tools.
+20.5 Recommended Business Model
+Interlink should eventually combine:
+Free mentorship.
+Paid professional mentorship.
+Corporate subscriptions.
+Institutional partnerships.
+Sponsored programmes.
+Premium career development.
+20.6 Monetisation Guardrails
+Do not make verification dependent solely on payment.
+Do not prioritise paid mentors without clear disclosure.
+Do not compromise mentor credibility for commercial incentives.
+Clearly communicate fees.
+Establish refund and cancellation policies before accepting payments.
+Avoid charging mentees before the platform demonstrates meaningful value.
+
+21. PRODUCT ROADMAP AND DELIVERY STRATEGY
+Phase 0: Product Discovery and Design
+Estimated Duration: 2–3 weeks.
+Activities:
+Validate target users.
+Interview prospective mentors.
+Interview prospective mentees.
+Recruit initial mentor candidates.
+Confirm MVP requirements.
+Establish design system.
+Create user flows.
+Produce high-fidelity designs.
+Define database architecture.
+Establish technical environments.
+Confirm legal and privacy requirements.
+Deliverables:
+Approved PRD.
+Validated user personas.
+UX flows.
+UI designs.
+Database design.
+Technical implementation plan.
+Initial mentor recruitment pipeline.
+Launch measurement plan.
+Phase 1: MVP Development
+Estimated Duration: 8–12 weeks, subject to team capacity and technical discovery.
+Weeks 1–2: Foundation
+Project setup.
+Authentication.
+User roles.
+Database structure.
+Backend architecture.
+Development environments.
+Weeks 3–4: Profiles and Discovery
+Mentor profiles.
+Mentee profiles.
+Onboarding.
+Profile completion.
+Mentor discovery.
+Search and filters.
+Weeks 5–6: Mentorship Relationships
+Mentorship requests.
+Request management.
+Relationship creation.
+Mentorship workspaces.
+Basic messaging.
+Weeks 7–8: Engagement
+Session scheduling.
+Goals and milestones.
+Notifications.
+Availability management.
+Basic resource sharing.
+Weeks 9–10: Administration
+Dashboards.
+User management.
+Mentor verification.
+Reporting and blocking.
+Audit logging.
+Security testing.
+Weeks 11–12: Quality and Launch
+Quality assurance.
+User acceptance testing.
+Performance testing.
+Bug fixing.
+Deployment.
+Pilot launch.
+Phase 1.1: Controlled Pilot
+Recommended before broad public launch.
+Recruit a limited initial community of mentors and mentees.
+Observe:
+Registration completion.
+Mentor discovery.
+Request conversion.
+Mentor response time.
+First-session completion.
+Goal creation.
+Relationship continuation.
+User satisfaction.
+Use findings to prioritise product improvements.
+Phase 2: Product Enhancement
+Estimated Timing: 2–4 months after MVP launch.
+Advanced matching.
+Improved messaging.
+Calendar integration.
+Video meeting integration.
+Detailed feedback.
+Advanced analytics.
+Career development roadmaps.
+Opportunity management.
+Phase 3: Product Expansion
+Estimated Timing: 6–12 months after MVP launch, subject to validation.
+AI-powered career recommendations.
+Corporate mentorship.
+Institutional partnerships.
+Premium services.
+Advanced learning tools.
+Enterprise administration.
+Expanded opportunity ecosystem.
+Native mobile applications where justified.
+
+22. SUCCESS METRICS AND PRODUCT ANALYTICS
+22.1 Acquisition Metrics
+KPI
+Measurement
+Registered mentors
+Total mentor accounts.
+Registered mentees
+Total mentee accounts.
+Registration conversion
+Completed registrations / registration starts.
+Profile completion
+Completed required profiles / registered users.
+Mentor acquisition
+New mentors acquired during a period.
+Acquisition source
+Registration by channel.
+
+22.2 Activation Metrics
+These metrics should measure whether new users experience the core product value.
+KPI
+Measurement
+Mentee activation
+New mentees who complete onboarding and initiate discovery.
+Mentor activation
+Mentors who complete their profiles and become discoverable.
+First mentor view
+Time until a mentee views a relevant mentor.
+First request
+Time until a mentee submits a mentorship request.
+First match
+Time until a request is accepted.
+First session
+Time until the first completed session.
+
+22.3 Engagement Metrics
+KPI
+Measurement
+Monthly Active Users
+Unique users active monthly.
+Weekly Active Users
+Unique users active weekly.
+Active mentorships
+Relationships in active status.
+Completed sessions
+Number of completed sessions.
+Messages exchanged
+Total mentorship messages.
+Goal activity
+Goals updated during a reporting period.
+Milestone completion
+Milestones completed.
+Mentor response time
+Average time to respond to requests.
+
+22.4 Mentorship Quality Metrics
+KPI
+Measurement
+Request acceptance rate
+Accepted requests / resolved requests.
+First-session conversion
+Accepted relationships progressing to a completed first session.
+Retention rate
+Relationships remaining active over a defined period.
+Satisfaction score
+Average eligible feedback rating.
+Goal completion rate
+Completed goals / goals due.
+Mentor retention
+Mentors remaining active over a defined period.
+Mentee retention
+Mentees remaining active over a defined period.
+
+22.5 Proposed Initial KPI Targets
+KPI
+Initial Target
+Profile completion
+80%
+Request acceptance
+40%
+First-session conversion
+70%
+Mentee satisfaction
+4/5
+Goal completion
+50%
+Monthly active users
+50% of registered users
+Mentor retention
+70% over 90 days
+
+Targets should be adjusted after real usage data becomes available.
+22.6 Funnel Analytics
+Interlink should measure the complete mentee funnel:
+Registration → Profile Completion → Mentor Discovery → Mentor Profile View → Request Submission → Request Acceptance → First Session → Goal Creation → Ongoing Engagement → Relationship Completion.
+The platform should identify where users abandon this journey.
+22.7 Analytics Events
+Recommended event names:
+user_registered
+email_verified
+profile_completed
+mentor_search_performed
+mentor_profile_viewed
+mentor_saved
+mentorship_request_submitted
+mentorship_request_accepted
+mentorship_request_rejected
+mentorship_activated
+session_proposed
+session_confirmed
+session_completed
+goal_created
+milestone_completed
+progress_submitted
+relationship_completed
+review_submitted
+Analytics must avoid collecting unnecessary sensitive personal information.
+
+23. RISKS, ASSUMPTIONS AND DEPENDENCIES
+23.1 Product Risks
+Risk 1: Insufficient Mentor Supply
+Mentees may join without finding suitable mentors.
+Mitigation:
+Recruit mentors before public launch.
+Establish industry-specific mentor communities.
+Introduce mentor referral initiatives.
+Focus initial acquisition on selected professional sectors.
+Risk 2: Low Mentor Engagement
+Experienced professionals may lack sufficient time.
+Mitigation:
+Allow mentors to control availability.
+Set mentee capacity limits.
+Provide structured request information.
+Make pausing requests easy.
+Send relevant reminders.
+Risk 3: Poor Mentee Commitment
+Users may register without actively participating.
+Mitigation:
+Progressive onboarding.
+Clear mentorship expectations.
+Goal-setting.
+Milestone reminders.
+Engagement monitoring.
+Risk 4: Misrepresentation of Credentials
+Users may provide false professional information.
+Mitigation:
+Verification procedures.
+Supporting evidence.
+Reporting mechanisms.
+Administrative review.
+Risk 5: Harassment and Misconduct
+Mentorship interactions may involve inappropriate behaviour.
+Mitigation:
+Reporting and blocking.
+Community guidelines.
+Account suspension procedures.
+Complaint investigation.
+Privacy controls.
+Risk 6: Low Retention
+Users may abandon mentorship relationships.
+Mitigation:
+Structured objectives.
+Session reminders.
+Progress reviews.
+Inactivity monitoring.
+Intentional relationship closure.
+Risk 7: Mentor–Mentee Mismatch
+A professional may have experience but not be suitable for a particular mentee.
+Mitigation:
+Clear expertise categories.
+Career objective matching.
+Transparent mentor profiles.
+Structured requests.
+Participant feedback.
+Risk 8: Low Marketplace Liquidity
+There may be sufficient users overall but insufficient mentors in specific industries or areas of expertise.
+Mitigation:
+Track mentor supply by category.
+Launch in focused communities.
+Monitor search result availability.
+Recruit mentors based on demonstrated demand.
+Risk 9: Technical Complexity
+Excessive feature development may delay launch.
+Mitigation:
+Maintain strict MVP scope.
+Use established integrations.
+Build a modular monolith.
+Defer AI, payments and video infrastructure.
+Risk 10: High Operational Costs
+Manual verification, support and moderation may become expensive.
+Mitigation:
+Establish clear operational procedures.
+Prioritise high-risk cases.
+Automate routine notifications.
+Measure administrative workload.
+Expand operations based on actual usage.
+23.2 Assumptions
+Users can register using email addresses.
+Mentors are willing to offer free mentorship opportunities.
+Mentees are willing to provide professional and educational information.
+The initial product is a web application.
+Mentorship may take place remotely.
+Users can access email notifications.
+Administrators will manually verify mentors.
+The initial launch will focus on a manageable community.
+Mentorship availability will be limited by mentor capacity.
+23.3 Dependencies
+Cloud hosting.
+PostgreSQL.
+Email service.
+Object storage.
+Domain and SSL configuration.
+Authentication infrastructure.
+Mentor recruitment.
+Platform administration.
+Privacy policy.
+Terms of service.
+Community guidelines.
+Support and complaint management procedures.
+
+24. QUALITY ASSURANCE AND TESTING REQUIREMENTS
+24.1 Functional Testing
+Test all critical platform functions:
+Registration.
+Authentication.
+Email verification.
+Profile creation.
+Mentor discovery.
+Filtering.
+Request submission.
+Request acceptance.
+Relationship creation.
+Messaging.
+Scheduling.
+Goal tracking.
+Notifications.
+Administration.
+24.2 Security Testing
+Verify:
+Authentication enforcement.
+Role permissions.
+Resource-level authorisation.
+File upload validation.
+Session management.
+Rate limiting.
+Protection against common vulnerabilities.
+Administrative endpoint security.
+Sensitive information handling.
+24.3 Integration Testing
+Test integrations with:
+Email provider.
+Object storage.
+Database.
+Notification system.
+External meeting links.
+Background job processing.
+24.4 Performance Testing
+Test:
+Mentor search.
+Dashboard loading.
+Profile retrieval.
+Messaging.
+Session retrieval.
+Concurrent user activity.
+24.5 Accessibility Testing
+Test:
+Keyboard navigation.
+Screen readers.
+Colour contrast.
+Form labels.
+Focus management.
+Responsive layouts.
+24.6 User Acceptance Testing
+The pilot should include:
+University students.
+Recent graduates.
+Early-career professionals.
+Experienced mentors.
+Administrators.
+Testing should evaluate whether users can independently complete the core mentorship lifecycle.
+24.7 Critical User Acceptance Scenarios
+A mentee can register and complete onboarding.
+A mentor can register and submit a professional profile.
+An administrator can review a mentor.
+A mentee can discover a suitable mentor.
+A mentee can submit a request.
+A mentor can accept the request.
+The system creates exactly one mentorship relationship.
+Both participants can access the workspace.
+Both participants can communicate.
+A session can be proposed and confirmed.
+A goal can be created.
+A milestone can be updated.
+A mentor can review progress.
+A user can report inappropriate behaviour.
+An administrator can investigate the report.
+A mentorship can be completed.
+Historical records remain accessible according to policy.
+
+25. MVP DEFINITION OF DONE AND LAUNCH CRITERIA
+The MVP will be considered ready for launch when the following requirements are satisfied.
+Authentication
+Registration works.
+Login and logout work.
+Email verification works.
+Password recovery works.
+Role permissions are enforced.
+Account recovery is tested.
+Profiles
+Mentors can create professional profiles.
+Mentees can complete profiles.
+Profile updates persist.
+Profile visibility is respected.
+Profile completion works.
+Discovery
+Mentees can search mentors.
+Filters work correctly.
+Mentor profiles are accessible.
+Verification status is visible.
+Availability is accurately represented.
+Mentorship
+Mentees can send requests.
+Mentors can accept or reject requests.
+Accepted requests establish exactly one relationship.
+Relationship status can be managed.
+Dedicated mentorship workspaces are available.
+Communication
+Participants can exchange messages.
+Message access is restricted.
+Notifications are generated.
+Reporting mechanisms are available.
+Sessions
+Sessions can be proposed.
+Sessions can be confirmed.
+Sessions can be rescheduled.
+Sessions can be cancelled.
+Session history is accessible.
+Timezones are handled correctly.
+Goals
+Goals can be created.
+Milestones can be established.
+Progress can be updated.
+Mentors can review progress.
+Completed milestones are retained.
+Dashboards
+Mentee dashboards display relevant information.
+Mentor dashboards display relevant information.
+Administrator dashboards display operational metrics.
+Empty states guide users towards meaningful actions.
+Administration
+Administrators can manage users.
+Mentors can be verified.
+Complaints can be reviewed.
+Administrative activities are logged.
+Administrative permissions are enforced.
+Security and Quality
+Protected APIs enforce authorisation.
+Unauthorised access tests pass.
+Critical application errors are resolved.
+Database backups are configured.
+Responsive layouts work on supported devices.
+Privacy policy and terms are published.
+Community guidelines are published.
+User acceptance testing is completed.
+Monitoring and incident response are configured.
+Operational Launch Readiness
+The platform must also have:
+An initial mentor recruitment pipeline.
+A defined support process.
+A mentor verification procedure.
+A complaint escalation process.
+A backup and recovery procedure.
+An analytics dashboard.
+A documented launch plan.
+
+26. FUTURE PRODUCT OPPORTUNITIES
+These opportunities should be explored after validating the core mentorship model.
+26.1 AI-Powered Career Assistant
+An AI assistant that helps mentees:
+Explore career interests.
+Understand potential skills gaps.
+Explore career paths.
+Prepare mentorship questions.
+Develop learning objectives.
+Improve CVs.
+Prepare for interviews.
+AI should support human mentorship rather than replace it.
+26.2 Intelligent Mentor Matching
+Advanced recommendations based on:
+Professional background.
+Expertise.
+Career goals.
+Availability.
+Mentorship history.
+Feedback.
+Relationship outcomes.
+26.3 Corporate Mentorship
+Potential features:
+Company workspaces.
+Internal mentor directories.
+Employee development plans.
+Programme administration.
+Performance reporting.
+26.4 University Partnerships
+Potential features:
+Alumni mentorship.
+Graduate career development.
+Internship guidance.
+Industry exposure.
+Employability programmes.
+26.5 Sponsored Mentorship
+Organisations can sponsor mentorship for:
+University students.
+Emerging professionals.
+Entrepreneurs.
+Underrepresented communities.
+Individuals changing careers.
+26.6 Professional Opportunity Marketplace
+Curated opportunities:
+Jobs.
+Internships.
+Scholarships.
+Fellowships.
+Graduate programmes.
+Entrepreneurship opportunities.
+26.7 Interlink Learning Hub
+Potential capabilities:
+Professional development courses.
+Expert-led sessions.
+Career workshops.
+Learning materials.
+Industry resources.
+Recorded educational content.
+
+27. FINAL PRODUCT RECOMMENDATIONS
+The following recommendations should guide product decisions throughout development and launch.
+27.1 Make the Mentorship Lifecycle the Core Product
+The platform must make it possible for users to:
+Discover a mentor → Request mentorship → Establish a relationship → Set goals → Schedule sessions → Track progress → Complete mentorship.
+Every MVP feature should support this journey.
+27.2 Solve Mentor Supply Before Scaling Mentee Acquisition
+A platform with many mentees and insufficient mentors will create frustration.
+Interlink should recruit credible mentors before investing heavily in large-scale user acquisition.
+27.3 Introduce a Strong Mentor Verification Framework
+Professional credibility is central to the platform's value proposition.
+Verification must be transparent, meaningful and accessible.
+27.4 Prioritise Mentor Availability and Capacity
+Mentors should control when they accept requests and how many active mentees they can support.
+This protects mentor experience and improves response rates.
+27.5 Make Mentorship Workspaces the Centre of Engagement
+Each active mentorship should have one dedicated environment containing its objectives, sessions, conversations, resources and progress.
+This should be one of Interlink's defining product experiences.
+27.6 Introduce Structured Relationship Completion
+Mentorship should have an intentional ending or renewal process.
+Participants should be able to review achievements, document outcomes and decide whether to continue.
+27.7 Build for Outcomes, Not Activity
+Do not measure success only through messages, registrations or profile views.
+Measure meaningful relationships, completed sessions, goal progress and participant satisfaction.
+27.8 Keep the MVP Technically Manageable
+Use:
+Angular.
+NestJS.
+PostgreSQL.
+Prisma.
+Managed infrastructure.
+Third-party email and storage services.
+A modular monolithic architecture.
+Avoid premature microservices and unnecessary infrastructure.
+27.9 Make Trust and Safety Non-Negotiable
+Reporting, blocking, verification, moderation and administrative audit logs must exist in the initial product.
+27.10 Preserve Free Mentorship Access
+The platform should build trust and demonstrate value before introducing paid services.
+Commercial opportunities should complement the core mission.
+27.11 Launch With a Controlled Pilot
+Before a broad launch, test the product with a smaller community.
+Observe actual behaviour rather than relying entirely on assumptions.
+27.12 Build a Product That Learns From Its Users
+Interlink should continuously evaluate:
+Where users abandon onboarding.
+Which mentors attract relevant requests.
+Why mentors reject requests.
+How long relationships remain active.
+Which goals are completed.
+What causes mentorship relationships to end.
+What users consider valuable.
+These findings should guide future development.
+
+28. CONCLUSION
+Interlink is envisioned as more than a platform for finding professional contacts.
+It is a structured environment where experience meets ambition, knowledge becomes guidance and professional relationships translate into measurable growth.
+Its fundamental purpose is to make mentorship more accessible, intentional, credible and accountable.
+By combining mentor discovery, professional verification, structured mentorship relationships, communication, development objectives and progress tracking, Interlink can address an important gap between individuals seeking career direction and experienced professionals willing to provide it.
+The recommended strategy is to:
+Establish a credible mentor community.
+Launch a focused mentorship-first MVP.
+Validate the complete mentorship lifecycle.
+Build trust through verification and platform governance.
+Measure actual mentorship outcomes.
+Improve the product using real user feedback.
+Expand progressively into career development, institutional partnerships and intelligent recommendations.
+The long-term success of Interlink will not be determined by the number of features it introduces, but by the number of people whose professional journeys are meaningfully improved through the platform.
+
+INTERLINK
+Get Linked with experienced mentors who can guide you as you advance in your career journey.
+Empowerment. Growth. Connection.
+End of Product Requirements Document – Version 2.0.
+
