@@ -1,0 +1,20 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Expo: Start mobile with QR code",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"dev:mobile"
+			],
+			"isBackground": true,
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated"
+			}
+		}
+	]
+}
