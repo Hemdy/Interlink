@@ -1,6 +1,19 @@
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { config } from "dotenv";
 import { USER_ROLES, type UserRole } from "@interlink/types";
 import { getDb } from "./connection";
 import { industries, roles, skills } from "./schema";
+
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const rootDir = resolve(currentDir, "../../..");
+for (const envFile of [".env.local", ".env"]) {
+  const fullPath = resolve(rootDir, envFile);
+  if (existsSync(fullPath)) {
+    config({ path: fullPath });
+  }
+}
 
 const roleLabels: Record<UserRole, string> = {
   mentee: "Mentee",

@@ -199,12 +199,18 @@ export function AdminConsoleClient({
                     )}
                     {v.documentReference && (
                       <a
-                        href={v.documentReference}
+                        href={
+                          v.documentReference.startsWith("http")
+                            ? v.documentReference
+                            : `/api/v1/storage/file?key=${encodeURIComponent(v.documentReference)}`
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-1 inline-block text-xs text-interlink-link underline"
                       >
-                        {v.documentReference}
+                        {v.documentReference.startsWith("http")
+                          ? v.documentReference
+                          : "View Uploaded Verification Document"}
                       </a>
                     )}
                   </div>

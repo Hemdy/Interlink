@@ -52,6 +52,13 @@ export const databaseEnvironmentSchema = z.object({
   DATABASE_URL: databaseUrlSchema,
 });
 
+export const objectStorageEnvironmentSchema = z.object({
+  AWS_ACCESS_KEY_ID: z.string().min(1),
+  AWS_SECRET_ACCESS_KEY: z.string().min(1),
+  AWS_ENDPOINT_URL_S3: z.string().url(),
+  AWS_REGION: z.string().min(1),
+});
+
 export const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters.")

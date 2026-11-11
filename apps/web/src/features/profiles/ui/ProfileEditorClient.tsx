@@ -73,6 +73,8 @@ export function ProfileEditorClient({
   const router = useRouter();
   const { pushToast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [uploadedDocKey, setUploadedDocKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Mentor form state
@@ -156,6 +158,35 @@ export function ProfileEditorClient({
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
+  }
+
+  async function handleVerificationDocUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingDoc(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("purpose", "verification");
+      const res = await fetch("/api/v1/storage/upload", {
+        method: "POST",
+        body: form,
+      });
+      const json = (await res.json()) as {
+        data?: { key: string };
+        error?: { message: string };
+      };
+      if (!res.ok) {
+        setError(json.error?.message ?? "Unable to upload verification document.");
+        return;
+      }
+      setUploadedDocKey(json.data?.key ?? null);
+      pushToast({ kind: "success", title: "Verification document uploaded for review" });
+      router.refresh();
+    } finally {
+      setUploadingDoc(false);
+    }
   }
 
   async function saveProfile(e: React.FormEvent, markComplete = true) {
@@ -420,6 +451,32 @@ export function ProfileEditorClient({
                 value={qualifications}
                 onChange={(e) => setQualifications(e.target.value)}
               />
+              <div className="rounded-[2px] border border-interlink-border bg-interlink-app-bg p-4">
+                <p className="text-xs font-medium text-interlink-ink">
+                  Supporting Verification Credential (Optional)
+                </p>
+                <p className="mt-0.5 text-[11px] text-interlink-muted">
+                  Upload a PDF certificate or supporting document to Neon Object Storage (private
+                  access for administrators only).
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <label className="inline-block cursor-pointer rounded-[2px] border border-interlink-hairline bg-interlink-surface px-3.5 py-1.5 text-xs font-medium text-interlink-ink hover:border-interlink-forest">
+                    {uploadingDoc ? "Uploading..." : "Upload Verification Document"}
+                    <input
+                      type="file"
+                      accept="application/pdf,image/jpeg,image/png,image/webp"
+                      onChange={handleVerificationDocUpload}
+                      disabled={uploadingDoc}
+                      className="sr-only"
+                    />
+                  </label>
+                  {uploadedDocKey && (
+                    <span className="text-xs text-interlink-forest">
+                      Uploaded: {uploadedDocKey}
+                    </span>
+                  )}
+                </div>
+              </div>
               {isOnboarding && (
                 <Input
                   label="Verification Submission Summary (Optional)"
