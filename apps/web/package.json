@@ -10,9 +10,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@interlink/database": "workspace:*",
+    "@interlink/types": "workspace:*",
+    "@interlink/utils": "workspace:*",
+    "@interlink/validation": "workspace:*",
+    "drizzle-orm": "^0.44.7",
+    "lucide-react": "^1.72.0",
     "next": "^16.4.5",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@interlink/typescript-config": "workspace:*",

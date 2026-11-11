@@ -1,3 +1,3 @@
 import "server-only";
 
-export { getDb } from "./connection";
+export { getDb, isDatabaseConfigured, type Database } from "./connection";
