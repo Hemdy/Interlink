@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { desc, eq, inArray, or } from "drizzle-orm";
 import { getDb, isDatabaseConfigured, mentorships, users } from "@interlink/database";
+import { formatDate } from "@interlink/utils";
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge, Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/Feedback";
@@ -94,7 +95,7 @@ export default async function MentorshipsListPage() {
 
                 <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-xs">
                   <span className="text-interlink-muted">
-                    Started {new Date(m.startDate).toLocaleDateString()}
+                    Started {formatDate(m.startDate)}
                   </span>
                   <Link
                     href={`/mentorships/${m.id}`}

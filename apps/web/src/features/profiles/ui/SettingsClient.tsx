@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { SessionUser } from "@interlink/types";
+import { formatDate } from "@interlink/utils";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { Badge, Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -220,7 +221,7 @@ export function SettingsClient({
             </h2>
             <p className="mt-1 text-xs text-interlink-muted">
               {user.emailVerifiedAt
-                ? `Verified on ${new Date(user.emailVerifiedAt).toLocaleDateString()}`
+                ? `Verified on ${formatDate(user.emailVerifiedAt)}`
                 : "Your email address is not yet verified."}
             </p>
           </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Calendar, ExternalLink, Globe, MapPin, ShieldCheck } from "lucide-react";
+import { formatDate } from "@interlink/utils";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Badge, Card } from "@/components/ui/Card";
 import { getMentorPublicDetail } from "@/features/discovery/infrastructure/mentorQueries";
@@ -211,7 +212,7 @@ export default async function MentorDetailPage({
                   </p>
                 )}
                 <p className="mt-4 text-[11px] text-interlink-muted">
-                  Profile last updated {new Date(mentor.updatedAt).toLocaleDateString()}
+                  Profile last updated {formatDate(mentor.updatedAt)}
                 </p>
               </Card>
             </div>

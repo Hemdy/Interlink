@@ -31,6 +31,7 @@ loadRootEnvFile(".env");
 
 const nextConfig: NextConfig = {
   transpilePackages: [
+    "@interlink/database",
     "@interlink/types",
     "@interlink/validation",
     "@interlink/utils",

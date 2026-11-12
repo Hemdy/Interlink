@@ -9,6 +9,7 @@ import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
+import { postJson } from "@/lib/api/client";
 
 type AuthModalView = "sign-in" | "sign-up" | "forgot-password" | null;
 
@@ -91,14 +92,13 @@ export function AuthModalProvider({
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, password: loginPassword }),
-      });
-      const json = (await res.json()) as { error?: { message: string } };
-      if (!res.ok) {
-        setError(json.error?.message ?? "Unable to sign in.");
+      const result = await postJson(
+        "/api/v1/auth/login",
+        { identifier, password: loginPassword },
+        "Unable to sign in.",
+      );
+      if (!result.ok) {
+        setError(result.errorMessage ?? "Unable to sign in.");
         return;
       }
       pushToast({ kind: "success", title: "Signed in to Interlink" });
@@ -121,10 +121,9 @@ export function AuthModalProvider({
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await postJson<{ devVerificationUrl?: string }>(
+        "/api/v1/auth/register",
+        {
           firstName,
           lastName,
           email,
@@ -132,14 +131,11 @@ export function AuthModalProvider({
           confirmPassword,
           role,
           acceptPolicies: true,
-        }),
-      });
-      const json = (await res.json()) as {
-        data?: { devVerificationUrl?: string };
-        error?: { message: string };
-      };
-      if (!res.ok) {
-        setError(json.error?.message ?? "Unable to create your account.");
+        },
+        "Unable to create your account.",
+      );
+      if (!result.ok) {
+        setError(result.errorMessage ?? "Unable to create your account.");
         return;
       }
       pushToast({
@@ -148,7 +144,7 @@ export function AuthModalProvider({
         description: "Let's complete your Interlink onboarding profile.",
       });
       closeAuthModal();
-      if (json.data?.devVerificationUrl) {
+      if (result.data?.devVerificationUrl) {
         router.push(`/onboarding?verifyNotice=1`);
       } else {
         router.push("/onboarding");

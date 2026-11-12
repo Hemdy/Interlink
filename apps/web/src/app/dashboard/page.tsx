@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { and, count, desc, eq, inArray, or } from "drizzle-orm";
+import { formatDate, formatDateTime } from "@interlink/utils";
 import {
   getDb,
   isDatabaseConfigured,
@@ -330,7 +331,7 @@ export default async function DashboardPage() {
                             {mentee ? `${mentee.firstName} ${mentee.lastName}` : "Mentee"}
                           </p>
                           <p className="text-xs text-interlink-muted">
-                            Started {new Date(m.startDate).toLocaleDateString()}
+                            Started {formatDate(m.startDate)}
                           </p>
                         </div>
                         <Badge tone="forest">Open Workspace &rarr;</Badge>
@@ -366,7 +367,7 @@ export default async function DashboardPage() {
                         {req.careerObjective}
                       </p>
                       <p className="mt-1 text-xs text-interlink-muted">
-                        Received {new Date(req.createdAt).toLocaleDateString()} &middot; Status:{" "}
+                        Received {formatDate(req.createdAt)} &middot; Status:{" "}
                         {req.status}
                       </p>
                     </Link>
@@ -394,7 +395,7 @@ export default async function DashboardPage() {
                     >
                       <p className="font-semibold text-interlink-ink">{s.title}</p>
                       <p className="mt-1 text-interlink-muted">
-                        {new Date(s.startTime).toLocaleString()} &middot;{" "}
+                        {formatDateTime(s.startTime)} &middot;{" "}
                         <span className="capitalize">{s.status}</span>
                       </p>
                     </li>
@@ -537,7 +538,7 @@ export default async function DashboardPage() {
                           {mentor ? `${mentor.firstName} ${mentor.lastName}` : "Mentor"}
                         </p>
                         <p className="text-xs text-interlink-muted">
-                          Active since {new Date(m.startDate).toLocaleDateString()}
+                          Active since {formatDate(m.startDate)}
                         </p>
                       </div>
                       <Badge tone="forest">Open Workspace &rarr;</Badge>
@@ -641,7 +642,7 @@ export default async function DashboardPage() {
                   <li key={s.id} className="rounded-[2px] border border-slate-200 p-3">
                     <p className="font-semibold text-interlink-ink">{s.title}</p>
                     <p className="mt-1 text-interlink-muted">
-                      {new Date(s.startTime).toLocaleString()}
+                      {formatDateTime(s.startTime)}
                     </p>
                   </li>
                 ))}

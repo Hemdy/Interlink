@@ -1,7 +1,13 @@
 import { ok } from "@/lib/api/http";
-import { revokeCurrentSession } from "@/lib/auth/session";
+import { clearSessionCookieOnResponse, revokeCurrentSession } from "@/lib/auth/session";
 
-export async function POST() {
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function POST(request: Request) {
   await revokeCurrentSession();
-  return ok({ loggedOut: true });
+  const response = ok({ loggedOut: true });
+  response.headers.set("Cache-Control", "no-store");
+  clearSessionCookieOnResponse(response, request);
+  return response;
 }

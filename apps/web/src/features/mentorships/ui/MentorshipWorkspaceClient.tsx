@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatDate, formatDateTime, formatTime } from "@interlink/utils";
 import {
   AlertTriangle,
   BookOpen,
@@ -470,7 +471,7 @@ export function MentorshipWorkspaceClient({
             </div>
             <p className="mt-1 text-xs text-interlink-muted">
               Your role: <span className="font-medium">{isMentor ? "Mentor" : "Mentee"}</span>{" "}
-              &middot; Started {new Date(mentorship.startDate).toLocaleDateString()}
+              &middot; Started {formatDate(mentorship.startDate)}
             </p>
           </div>
 
@@ -743,7 +744,7 @@ export function MentorshipWorkspaceClient({
                         <div key={u.id} className="rounded-[2px] bg-slate-50 p-2.5 text-xs">
                           <p className="text-slate-700">{u.description}</p>
                           <span className="text-[10px] text-slate-400">
-                            {new Date(u.createdAt).toLocaleString()}
+                            {formatDateTime(u.createdAt)}
                           </span>
                         </div>
                       ))}
@@ -855,8 +856,8 @@ export function MentorshipWorkspaceClient({
                         </Badge>
                       </div>
                       <p className="mt-1 text-xs text-interlink-muted">
-                        {new Date(s.startTime).toLocaleString()} &ndash;{" "}
-                        {new Date(s.endTime).toLocaleTimeString()} ({s.timezone}) &middot;{" "}
+                        {formatDateTime(s.startTime, s.timezone)} &ndash;{" "}
+                        {formatTime(s.endTime, s.timezone)} ({s.timezone}) &middot;{" "}
                         {s.sessionType}
                       </p>
                       {s.meetingLink && (
@@ -946,7 +947,7 @@ export function MentorshipWorkspaceClient({
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                     </div>
                     <span className="mt-1 text-[10px] text-slate-400">
-                      {new Date(msg.createdAt).toLocaleString()}
+                      {formatDateTime(msg.createdAt)}
                     </span>
                   </div>
                 );

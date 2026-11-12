@@ -8,6 +8,7 @@ import { ErrorAlert, LoadingSpinner } from "@/components/ui/Feedback";
 import { Input } from "@/components/ui/Input";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { useToast } from "@/components/ui/ToastProvider";
+import { postJson } from "@/lib/api/client";
 
 function SignUpInner() {
   const router = useRouter();
@@ -33,10 +34,9 @@ function SignUpInner() {
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await postJson(
+        "/api/v1/auth/register",
+        {
           firstName,
           lastName,
           email,
@@ -44,11 +44,11 @@ function SignUpInner() {
           confirmPassword,
           role,
           acceptPolicies: true,
-        }),
-      });
-      const json = (await res.json()) as { error?: { message: string } };
-      if (!res.ok) {
-        setError(json.error?.message ?? "Unable to register.");
+        },
+        "Unable to register.",
+      );
+      if (!result.ok) {
+        setError(result.errorMessage ?? "Unable to register.");
         return;
       }
       pushToast({ kind: "success", title: "Account created!" });

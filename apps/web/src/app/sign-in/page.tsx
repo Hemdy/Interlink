@@ -8,6 +8,7 @@ import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input } from "@/components/ui/Input";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { useToast } from "@/components/ui/ToastProvider";
+import { postJson } from "@/lib/api/client";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -22,14 +23,13 @@ export default function SignInPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, password }),
-      });
-      const json = (await res.json()) as { error?: { message: string } };
-      if (!res.ok) {
-        setError(json.error?.message ?? "Unable to sign in.");
+      const result = await postJson(
+        "/api/v1/auth/login",
+        { identifier, password },
+        "Unable to sign in.",
+      );
+      if (!result.ok) {
+        setError(result.errorMessage ?? "Unable to sign in.");
         return;
       }
       pushToast({ kind: "success", title: "Signed in to Interlink" });

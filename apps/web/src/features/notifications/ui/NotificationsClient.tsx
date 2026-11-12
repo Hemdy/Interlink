@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { formatDateTime } from "@interlink/utils";
 import { Bell, CheckCheck } from "lucide-react";
 import { Badge, Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -88,7 +89,7 @@ export function NotificationsClient({
               </div>
               <p className="mt-1 text-sm text-slate-600">{n.message}</p>
               <p className="mt-1.5 text-xs text-interlink-muted">
-                {new Date(n.createdAt).toLocaleString()}
+                {formatDateTime(n.createdAt)}
               </p>
             </div>
 

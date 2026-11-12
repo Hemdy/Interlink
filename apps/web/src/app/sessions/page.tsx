@@ -8,6 +8,7 @@ import {
   sessions,
   users,
 } from "@interlink/database";
+import { formatDateTime } from "@interlink/utils";
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge, Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/Feedback";
@@ -103,7 +104,7 @@ export default async function SessionsPage() {
                     </div>
                     <p className="mt-1 text-xs text-interlink-muted">
                       With {partner ? `${partner.firstName} ${partner.lastName}` : "Participant"}{" "}
-                      &middot; {new Date(s.startTime).toLocaleString()} ({s.timezone})
+                      &middot; {formatDateTime(s.startTime, s.timezone)} ({s.timezone})
                     </p>
                   </div>
                   <Link

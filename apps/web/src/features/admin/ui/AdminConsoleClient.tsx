@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatDateTime } from "@interlink/utils";
 import { Badge, Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -425,7 +426,7 @@ export function AdminConsoleClient({
               {auditLogsList.map((log) => (
                 <tr key={log.id}>
                   <td className="px-4 py-2.5 text-slate-500">
-                    {new Date(log.createdAt).toLocaleString()}
+                    {formatDateTime(log.createdAt)}
                   </td>
                   <td className="px-4 py-2.5 text-interlink-ink">
                     {log.actorFirstName
