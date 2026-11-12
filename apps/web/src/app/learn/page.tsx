@@ -5,6 +5,12 @@ import { getDb, isDatabaseConfigured, resources, users } from "@interlink/databa
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Badge, Card } from "@/components/ui/Card";
 import { Reveal } from "@/components/ui/Reveal";
+import {
+  listPublishedMentorReels,
+  listPublishedPlatformEvents,
+} from "@/features/content/infrastructure/contentQueries";
+import { PromotionsEventsSection } from "@/features/events/ui/PromotionsEventsSection";
+import { MentorSpotlightSection } from "@/features/spotlight/ui/MentorSpotlightSection";
 import { getCurrentUser } from "@/lib/auth/session";
 
 const careerPaths = [
@@ -45,6 +51,10 @@ const careerPaths = [
 
 export default async function LearnPage() {
   const user = await getCurrentUser();
+  const [reels, events] = await Promise.all([
+    listPublishedMentorReels(),
+    listPublishedPlatformEvents(),
+  ]);
 
   let sharedResources: Array<{
     id: string;
@@ -208,6 +218,10 @@ export default async function LearnPage() {
           </div>
         </div>
       </section>
+
+      <MentorSpotlightSection initialReels={reels} user={user} />
+
+      <PromotionsEventsSection initialEvents={events} user={user} />
     </PublicShell>
   );
 }

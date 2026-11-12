@@ -6,3 +6,4 @@ export * from "./profiles";
 export * from "./mentorships";
 export * from "./workspace";
 export * from "./governance";
+export * from "./content";

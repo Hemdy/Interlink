@@ -59,6 +59,9 @@ export default async function OnboardingPage() {
         initialMentor={initialMentor}
         initialMentee={initialMentee}
         isOnboarding
+        userFirstName={user.firstName}
+        userLastName={user.lastName}
+        initialProfileImage={user.profileImage}
       />
     </AppShell>
   );

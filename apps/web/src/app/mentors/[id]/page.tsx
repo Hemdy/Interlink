@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, ExternalLink, Globe, MapPin, ShieldCheck } from "l
 import { formatDate } from "@interlink/utils";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Badge, Card } from "@/components/ui/Card";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { getMentorPublicDetail } from "@/features/discovery/infrastructure/mentorQueries";
 import { MentorProfileActions } from "@/features/discovery/ui/MentorProfileActions";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -44,14 +45,22 @@ export default async function MentorDetailPage({
             <div className="space-y-6 lg:col-span-8">
               <Card>
                 <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <h1 className="font-display text-2xl font-semibold text-interlink-ink sm:text-3xl">
-                      {mentor.firstName} {mentor.lastName}
-                    </h1>
-                    <p className="mt-1 text-sm text-interlink-muted">
-                      {mentor.currentPosition}
-                      {mentor.organisation ? ` at ${mentor.organisation}` : ""}
-                    </p>
+                  <div className="flex items-start gap-4">
+                    <UserAvatar
+                      src={mentor.profileImage}
+                      firstName={mentor.firstName}
+                      lastName={mentor.lastName}
+                      size="xl"
+                    />
+                    <div>
+                      <h1 className="font-display text-2xl font-semibold text-interlink-ink sm:text-3xl">
+                        {mentor.firstName} {mentor.lastName}
+                      </h1>
+                      <p className="mt-1 text-sm text-interlink-muted">
+                        {mentor.currentPosition}
+                        {mentor.organisation ? ` at ${mentor.organisation}` : ""}
+                      </p>
+                    </div>
                   </div>
                   <Badge
                     tone={

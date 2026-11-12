@@ -6,6 +6,7 @@ import { formatDate } from "@interlink/utils";
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge, Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/Feedback";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getUnreadNotificationCount } from "@/lib/notifications/unread";
 
@@ -28,7 +29,12 @@ export default async function MentorshipsListPage() {
   const relatedUsers =
     db && userIds.length > 0
       ? await db
-          .select({ id: users.id, firstName: users.firstName, lastName: users.lastName })
+          .select({
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            profileImage: users.profileImage,
+          })
           .from(users)
           .where(inArray(users.id, userIds))
       : [];
@@ -65,13 +71,21 @@ export default async function MentorshipsListPage() {
               <Card key={m.id} className="flex flex-col justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wider text-interlink-muted">
-                        {roleLabel}
-                      </p>
-                      <h2 className="mt-1 font-display text-lg font-semibold text-interlink-ink">
-                        {partner ? `${partner.firstName} ${partner.lastName}` : "Participant"}
-                      </h2>
+                    <div className="flex items-start gap-3">
+                      <UserAvatar
+                        src={partner?.profileImage}
+                        firstName={partner?.firstName ?? "P"}
+                        lastName={partner?.lastName ?? ""}
+                        size="md"
+                      />
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wider text-interlink-muted">
+                          {roleLabel}
+                        </p>
+                        <h2 className="mt-1 font-display text-lg font-semibold text-interlink-ink">
+                          {partner ? `${partner.firstName} ${partner.lastName}` : "Participant"}
+                        </h2>
+                      </div>
                     </div>
                     <Badge
                       tone={

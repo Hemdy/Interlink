@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input, Select, Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/ToastProvider";
+import { AvatarUploadCard } from "@/features/profiles/ui/AvatarUploadCard";
 
 interface IndustryOption {
   id: string;
@@ -20,9 +21,15 @@ export function ProfileEditorClient({
   initialMentee,
   initialSlots = [],
   isOnboarding = false,
+  userFirstName = "",
+  userLastName = "",
+  initialProfileImage = null,
 }: {
   role: "mentor" | "mentee";
   industries: IndustryOption[];
+  userFirstName?: string;
+  userLastName?: string;
+  initialProfileImage?: string | null;
   initialMentor?: {
     biography: string;
     currentPosition: string;
@@ -316,6 +323,15 @@ export function ProfileEditorClient({
             <ErrorAlert message={error} />
           </div>
         )}
+
+        <div className="mb-6">
+          <AvatarUploadCard
+            firstName={userFirstName}
+            lastName={userLastName}
+            initialProfileImage={initialProfileImage}
+            compact
+          />
+        </div>
 
         <form onSubmit={(e) => saveProfile(e, true)} className="space-y-5">
           {role === "mentor" ? (

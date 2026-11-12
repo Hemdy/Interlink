@@ -300,3 +300,33 @@ export const createCategorySchema = z.object({
   name: z.string().trim().min(2).max(100),
   description: z.string().trim().max(500).optional().nullable(),
 });
+
+export const createMentorReelSchema = z.object({
+  mentorName: z.string().trim().min(2, "Mentor name is required.").max(160),
+  profession: z.string().trim().min(2, "Profession is required.").max(160),
+  careerPath: z.string().trim().min(4, "Career path is required.").max(240),
+  title: z.string().trim().min(3, "Title is required.").max(200),
+  summary: z.string().trim().min(10, "Summary is required.").max(1000),
+  videoUrl: z.string().trim().url("A valid video URL is required.").max(800),
+  posterImageUrl: z.string().trim().max(800).optional().nullable().or(z.literal("")),
+  durationLabel: z.string().trim().min(2).max(20).default("0:45"),
+  topicTag: z.string().trim().min(2).max(80).default("Career Growth"),
+});
+
+export const createPlatformEventSchema = z.object({
+  title: z.string().trim().min(3, "Event title is required.").max(200),
+  category: z.enum(["workshop", "event", "opportunity", "promotion"]).default("workshop"),
+  summary: z.string().trim().min(10, "Summary is required.").max(1200),
+  imageUrl: z.string().trim().min(1, "Image URL or path is required.").max(800),
+  eventDate: z.string().datetime().optional().nullable().or(z.literal("")),
+  locationOrFormat: z.string().trim().min(2, "Location or format is required.").max(160),
+  ctaLabel: z.string().trim().min(2).max(80).default("Reserve Seat"),
+  ctaUrl: z.string().trim().max(800).optional().nullable().or(z.literal("")),
+  isFeatured: z.boolean().default(false),
+});
+
+export const registerEventSchema = z.object({
+  eventId: z.string().trim().min(1, "Event ID is required.").max(120),
+  attendeeName: z.string().trim().min(2, "Your name is required.").max(160),
+  attendeeEmail: z.string().trim().email("A valid email address is required.").max(320),
+});

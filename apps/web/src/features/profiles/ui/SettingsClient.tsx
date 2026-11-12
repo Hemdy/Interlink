@@ -12,6 +12,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/ToastProvider";
+import { AvatarUploadCard } from "@/features/profiles/ui/AvatarUploadCard";
 
 export function SettingsClient({
   user,
@@ -28,48 +29,9 @@ export function SettingsClient({
   const [lastName, setLastName] = useState(user.lastName);
   const [username, setUsername] = useState(user.username ?? "");
   const [saving, setSaving] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(
-    user.profileImage
-      ? user.profileImage.startsWith("http")
-        ? user.profileImage
-        : `/api/v1/storage/file?key=${encodeURIComponent(user.profileImage)}`
-      : null,
-  );
   const [error, setError] = useState<string | null>(null);
   const [devVerifyUrl, setDevVerifyUrl] = useState<string | null>(null);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
-
-  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingAvatar(true);
-    setError(null);
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("purpose", "avatar");
-      const res = await fetch("/api/v1/storage/upload", {
-        method: "POST",
-        body: form,
-      });
-      const json = (await res.json()) as {
-        data?: { signedUrl: string };
-        error?: { message: string };
-      };
-      if (!res.ok) {
-        setError(json.error?.message ?? "Unable to upload profile photo.");
-        return;
-      }
-      if (json.data?.signedUrl) {
-        setAvatarUrl(json.data.signedUrl);
-      }
-      pushToast({ kind: "success", title: "Profile photograph uploaded to Neon Storage" });
-      router.refresh();
-    } finally {
-      setUploadingAvatar(false);
-    }
-  }
 
   async function saveAccount(e: React.FormEvent) {
     e.preventDefault();
@@ -154,35 +116,11 @@ export function SettingsClient({
           </div>
         )}
         <form onSubmit={saveAccount} className="mt-5 space-y-4">
-          <div className="flex flex-wrap items-center gap-4 border-b border-interlink-border pb-4">
-            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[2px] border border-interlink-border bg-interlink-app-bg text-sm font-semibold text-interlink-forest">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarUrl}
-                  alt={`${user.firstName} ${user.lastName}`}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`
-              )}
-            </div>
-            <div>
-              <label className="inline-block cursor-pointer rounded-[2px] border border-interlink-hairline bg-interlink-surface px-3.5 py-1.5 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest">
-                {uploadingAvatar ? "Uploading..." : "Upload Profile Photo"}
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleAvatarUpload}
-                  disabled={uploadingAvatar}
-                  className="sr-only"
-                />
-              </label>
-              <p className="mt-1 text-[11px] text-interlink-muted">
-                Stored securely in Neon Object Storage (JPEG, PNG, or WebP up to 5 MB).
-              </p>
-            </div>
-          </div>
+          <AvatarUploadCard
+            firstName={user.firstName}
+            lastName={user.lastName}
+            initialProfileImage={user.profileImage}
+          />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input

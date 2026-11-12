@@ -26,6 +26,7 @@ import type { SessionUser } from "@interlink/types";
 import { ADMIN_ROLES } from "@interlink/types";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 
 interface NavItem {
   label: string;
@@ -125,13 +126,21 @@ export function AppShell({
           </button>
         </div>
 
-        <div className="border-b border-interlink-border/60 px-5 py-3.5">
-          <p className="truncate text-sm font-semibold text-interlink-ink">
-            {user.firstName} {user.lastName}
-          </p>
-          <p className="mt-0.5 text-xs capitalize text-interlink-forest">
-            {user.primaryRole.replace("_", " ")}
-          </p>
+        <div className="flex items-center gap-3 border-b border-interlink-border/60 px-5 py-3.5">
+          <UserAvatar
+            src={user.profileImage}
+            firstName={user.firstName}
+            lastName={user.lastName}
+            size="sm"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-interlink-ink">
+              {user.firstName} {user.lastName}
+            </p>
+            <p className="mt-0.5 text-xs capitalize text-interlink-forest">
+              {user.primaryRole.replace("_", " ")}
+            </p>
+          </div>
         </div>
 
         <nav className="space-y-0.5 p-3" aria-label="Workspace navigation">

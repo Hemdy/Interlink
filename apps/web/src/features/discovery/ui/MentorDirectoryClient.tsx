@@ -19,6 +19,7 @@ import { EmptyState } from "@/components/ui/Feedback";
 import { Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useAuthModal } from "@/features/auth/ui/AuthModalProvider";
 
 interface IndustryOption {
@@ -308,14 +309,22 @@ export function MentorDirectoryClient({
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="text-base font-semibold text-interlink-ink">
-                        {mentor.firstName} {mentor.lastName}
-                      </h3>
-                      <p className="text-xs text-interlink-muted">
-                        {mentor.currentPosition}
-                        {mentor.organisation ? ` · ${mentor.organisation}` : ""}
-                      </p>
+                    <div className="flex items-start gap-3">
+                      <UserAvatar
+                        src={mentor.profileImage}
+                        firstName={mentor.firstName}
+                        lastName={mentor.lastName}
+                        size="md"
+                      />
+                      <div>
+                        <h3 className="text-base font-semibold text-interlink-ink">
+                          {mentor.firstName} {mentor.lastName}
+                        </h3>
+                        <p className="text-xs text-interlink-muted">
+                          {mentor.currentPosition}
+                          {mentor.organisation ? ` · ${mentor.organisation}` : ""}
+                        </p>
+                      </div>
                     </div>
                     <Badge
                       tone={

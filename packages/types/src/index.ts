@@ -177,3 +177,37 @@ export interface PublicMentorSummary {
   matchScore?: number;
   matchReasons?: string[];
 }
+
+export const EVENT_CATEGORIES = ["workshop", "event", "opportunity", "promotion"] as const;
+
+export type EventCategory = (typeof EVENT_CATEGORIES)[number];
+
+export interface MentorReelItem {
+  id: string;
+  mentorId: string | null;
+  mentorName: string;
+  profession: string;
+  careerPath: string;
+  title: string;
+  summary: string;
+  videoUrl: string;
+  posterImageUrl: string | null;
+  durationLabel: string;
+  topicTag: string;
+  createdAt: string;
+}
+
+export interface PlatformEventItem {
+  id: string;
+  title: string;
+  category: EventCategory;
+  summary: string;
+  imageUrl: string;
+  eventDate: string | null;
+  locationOrFormat: string;
+  ctaLabel: string;
+  ctaUrl: string | null;
+  isFeatured: boolean;
+  registrationCount?: number;
+  isRegistered?: boolean;
+}

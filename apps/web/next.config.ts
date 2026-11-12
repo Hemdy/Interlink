@@ -36,6 +36,14 @@ const nextConfig: NextConfig = {
     "@interlink/validation",
     "@interlink/utils",
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.pixabay.com",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

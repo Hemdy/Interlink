@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -13,9 +14,16 @@ import { PublicShell } from "@/components/layout/PublicShell";
 import { Badge, Card } from "@/components/ui/Card";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { Reveal } from "@/components/ui/Reveal";
+import { UserAvatar } from "@/components/ui/UserAvatar";
+import {
+  listPublishedMentorReels,
+  listPublishedPlatformEvents,
+} from "@/features/content/infrastructure/contentQueries";
 import { listPublicMentors } from "@/features/discovery/infrastructure/mentorQueries";
+import { PromotionsEventsSection } from "@/features/events/ui/PromotionsEventsSection";
 import { getPlatformTrustMetrics } from "@/features/home/infrastructure/platformMetrics";
 import { LandingHeroActions } from "@/features/home/ui/LandingHeroActions";
+import { MentorSpotlightSection } from "@/features/spotlight/ui/MentorSpotlightSection";
 import { getCurrentUser } from "@/lib/auth/session";
 
 const lifecycleStages = [
@@ -53,9 +61,11 @@ const lifecycleStages = [
 
 export default async function HomePage() {
   const user = await getCurrentUser();
-  const [{ mentors }, metrics] = await Promise.all([
+  const [{ mentors }, metrics, reels, events] = await Promise.all([
     listPublicMentors({ limit: 3, viewerUserId: user?.id ?? null }),
     getPlatformTrustMetrics(),
+    listPublishedMentorReels(),
+    listPublishedPlatformEvents(),
   ]);
 
   const trustItems = metrics.hasLiveMetrics
@@ -251,14 +261,22 @@ export default async function HomePage() {
                   >
                     <div>
                       <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="text-base font-semibold text-interlink-ink">
-                            {mentor.firstName} {mentor.lastName}
-                          </h3>
-                          <p className="text-xs text-interlink-muted">
-                            {mentor.currentPosition}
-                            {mentor.organisation ? ` · ${mentor.organisation}` : ""}
-                          </p>
+                        <div className="flex items-start gap-3">
+                          <UserAvatar
+                            src={mentor.profileImage}
+                            firstName={mentor.firstName}
+                            lastName={mentor.lastName}
+                            size="md"
+                          />
+                          <div>
+                            <h3 className="text-base font-semibold text-interlink-ink">
+                              {mentor.firstName} {mentor.lastName}
+                            </h3>
+                            <p className="text-xs text-interlink-muted">
+                              {mentor.currentPosition}
+                              {mentor.organisation ? ` · ${mentor.organisation}` : ""}
+                            </p>
+                          </div>
                         </div>
                         <Badge
                           tone={
@@ -326,6 +344,60 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      {/* MENTORSHIP IN ACTION VISUAL SHOWCASE */}
+      <section className="border-t border-interlink-border bg-interlink-surface py-16 sm:py-20">
+        <div className="mx-auto grid max-w-[1360px] grid-cols-1 items-center gap-10 px-6 sm:px-10 lg:grid-cols-12">
+          <div className="lg:col-span-6">
+            <Reveal>
+              <div className="relative aspect-[16/10] overflow-hidden rounded-[2px] border border-interlink-border shadow-elevated">
+                <Image
+                  src="/images/mentorship-coaching.jpg"
+                  alt="Mentor and mentee collaborating on a career roadmap"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover"
+                />
+              </div>
+            </Reveal>
+          </div>
+          <div className="lg:col-span-6">
+            <Reveal delayMs={90}>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-interlink-forest">
+                Real Guidance, Real Accountability
+              </p>
+              <h2 className="mt-2 font-display text-2xl font-light text-interlink-ink sm:text-3xl">
+                Every mentorship is backed by clear goals, scheduled sessions, and measurable progress.
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-interlink-muted">
+                Whether you are preparing for your first industry role, transitioning tracks, or
+                scaling into leadership, Interlink pairs structured workspaces with experienced
+                practitioners who stay invested in your growth.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href="/mentors"
+                  className="rounded-[2px] bg-interlink-forest px-5 py-2.5 text-sm font-medium text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
+                >
+                  Find Your Mentor
+                </Link>
+                <Link
+                  href="/become-a-mentor"
+                  className="rounded-[2px] border border-interlink-hairline bg-interlink-surface px-5 py-2.5 text-sm font-medium text-interlink-ink transition-colors hover:border-interlink-forest"
+                >
+                  Become a Mentor
+                </Link>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* MENTOR SPOTLIGHT / MOTIVATIONAL REELS */}
+      <MentorSpotlightSection initialReels={reels} user={user} />
+
+      {/* PROMOTIONS & UPCOMING EVENTS */}
+      <PromotionsEventsSection initialEvents={events} user={user} />
 
       {/* TRUST, CREDIBILITY & GOALS */}
       <section className="border-t border-interlink-border bg-interlink-forest-deep py-16 text-white">

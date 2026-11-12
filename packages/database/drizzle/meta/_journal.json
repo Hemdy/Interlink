@@ -15,6 +15,13 @@
       "when": 1794431031764,
       "tag": "0001_absurd_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794475437107,
+      "tag": "0002_marvelous_monster_badoon",
+      "breakpoints": true
     }
   ]
 }

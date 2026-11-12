@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { DropdownMenu } from "@/components/ui/DropdownMenu";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useAuthModal } from "@/features/auth/ui/AuthModalProvider";
 
 const primaryNavLinks = [
@@ -70,6 +71,12 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
 
           {user ? (
             <div className="flex items-center gap-2.5 border-l border-interlink-border pl-3">
+              <UserAvatar
+                src={user.profileImage}
+                firstName={user.firstName}
+                lastName={user.lastName}
+                size="xs"
+              />
               <Link
                 href="/dashboard"
                 className="inline-flex items-center gap-1.5 rounded-[2px] bg-interlink-forest px-4 py-1.5 text-sm font-medium text-white shadow-subtle transition-all duration-200 hover:bg-interlink-forest-hover focus-ring"

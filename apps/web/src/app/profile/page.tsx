@@ -77,6 +77,9 @@ export default async function ProfilePage() {
         initialMentor={initialMentor}
         initialMentee={initialMentee}
         initialSlots={slots}
+        userFirstName={user.firstName}
+        userLastName={user.lastName}
+        initialProfileImage={user.profileImage}
       />
     </AppShell>
   );
