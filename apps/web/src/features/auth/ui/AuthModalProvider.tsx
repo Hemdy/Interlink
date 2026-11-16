@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
 import { postJson } from "@/lib/api/client";
+import { GoogleAuthButton } from "./GoogleAuthButton";
 
 type AuthModalView = "sign-in" | "sign-up" | "forgot-password" | null;
 
@@ -141,14 +142,10 @@ export function AuthModalProvider({
       pushToast({
         kind: "success",
         title: "Account created",
-        description: "Let's complete your Interlink onboarding profile.",
+        description: "Welcome to Interlink! You can customize your profile anytime from your dashboard.",
       });
       closeAuthModal();
-      if (result.data?.devVerificationUrl) {
-        router.push(`/onboarding?verifyNotice=1`);
-      } else {
-        router.push("/onboarding");
-      }
+      router.push("/dashboard");
       router.refresh();
     } catch {
       setError("Network error while creating your account.");
@@ -220,7 +217,27 @@ export function AuthModalProvider({
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="mt-7 space-y-4">
+            <div className="mt-6">
+              <GoogleAuthButton
+                label="Continue with Google"
+                onSuccess={() => {
+                  closeAuthModal();
+                  router.push("/dashboard");
+                  router.refresh();
+                }}
+              />
+            </div>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-interlink-border" />
+              </div>
+              <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
+                <span className="bg-interlink-modal px-2 text-interlink-muted">or continue with email</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
               <Input
                 name="identifier"
                 type="text"
@@ -290,7 +307,7 @@ export function AuthModalProvider({
                 resetMessages();
                 setView("sign-up");
               }}
-              className="mt-7 rounded-[2px] bg-white px-7 py-2 text-sm font-medium text-interlink-ink transition-colors hover:bg-slate-100 focus-ring"
+              className="mt-7 rounded-[2px] bg-white px-7 py-2 text-sm font-semibold text-slate-900 shadow-subtle transition-colors hover:bg-slate-100 focus-ring"
             >
               Sign Up
             </button>
@@ -348,7 +365,28 @@ export function AuthModalProvider({
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="mt-5 space-y-3">
+          <div className="mt-4">
+            <GoogleAuthButton
+              role={role}
+              label={`Sign up as ${role === "mentor" ? "Mentor" : "Mentee"} with Google`}
+              onSuccess={() => {
+                closeAuthModal();
+                router.push("/dashboard");
+                router.refresh();
+              }}
+            />
+          </div>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-interlink-border" />
+            </div>
+            <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
+              <span className="bg-interlink-modal px-2 text-interlink-muted">or register with email</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleRegister} className="mt-3 space-y-3">
             <Input
               name="firstName"
               type="text"

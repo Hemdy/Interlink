@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { useToast } from "@/components/ui/ToastProvider";
 import { postJson } from "@/lib/api/client";
+import { GoogleAuthButton } from "@/features/auth/ui/GoogleAuthButton";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -68,7 +69,20 @@ export default function SignInPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+          <div className="mt-6">
+            <GoogleAuthButton label="Continue with Google" />
+          </div>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-interlink-border" />
+            </div>
+            <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
+              <span className="bg-interlink-modal px-2 text-interlink-muted">or continue with email</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               name="identifier"
               type="text"
@@ -77,6 +91,7 @@ export default function SignInPage() {
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
+              autoComplete="username"
             />
             <Input
               name="password"
@@ -86,6 +101,7 @@ export default function SignInPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
             />
             <div className="flex items-center justify-between pt-2">
               <Button type="submit" loading={loading} className="px-6">
@@ -116,7 +132,7 @@ export default function SignInPage() {
           </p>
           <Link
             href="/sign-up"
-            className="mt-7 rounded-[2px] bg-white px-7 py-2 text-sm font-medium text-interlink-ink hover:bg-slate-100"
+            className="mt-7 rounded-[2px] bg-white px-7 py-2 text-sm font-semibold text-slate-900 shadow-subtle transition-colors hover:bg-slate-100 focus-ring"
           >
             Sign Up
           </Link>

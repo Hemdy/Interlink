@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatDate, formatDateTime, formatTime } from "@interlink/utils";
 import {
   AlertTriangle,
@@ -132,9 +132,30 @@ export function MentorshipWorkspaceClient({
   const isMentor = mentorship.mentorId === currentUserId;
   const partner = isMentor ? mentee : mentor;
 
-  const [tab, setTab] = useState<"overview" | "goals" | "sessions" | "messages" | "resources">(
-    "overview",
-  );
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const [tab, setTab] = useState<"overview" | "goals" | "sessions" | "messages" | "resources">(() => {
+    if (
+      requestedTab === "messages" ||
+      requestedTab === "goals" ||
+      requestedTab === "sessions" ||
+      requestedTab === "resources"
+    ) {
+      return requestedTab;
+    }
+    return "overview";
+  });
+
+  useEffect(() => {
+    if (
+      requestedTab === "messages" ||
+      requestedTab === "goals" ||
+      requestedTab === "sessions" ||
+      requestedTab === "resources"
+    ) {
+      setTab(requestedTab);
+    }
+  }, [requestedTab]);
   const [busy, setBusy] = useState(false);
 
   // Goals state

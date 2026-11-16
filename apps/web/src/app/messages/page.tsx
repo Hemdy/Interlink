@@ -12,6 +12,7 @@ import {
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge, Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/Feedback";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getUnreadNotificationCount } from "@/lib/notifications/unread";
 
@@ -49,7 +50,12 @@ export default async function MessagesPage() {
   const partners =
     db && partnerIds.length > 0
       ? await db
-          .select({ id: users.id, firstName: users.firstName, lastName: users.lastName })
+          .select({
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            profileImage: users.profileImage,
+          })
           .from(users)
           .where(inArray(users.id, partnerIds))
       : [];
@@ -101,22 +107,35 @@ export default async function MessagesPage() {
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
-            <Link key={item.conv.id} href={`/mentorships/${item.conv.mentorshipId}`}>
-              <Card className="transition-colors hover:border-interlink-forest">
+            <Link key={item.conv.id} href={`/mentorships/${item.conv.mentorshipId}?tab=messages`}>
+              <Card className="transition-all hover:border-interlink-forest hover:shadow-subtle">
                 <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-base font-semibold text-interlink-ink">
-                      {item.partner
-                        ? `${item.partner.firstName} ${item.partner.lastName}`
-                        : "Participant"}
-                    </h2>
-                    <p className="mt-1 text-xs text-interlink-muted">
-                      {item.lastMessage
-                        ? item.lastMessage.content
-                        : "No messages exchanged yet — open workspace to send a message."}
-                    </p>
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <UserAvatar
+                      src={item.partner?.profileImage}
+                      firstName={item.partner?.firstName ?? "P"}
+                      lastName={item.partner?.lastName ?? ""}
+                      size="md"
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-sm font-semibold text-interlink-ink truncate">
+                          {item.partner
+                            ? `${item.partner.firstName} ${item.partner.lastName}`
+                            : "Participant"}
+                        </h2>
+                        <Badge tone="forest">{item.mentorshipStatus}</Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-interlink-muted truncate max-w-xl">
+                        {item.lastMessage
+                          ? item.lastMessage.content
+                          : "No messages exchanged yet — click to open private conversation."}
+                      </p>
+                    </div>
                   </div>
-                  <Badge tone="forest">{item.mentorshipStatus}</Badge>
+                  <span className="text-xs font-medium text-interlink-forest shrink-0 hover:underline">
+                    Open Chat &rarr;
+                  </span>
                 </div>
               </Card>
             </Link>

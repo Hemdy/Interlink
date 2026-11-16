@@ -28,9 +28,11 @@ import {
   Calendar,
   CheckCircle2,
   Compass,
+  Globe,
   Inbox,
   ShieldCheck,
   Target,
+  UserCircle,
   Users,
 } from "lucide-react";
 
@@ -244,13 +246,58 @@ export default async function DashboardPage() {
             </Link>
             <Link
               href="/profile#availability"
-              className="hidden rounded-[2px] border border-interlink-hairline bg-white px-4 py-2 text-xs font-medium text-interlink-ink hover:border-interlink-forest sm:inline-block"
+              className="hidden rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest sm:inline-block"
             >
               Manage Availability
             </Link>
           </div>
         }
       >
+        {/* Mentor Profile Setup & Public Profile Configuration Card */}
+        <div className="mb-6 rounded-[2px] border border-interlink-border bg-interlink-surface p-5 shadow-subtle sm:p-6">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[2px] border border-interlink-forest/20 bg-interlink-app-bg text-interlink-forest">
+                <Globe className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-display text-base font-semibold text-interlink-ink">
+                    Public Profile & Mentorship Setup
+                  </h2>
+                  <Badge tone={mentorProfile?.biography ? "forest" : "neutral"}>
+                    {mentorProfile?.biography ? "Profile Configured" : "Setup Incomplete"}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-xs text-interlink-muted">
+                  Update your bio, industry, skills, and session availability anytime so mentees can find you.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Link
+                href="/profile"
+                className="rounded-[2px] bg-interlink-forest px-4 py-2 text-xs font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
+              >
+                Complete / Edit Profile
+              </Link>
+              <Link
+                href="/profile#visibility"
+                className="rounded-[2px] border border-interlink-border bg-interlink-app-bg px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+              >
+                Configure Public Profile
+              </Link>
+              <Link
+                href={`/mentors/${user.id}`}
+                className="rounded-[2px] border border-interlink-border bg-interlink-app-bg px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+              >
+                Preview Public Profile
+              </Link>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <p className="text-xs text-interlink-muted">Verification Status</p>
@@ -324,7 +371,7 @@ export default async function DashboardPage() {
                       <Link
                         key={m.id}
                         href={`/mentorships/${m.id}`}
-                        className="flex items-center justify-between rounded-[2px] border border-slate-200 p-3.5 hover:border-interlink-forest"
+                        className="flex items-center justify-between rounded-[2px] border border-interlink-border bg-interlink-surface/60 p-3.5 transition-colors hover:border-interlink-forest hover:bg-interlink-surface"
                       >
                         <div>
                           <p className="text-sm font-semibold text-interlink-ink">
@@ -458,13 +505,52 @@ export default async function DashboardPage() {
           </Link>
           <Link
             href="/goals"
-            className="hidden rounded-[2px] border border-interlink-hairline bg-white px-4 py-2 text-xs font-medium text-interlink-ink hover:border-interlink-forest sm:inline-block"
+            className="hidden rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest sm:inline-block"
           >
             Update My Goals
           </Link>
         </div>
       }
     >
+      {/* Mentee Profile Setup & Public Profile Configuration Card */}
+      <div className="mb-6 rounded-[2px] border border-interlink-border bg-interlink-surface p-5 shadow-subtle sm:p-6">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-3.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[2px] border border-interlink-forest/20 bg-interlink-app-bg text-interlink-forest">
+              <UserCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-display text-base font-semibold text-interlink-ink">
+                  Profile Setup & Public Profile
+                </h2>
+                <Badge tone={(menteeProfile?.profileCompletion ?? 0) >= 80 ? "forest" : "neutral"}>
+                  {menteeProfile?.profileCompletion ?? 0}% Complete
+                </Badge>
+              </div>
+              <p className="mt-1 text-xs text-interlink-muted">
+                Keep your background, learning goals, and career interests up to date to get matching mentor recommendations.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/profile"
+              className="rounded-[2px] bg-interlink-forest px-4 py-2 text-xs font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
+            >
+              Complete / Edit Profile
+            </Link>
+            <Link
+              href="/profile#visibility"
+              className="rounded-[2px] border border-interlink-border bg-interlink-app-bg px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+            >
+              Configure Public Profile
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <p className="text-xs text-interlink-muted">Profile Completion</p>
@@ -531,7 +617,7 @@ export default async function DashboardPage() {
                     <Link
                       key={m.id}
                       href={`/mentorships/${m.id}`}
-                      className="flex items-center justify-between rounded-[2px] border border-slate-200 p-3.5 hover:border-interlink-forest"
+                      className="flex items-center justify-between rounded-[2px] border border-interlink-border bg-interlink-surface/60 p-3.5 transition-colors hover:border-interlink-forest hover:bg-interlink-surface"
                     >
                       <div>
                         <p className="text-sm font-semibold text-interlink-ink">
@@ -569,7 +655,7 @@ export default async function DashboardPage() {
                   <Link
                     key={mentor.userId}
                     href={`/mentors/${mentor.userId}`}
-                    className="flex items-center justify-between rounded-[2px] border border-slate-200 p-3.5 hover:border-interlink-forest"
+                    className="flex items-center justify-between rounded-[2px] border border-interlink-border bg-interlink-surface/60 p-3.5 transition-colors hover:border-interlink-forest hover:bg-interlink-surface"
                   >
                     <div>
                       <p className="text-sm font-semibold text-interlink-ink">
@@ -611,7 +697,7 @@ export default async function DashboardPage() {
             ) : (
               <ul className="mt-4 space-y-2.5 text-xs">
                 {activeGoals.map((goal) => (
-                  <li key={goal.id} className="rounded-[2px] border border-slate-200 p-3">
+                  <li key={goal.id} className="rounded-[2px] border border-interlink-border bg-interlink-surface/60 p-3">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-interlink-ink">{goal.title}</span>
                       <Badge tone="neutral">{goal.status.replace(/_/g, " ")}</Badge>

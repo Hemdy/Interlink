@@ -6,6 +6,7 @@ import {
   mentorshipRequestHistory,
   mentorshipRequests,
   mentorships,
+  messages,
 } from "@interlink/database";
 import { respondMentorshipRequestSchema, uuidSchema } from "@interlink/validation";
 import { apiError, ensureDatabaseConfigured, ok, parseBody } from "@/lib/api/http";
@@ -99,9 +100,33 @@ export async function PATCH(
     })
     .returning();
 
-  if (mentorship) {
-    await db.insert(conversations).values({
-      mentorshipId: mentorship.id,
+  const mentorshipRecord = mentorship ?? existingForReq;
+  let conversationId: string | null = null;
+
+  if (mentorshipRecord) {
+    const [existingConv] = await db
+      .select({ id: conversations.id })
+      .from(conversations)
+      .where(eq(conversations.mentorshipId, mentorshipRecord.id))
+      .limit(1);
+
+    if (existingConv) {
+      conversationId = existingConv.id;
+    } else {
+      const [newConv] = await db
+        .insert(conversations)
+        .values({ mentorshipId: mentorshipRecord.id })
+        .returning({ id: conversations.id });
+      conversationId = newConv?.id ?? null;
+    }
+  }
+
+  const initialGreeting = parsed.data.initialMessage?.trim();
+  if (conversationId && initialGreeting) {
+    await db.insert(messages).values({
+      conversationId,
+      senderId: user.id,
+      content: initialGreeting,
     });
   }
 
@@ -109,10 +134,12 @@ export async function PATCH(
     userId: reqRecord.menteeId,
     type: "request_accepted",
     title: "Mentorship Request Accepted",
-    message: `${user.firstName} ${user.lastName} accepted your mentorship request. Your dedicated workspace is ready.`,
-    relatedEntityId: mentorship?.id ?? reqRecord.id,
-    actionUrl: mentorship ? `/mentorships/${mentorship.id}` : "/mentorships",
+    message: initialGreeting
+      ? `${user.firstName} ${user.lastName} accepted your mentorship request and sent you a welcome message!`
+      : `${user.firstName} ${user.lastName} accepted your mentorship request. Your dedicated workspace is ready.`,
+    relatedEntityId: mentorshipRecord?.id ?? reqRecord.id,
+    actionUrl: mentorshipRecord ? `/mentorships/${mentorshipRecord.id}?tab=messages` : "/mentorships",
   });
 
-  return ok({ mentorship });
+  return ok({ mentorship: mentorshipRecord, conversationId });
 }

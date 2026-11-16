@@ -262,17 +262,26 @@ export function AppShell({
           <div className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-200 sm:px-8">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span>
-                Your onboarding profile is incomplete. Finish onboarding so{" "}
+                Your profile setup is incomplete. Complete your profile details so{" "}
                 {user.primaryRole === "mentor"
-                  ? "mentees can discover your profile."
-                  : "we can recommend compatible mentors."}
+                  ? "mentees can discover and request mentorship."
+                  : "we can recommend compatible verified mentors."}
               </span>
-              <Link
-                href="/onboarding"
-                className="font-semibold text-interlink-forest underline hover:no-underline"
-              >
-                Continue Onboarding &rarr;
-              </Link>
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/profile"
+                  className="font-semibold text-interlink-forest hover:underline"
+                >
+                  Edit Profile &rarr;
+                </Link>
+                <span className="text-amber-400 dark:text-amber-600">·</span>
+                <Link
+                  href="/onboarding"
+                  className="font-semibold text-interlink-forest hover:underline"
+                >
+                  Setup Wizard &rarr;
+                </Link>
+              </div>
             </div>
           </div>
         )}

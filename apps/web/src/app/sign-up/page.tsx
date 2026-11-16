@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { useToast } from "@/components/ui/ToastProvider";
 import { postJson } from "@/lib/api/client";
+import { GoogleAuthButton } from "@/features/auth/ui/GoogleAuthButton";
 
 function SignUpInner() {
   const router = useRouter();
@@ -51,8 +52,12 @@ function SignUpInner() {
         setError(result.errorMessage ?? "Unable to register.");
         return;
       }
-      pushToast({ kind: "success", title: "Account created!" });
-      router.push("/onboarding");
+      pushToast({
+        kind: "success",
+        title: "Account created!",
+        description: "Welcome to Interlink! You can finish setting up your profile anytime from your dashboard.",
+      });
+      router.push("/dashboard");
       router.refresh();
     } catch {
       setError("Network error creating account.");
@@ -107,41 +112,72 @@ function SignUpInner() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-5 space-y-3">
+        <div className="mt-4">
+          <GoogleAuthButton
+            role={role}
+            label={`Sign up as ${role === "mentor" ? "Mentor" : "Mentee"} with Google`}
+          />
+        </div>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-interlink-border" />
+          </div>
+          <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
+            <span className="bg-interlink-modal px-2 text-interlink-muted">or register with email</span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-3 space-y-3">
           <Input
+            name="firstName"
             placeholder="First Name"
+            aria-label="First Name"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             required
+            autoComplete="given-name"
           />
           <Input
+            name="lastName"
             placeholder="Last Name"
+            aria-label="Last Name"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             required
+            autoComplete="family-name"
           />
           <Input
+            name="email"
             type="email"
             placeholder="E-mail"
+            aria-label="E-mail"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
           />
           <Input
+            name="password"
             type="password"
             placeholder="Create Password"
+            aria-label="Create Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
+            autoComplete="new-password"
           />
           <Input
+            name="confirmPassword"
             type="password"
             placeholder="Confirm Password"
+            aria-label="Confirm Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             minLength={8}
+            autoComplete="new-password"
           />
           <div className="pt-2 text-center">
             <Button type="submit" loading={loading} className="min-w-[130px] px-8">

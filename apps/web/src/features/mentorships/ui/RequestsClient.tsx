@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Clock, HelpCircle, X } from "lucide-react";
+import { Check, Clock, HelpCircle, MessageSquare, X } from "lucide-react";
 import { Badge, Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/Feedback";
@@ -44,27 +44,34 @@ export function RequestsClient({
 }) {
   const router = useRouter();
   const { pushToast } = useToast();
+  const DEFAULT_WELCOME_MESSAGE =
+    "Hello! I'm excited to be your mentor. Looking forward to supporting you on your journey!";
+
   const [requests, setRequests] = useState(initialRequests);
   const [actionModal, setActionModal] = useState<{
     requestId: string;
     action: "reject" | "request-info";
   } | null>(null);
+  const [acceptModalTarget, setAcceptModalTarget] = useState<RequestItem | null>(null);
+  const [welcomeMessage, setWelcomeMessage] = useState(DEFAULT_WELCOME_MESSAGE);
   const [notes, setNotes] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const incoming = requests.filter((r) => r.mentorId === currentUserId);
   const outgoing = requests.filter((r) => r.menteeId === currentUserId);
 
-  async function handleAccept(requestId: string) {
+  async function handleAccept(requestId: string, initialGreeting?: string | null) {
     setBusyId(requestId);
     try {
       const res = await fetch(`/api/v1/mentorship-requests/${requestId}/accept`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          initialMessage: initialGreeting?.trim() ? initialGreeting.trim() : undefined,
+        }),
       });
       const json = (await res.json()) as {
-        data?: { mentorship?: { id: string } };
+        data?: { mentorship?: { id: string }; conversationId?: string };
         error?: { message: string };
       };
       if (!res.ok) {
@@ -75,13 +82,16 @@ export function RequestsClient({
         });
         return;
       }
+      setAcceptModalTarget(null);
       pushToast({
         kind: "success",
         title: "Mentorship established!",
-        description: "Redirecting to your new mentorship workspace.",
+        description: initialGreeting?.trim()
+          ? "Welcome message sent. Opening your mentorship conversation."
+          : "Redirecting to your new mentorship workspace.",
       });
       if (json.data?.mentorship?.id) {
-        router.push(`/mentorships/${json.data.mentorship.id}`);
+        router.push(`/mentorships/${json.data.mentorship.id}?tab=messages`);
       } else {
         router.refresh();
       }
@@ -189,7 +199,10 @@ export function RequestsClient({
                       <Button
                         size="sm"
                         loading={busyId === req.id}
-                        onClick={() => handleAccept(req.id)}
+                        onClick={() => {
+                          setWelcomeMessage(DEFAULT_WELCOME_MESSAGE);
+                          setAcceptModalTarget(req);
+                        }}
                       >
                         <Check className="h-3.5 w-3.5" /> Accept
                       </Button>
@@ -337,6 +350,81 @@ export function RequestsClient({
               </Button>
             </div>
           </form>
+        </div>
+      </Modal>
+
+      {/* Accept Request & Start Private Conversation Modal */}
+      <Modal
+        open={Boolean(acceptModalTarget)}
+        onClose={() => setAcceptModalTarget(null)}
+        title="Accept Request & Start Conversation"
+        maxWidthClass="max-w-lg"
+      >
+        <div className="bg-interlink-surface p-6 text-interlink-ink">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[2px] bg-interlink-forest/15 text-interlink-forest dark:bg-interlink-forest/25">
+              <MessageSquare className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-interlink-ink">
+                Start Private Conversation
+              </h3>
+              <p className="mt-0.5 text-xs text-interlink-muted">
+                Accepting this request automatically creates a private, secure workspace and conversation between you and{" "}
+                <span className="font-semibold text-interlink-ink">
+                  {acceptModalTarget?.mentee ? `${acceptModalTarget.mentee.firstName} ${acceptModalTarget.mentee.lastName}` : "the mentee"}
+                </span>.
+              </p>
+            </div>
+          </div>
+
+          {acceptModalTarget && (
+            <div className="mt-4 rounded-[2px] border border-interlink-border bg-interlink-app-bg/60 p-3 text-xs">
+              <p className="font-semibold text-interlink-ink">Mentee Career Objective:</p>
+              <p className="mt-0.5 text-interlink-muted">{acceptModalTarget.careerObjective}</p>
+            </div>
+          )}
+
+          <div className="mt-4 space-y-2.5">
+            <label htmlFor="welcome-msg" className="block text-xs font-medium text-interlink-ink">
+              Send an Initial Welcome Greeting:
+            </label>
+            <Textarea
+              id="welcome-msg"
+              rows={3}
+              value={welcomeMessage}
+              onChange={(e) => setWelcomeMessage(e.target.value)}
+              placeholder="Type your initial greeting..."
+            />
+            <p className="text-[11px] text-interlink-muted">
+              Suggested message is ready to send. You can personalize it or accept without an initial greeting.
+            </p>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-end gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAcceptModalTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              loading={busyId === acceptModalTarget?.id}
+              onClick={() => acceptModalTarget && handleAccept(acceptModalTarget.id, null)}
+            >
+              Accept Without Message
+            </Button>
+            <Button
+              size="sm"
+              loading={busyId === acceptModalTarget?.id}
+              onClick={() => acceptModalTarget && handleAccept(acceptModalTarget.id, welcomeMessage)}
+            >
+              Accept &amp; Send Message
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

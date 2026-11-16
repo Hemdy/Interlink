@@ -64,7 +64,7 @@ export default async function ProfilePage() {
         role === "mentor" ? (
           <Link
             href={`/mentors/${user.id}`}
-            className="rounded-[2px] border border-interlink-hairline bg-white px-4 py-2 text-xs font-medium text-interlink-ink hover:border-interlink-forest"
+            className="rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
           >
             Preview Public Profile
           </Link>

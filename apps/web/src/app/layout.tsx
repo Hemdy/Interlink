@@ -3,6 +3,7 @@ import Script from "next/script";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { BrandPreloader } from "@/components/ui/BrandPreloader";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 
 export const metadata: Metadata = {
@@ -31,11 +32,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="bg-interlink-canvas font-sans text-interlink-ink antialiased">
+      <body
+        suppressHydrationWarning
+        className="bg-interlink-canvas font-sans text-interlink-ink antialiased"
+      >
         <Script id="interlink-theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>
         <ThemeProvider>
+          <BrandPreloader />
           <ToastProvider>{children}</ToastProvider>
         </ThemeProvider>
       </body>

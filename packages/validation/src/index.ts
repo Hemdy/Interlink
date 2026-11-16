@@ -187,6 +187,7 @@ export const createMentorshipRequestSchema = z.object({
 
 export const respondMentorshipRequestSchema = z.object({
   notes: z.string().trim().max(1000).optional().nullable(),
+  initialMessage: z.string().trim().max(3000).optional().nullable(),
 });
 
 export const updateMentorshipStatusSchema = z.object({

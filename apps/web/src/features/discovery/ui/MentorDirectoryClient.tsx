@@ -136,7 +136,7 @@ export function MentorDirectoryClient({
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {recommendedMentors.slice(0, 3).map((mentor) => (
-              <Card key={mentor.userId} className="border-interlink-forest/30 bg-white p-5">
+              <Card key={mentor.userId} className="border-interlink-forest/40 bg-interlink-surface p-5 shadow-subtle hover:border-interlink-forest">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-semibold text-interlink-ink">
@@ -152,7 +152,7 @@ export function MentorDirectoryClient({
                   )}
                 </div>
                 {mentor.matchReasons && mentor.matchReasons.length > 0 && (
-                  <p className="mt-2.5 text-xs text-slate-600">{mentor.matchReasons[0]}</p>
+                  <p className="mt-2.5 text-xs text-interlink-muted">{mentor.matchReasons[0]}</p>
                 )}
                 <div className="mt-4 flex items-center justify-between">
                   <Link

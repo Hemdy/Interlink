@@ -71,10 +71,10 @@ export default async function HomePage() {
   const trustItems = metrics.hasLiveMetrics
     ? [
         {
-          icon: ShieldCheck,
-          value: String(metrics.verifiedMentors),
-          label: "Verified Mentors",
-          detail: "Credential-checked industry practitioners",
+          icon: Link2,
+          value: String(metrics.mentorshipConnections),
+          label: "Mentorship Connections",
+          detail: "Structured relationships established",
         },
         {
           icon: Users,
@@ -83,42 +83,42 @@ export default async function HomePage() {
           detail: "Mentees and mentors across communities",
         },
         {
-          icon: Link2,
-          value: String(metrics.mentorshipConnections),
-          label: "Mentorship Connections",
-          detail: "Structured relationships established",
-        },
-        {
           icon: Award,
           value: String(metrics.completedSessions),
           label: "Completed Sessions",
           detail: "Recorded guidance & progress reviews",
         },
+        {
+          icon: ShieldCheck,
+          value: String(metrics.verifiedMentors),
+          label: "Verified Mentors",
+          detail: "Credential-checked industry practitioners",
+        },
       ]
     : [
         {
-          icon: ShieldCheck,
-          value: "3-Tier Verification",
-          label: "Credible Mentor Profiles",
-          detail: "Registered, Reviewed & Verified status levels",
+          icon: Link2,
+          value: "1:1 Workspaces",
+          label: "Mentorship Connections",
+          detail: "Dedicated goals, sessions, and milestones",
         },
         {
           icon: Users,
           value: "Capacity Protected",
-          label: "Focused Mentorship",
-          detail: "Mentors set explicit mentee slot limits",
-        },
-        {
-          icon: Link2,
-          value: "1:1 Workspaces",
-          label: "Structured Connections",
-          detail: "Dedicated goals, sessions, and private chat",
+          label: "Active Members",
+          detail: "Active mentees & mentors in tech and design",
         },
         {
           icon: Award,
           value: "Safety Governed",
-          label: "Accountable Community",
-          detail: "Moderation, reporting & clear guidelines",
+          label: "Completed Sessions",
+          detail: "Structured guidance & progress reviews",
+        },
+        {
+          icon: ShieldCheck,
+          value: "3-Tier Verification",
+          label: "Verified Mentors",
+          detail: "Credential-checked industry practitioners",
         },
       ];
 
@@ -162,17 +162,19 @@ export default async function HomePage() {
             {trustItems.map((item, idx) => {
               const Icon = item.icon;
               return (
-                <Reveal key={item.label} delayMs={idx * 70}>
-                  <div className="flex items-start gap-3.5 rounded-[2px] border border-interlink-border bg-interlink-app-bg/70 px-5 py-4 shadow-subtle transition-all duration-200 hover:-translate-y-0.5 hover:border-interlink-forest/50 hover:bg-interlink-surface hover:shadow-elevated">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-interlink-forest/20 bg-interlink-surface text-interlink-forest">
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <p className="font-display text-lg font-semibold leading-snug text-interlink-ink">
-                        {item.value}
-                      </p>
-                      <p className="text-xs font-medium text-interlink-forest">{item.label}</p>
-                      <p className="mt-0.5 text-xs text-interlink-muted">{item.detail}</p>
+                <Reveal key={item.label} delayMs={idx * 70} className="h-full">
+                  <div className="flex h-full min-h-[114px] flex-col justify-between rounded-[2px] border border-interlink-border bg-interlink-app-bg/70 p-5 shadow-subtle transition-all duration-200 hover:-translate-y-0.5 hover:border-interlink-forest/50 hover:bg-interlink-surface hover:shadow-elevated">
+                    <div className="flex items-start gap-3.5">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-interlink-forest/20 bg-interlink-surface text-interlink-forest">
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display text-lg font-semibold leading-snug text-interlink-ink">
+                          {item.value}
+                        </p>
+                        <p className="text-xs font-semibold text-interlink-forest">{item.label}</p>
+                        <p className="mt-1 text-xs leading-relaxed text-interlink-muted">{item.detail}</p>
+                      </div>
                     </div>
                   </div>
                 </Reveal>
