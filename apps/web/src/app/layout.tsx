@@ -13,6 +13,22 @@ export const metadata: Metadata = {
   },
   description:
     "Get Linked with experienced mentors who can guide you as you advance in your career journey. Empowerment. Growth. Connection.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+  },
+  manifest: "/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Interlink",
+  },
 };
 
 const themeInitScript = `

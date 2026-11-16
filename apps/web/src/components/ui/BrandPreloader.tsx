@@ -45,11 +45,11 @@ export function BrandPreloader() {
     return null;
   }
 
-  const handleSkip = () => {
-    setIsExiting(true);
-    document.body.style.overflow = "";
-    setTimeout(() => setMounted(false), 450);
-  };
+  // const handleSkip = () => {
+  //   setIsExiting(true);
+  //   document.body.style.overflow = "";
+  //   setTimeout(() => setMounted(false), 450);
+  // };
 
   return (
     <>
@@ -187,14 +187,14 @@ export function BrandPreloader() {
         />
 
         {/* Skip button for user control & accessibility */}
-        <button
+        {/* <button
           type="button"
           onClick={handleSkip}
           className="absolute right-5 top-5 rounded-[2px] border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-light text-white/70 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10 hover:text-white focus-ring"
           aria-label="Skip introduction"
         >
           Skip &rarr;
-        </button>
+        </button> */}
 
         <div className="relative z-10 flex flex-col items-center px-6 text-center">
           {/* Step 1: Animated Brand Logo */}
