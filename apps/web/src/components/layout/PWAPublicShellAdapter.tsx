@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import type { SessionUser } from "@interlink/types";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -26,6 +27,7 @@ export function PWAPublicShellAdapter({
   footer: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const { useBottomNav } = useNavigationMode();
   const showPWAShell = Boolean(user && useBottomNav);
   const unreadMessages = useUnreadMessagesCount(showPWAShell);
@@ -33,7 +35,8 @@ export function PWAPublicShellAdapter({
   async function handleSignOut() {
     purgeServiceWorkerAuthCache();
     await fetch("/api/v1/auth/logout", { method: "POST" });
-    window.location.replace("/sign-in");
+    router.replace("/sign-in");
+    router.refresh();
   }
 
   if (!showPWAShell || !user) {

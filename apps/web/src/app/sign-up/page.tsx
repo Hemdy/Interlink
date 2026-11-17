@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -10,9 +10,11 @@ import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { useToast } from "@/components/ui/ToastProvider";
 import { postJson } from "@/lib/api/client";
 import { GoogleAuthButton } from "@/features/auth/ui/GoogleAuthButton";
+import { useNavigationMode } from "@/features/pwa/useNavigationMode";
 
 function SignUpInner() {
   const router = useRouter();
+  const { isStandalone } = useNavigationMode();
   const searchParams = useSearchParams();
   const { pushToast } = useToast();
   const initialRole = searchParams.get("role") === "mentor" ? "mentor" : "mentee";
@@ -25,6 +27,19 @@ function SignUpInner() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isStandalone) return;
+    const controller = new AbortController();
+    fetch("/api/v1/auth/me", { signal: controller.signal, cache: "no-store" })
+      .then((res) => {
+        if (res.ok) {
+          router.replace("/dashboard");
+        }
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [isStandalone, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,7 +72,7 @@ function SignUpInner() {
         title: "Account created!",
         description: "Welcome to Interlink! You can finish setting up your profile anytime from your dashboard.",
       });
-      router.push("/dashboard");
+      router.replace("/dashboard");
       router.refresh();
     } catch {
       setError("Network error creating account.");
@@ -70,7 +85,7 @@ function SignUpInner() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-interlink-sage/85 px-4 py-10">
       <div className="mb-6">
         <Link
-          href="/"
+          href={isStandalone ? "/sign-in" : "/"}
           className="inline-block rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2 shadow-subtle"
         >
           <InterlinkLogo variant="compact" />
@@ -116,6 +131,10 @@ function SignUpInner() {
           <GoogleAuthButton
             role={role}
             label={`Sign up as ${role === "mentor" ? "Mentor" : "Mentee"} with Google`}
+            onSuccess={() => {
+              router.replace("/dashboard");
+              router.refresh();
+            }}
           />
         </div>
 

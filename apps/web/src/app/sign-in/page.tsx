@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -24,6 +24,19 @@ function SignInContent() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isStandalone) return;
+    const controller = new AbortController();
+    fetch("/api/v1/auth/me", { signal: controller.signal, cache: "no-store" })
+      .then((res) => {
+        if (res.ok) {
+          router.replace(redirectTarget);
+        }
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [isStandalone, redirectTarget, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

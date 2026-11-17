@@ -123,7 +123,8 @@ export function AppShell({
     purgeServiceWorkerAuthCache();
     await fetch("/api/v1/auth/logout", { method: "POST" });
     if (isStandalone || isInstalledPWA()) {
-      window.location.replace("/sign-in");
+      router.replace("/sign-in");
+      router.refresh();
       return;
     }
     router.push("/");

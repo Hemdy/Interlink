@@ -32,7 +32,8 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
     if (isInstalledPWA()) {
       purgeServiceWorkerAuthCache();
       await fetch("/api/v1/auth/logout", { method: "POST" });
-      window.location.replace("/sign-in");
+      router.replace("/sign-in");
+      router.refresh();
       return;
     }
     await fetch("/api/v1/auth/logout", { method: "POST" });

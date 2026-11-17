@@ -23,6 +23,7 @@ import { listPublicMentors } from "@/features/discovery/infrastructure/mentorQue
 import { PromotionsEventsSection } from "@/features/events/ui/PromotionsEventsSection";
 import { getPlatformTrustMetrics } from "@/features/home/infrastructure/platformMetrics";
 import { LandingHeroActions } from "@/features/home/ui/LandingHeroActions";
+import { PWAEntryGuard } from "@/features/pwa/PWAEntryGuard";
 import { MentorSpotlightSection } from "@/features/spotlight/ui/MentorSpotlightSection";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -124,6 +125,7 @@ export default async function HomePage() {
 
   return (
     <PublicShell user={user}>
+      <PWAEntryGuard isAuthenticated={Boolean(user)} />
       {/* HERO SECTION — Visually aligned to Reference Image 1 */}
       <section className="relative overflow-x-clip bg-interlink-canvas">
         <div className="relative mx-auto max-w-[1360px] lg:min-h-[850px] xl:min-h-[960px]">

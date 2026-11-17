@@ -99,7 +99,8 @@ export function SettingsClient({
         pushToast({ kind: "info", title: "Your account has been deactivated" });
         if (isInstalledPWA()) {
           purgeServiceWorkerAuthCache();
-          window.location.replace("/sign-in");
+          router.replace("/sign-in");
+          router.refresh();
           return;
         }
         router.push("/");
