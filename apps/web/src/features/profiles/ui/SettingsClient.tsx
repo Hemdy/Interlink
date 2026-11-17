@@ -13,6 +13,8 @@ import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/ToastProvider";
 import { AvatarUploadCard } from "@/features/profiles/ui/AvatarUploadCard";
+import { purgeServiceWorkerAuthCache } from "@/features/pwa/ServiceWorkerRegister";
+import { isInstalledPWA } from "@/features/pwa/useNavigationMode";
 
 export function SettingsClient({
   user,
@@ -95,6 +97,11 @@ export function SettingsClient({
       const res = await fetch("/api/v1/users/me", { method: "DELETE" });
       if (res.ok) {
         pushToast({ kind: "info", title: "Your account has been deactivated" });
+        if (isInstalledPWA()) {
+          purgeServiceWorkerAuthCache();
+          window.location.replace("/sign-in");
+          return;
+        }
         router.push("/");
         router.refresh();
       }

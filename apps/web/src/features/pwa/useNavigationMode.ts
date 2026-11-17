@@ -8,6 +8,15 @@ export interface NavigationModeState {
   useBottomNav: boolean;
 }
 
+export function isInstalledPWA(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
+    document.referrer.startsWith("android-app://")
+  );
+}
+
 /**
  * Determines whether the application should display the installed PWA bottom navigation
  * or the standard website/desktop sidebar navigation according to environment:

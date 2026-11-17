@@ -33,6 +33,7 @@ import {
   purgeServiceWorkerAuthCache,
 } from "@/features/pwa/ServiceWorkerRegister";
 import {
+  isInstalledPWA,
   useNavigationMode,
   useUnreadMessagesCount,
 } from "@/features/pwa/useNavigationMode";
@@ -113,7 +114,7 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { useBottomNav } = useNavigationMode();
+  const { isStandalone, useBottomNav } = useNavigationMode();
   const unreadMessages = useUnreadMessagesCount(useBottomNav);
 
   const navItems = getNavItemsForUser(user);
@@ -121,6 +122,10 @@ export function AppShell({
   async function handleSignOut() {
     purgeServiceWorkerAuthCache();
     await fetch("/api/v1/auth/logout", { method: "POST" });
+    if (isStandalone || isInstalledPWA()) {
+      window.location.replace("/sign-in");
+      return;
+    }
     router.push("/");
     router.refresh();
   }
@@ -129,7 +134,7 @@ export function AppShell({
     <div className="flex h-full flex-col justify-between bg-interlink-surface text-interlink-ink">
       <div>
         <div className="flex h-[68px] items-center justify-between border-b border-interlink-border px-5">
-          <Link href="/" className="focus-ring rounded-[2px]">
+          <Link href={isStandalone ? "/dashboard" : "/"} className="focus-ring rounded-[2px]">
             <InterlinkLogo variant="compact" />
           </Link>
           <button

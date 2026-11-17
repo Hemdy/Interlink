@@ -36,6 +36,7 @@ export function InterlinkMark({
           stroke={darkCard ? "#A3B1AA" : "#8B95A1"}
           strokeWidth="4.2"
           fill="none"
+          style={{ transition: "stroke 1200ms cubic-bezier(0.4, 0, 0.2, 1)" }}
         />
       </g>
       {/* White/contrast halo behind serif capital I */}

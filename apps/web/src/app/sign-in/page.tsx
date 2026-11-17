@@ -10,9 +10,11 @@ import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { useToast } from "@/components/ui/ToastProvider";
 import { postJson } from "@/lib/api/client";
 import { GoogleAuthButton } from "@/features/auth/ui/GoogleAuthButton";
+import { useNavigationMode } from "@/features/pwa/useNavigationMode";
 
 function SignInContent() {
   const router = useRouter();
+  const { isStandalone } = useNavigationMode();
   const searchParams = useSearchParams();
   const nextParam = searchParams.get("next");
   const redirectTarget = nextParam && nextParam.startsWith("/") ? nextParam : "/dashboard";
@@ -38,7 +40,7 @@ function SignInContent() {
         return;
       }
       pushToast({ kind: "success", title: "Signed in to Interlink" });
-      router.push(redirectTarget);
+      router.replace(redirectTarget);
       router.refresh();
     } catch {
       setError("Network error while signing in.");
@@ -51,7 +53,7 @@ function SignInContent() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-interlink-sage/85 px-4 py-10">
       <div className="mb-6">
         <Link
-          href="/"
+          href={isStandalone ? "/sign-in" : "/"}
           className="inline-block rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2 shadow-subtle"
         >
           <InterlinkLogo variant="compact" />

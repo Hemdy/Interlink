@@ -11,6 +11,8 @@ import { DropdownMenu } from "@/components/ui/DropdownMenu";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useAuthModal } from "@/features/auth/ui/AuthModalProvider";
+import { purgeServiceWorkerAuthCache } from "@/features/pwa/ServiceWorkerRegister";
+import { isInstalledPWA } from "@/features/pwa/useNavigationMode";
 
 const primaryNavLinks = [
   { label: "Browse Mentors", href: "/mentors" },
@@ -27,6 +29,12 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
   const router = useRouter();
 
   async function handleLogout() {
+    if (isInstalledPWA()) {
+      purgeServiceWorkerAuthCache();
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+      window.location.replace("/sign-in");
+      return;
+    }
     await fetch("/api/v1/auth/logout", { method: "POST" });
     router.refresh();
   }

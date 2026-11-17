@@ -5,12 +5,18 @@ import { InterlinkMark } from "./InterlinkLogo";
 
 export function BrandPreloader() {
   const [mounted, setMounted] = useState(true);
+  const [isLightPhase, setIsLightPhase] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
     // Prevent background scrolling while preloader is active
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    // Transition smoothly from green opening screen to light background with dark branding
+    const lightPhaseTimer = setTimeout(() => {
+      setIsLightPhase(true);
+    }, 2300);
 
     // Begin graceful fade-out transition at 5.0 seconds
     const exitTimer = setTimeout(() => {
@@ -34,6 +40,7 @@ export function BrandPreloader() {
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      clearTimeout(lightPhaseTimer);
       clearTimeout(exitTimer);
       clearTimeout(unmountTimer);
       window.removeEventListener("keydown", handleKeyDown);
@@ -44,12 +51,6 @@ export function BrandPreloader() {
   if (!mounted) {
     return null;
   }
-
-  // const handleSkip = () => {
-  //   setIsExiting(true);
-  //   document.body.style.overflow = "";
-  //   setTimeout(() => setMounted(false), 450);
-  // };
 
   return (
     <>
@@ -168,59 +169,82 @@ export function BrandPreloader() {
         aria-label="Loading Interlink"
         className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none transition-all duration-700 ease-out ${
           isExiting
-            ? "opacity-0 pointer-events-none scale-[1.015]"
-            : "opacity-100 pointer-events-auto scale-100"
+            ? "pointer-events-none scale-[1.015] opacity-0"
+            : "pointer-events-auto scale-100 opacity-100"
         }`}
         style={{
           background:
-            "radial-gradient(ellipse at 50% 46%, #285438 0%, #1c3c28 55%, #102318 100%)",
+            "radial-gradient(ellipse at 50% 46%, #FFFFFF 0%, #F5F7F5 58%, #E9F0EC 100%)",
         }}
       >
         <span className="sr-only">
           Interlink — Connection, Empowerment, Growth. Loading platform...
         </span>
 
-        {/* Ambient subtle emerald glow */}
+        {/* Opening Full-Screen Forest Green Layer that smoothly fades out */}
         <div
-          className="il-animate-glow pointer-events-none absolute h-[340px] w-[340px] rounded-full bg-emerald-400/15 blur-[85px] sm:h-[460px] sm:w-[460px]"
           aria-hidden="true"
-        />
-
-        {/* Skip button for user control & accessibility */}
-        {/* <button
-          type="button"
-          onClick={handleSkip}
-          className="absolute right-5 top-5 rounded-[2px] border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-light text-white/70 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10 hover:text-white focus-ring"
-          aria-label="Skip introduction"
+          className={`pointer-events-none absolute inset-0 transition-opacity duration-[1400ms] ease-in-out ${
+            isLightPhase ? "opacity-0" : "opacity-100"
+          }`}
+          style={{
+            background:
+              "radial-gradient(ellipse at 50% 46%, #285438 0%, #1c3c28 55%, #102318 100%)",
+          }}
         >
-          Skip &rarr;
-        </button> */}
+          {/* Ambient subtle emerald glow during green opening state */}
+          <div className="flex h-full w-full items-center justify-center">
+            <div className="il-animate-glow h-[340px] w-[340px] rounded-full bg-emerald-400/15 blur-[85px] sm:h-[460px] sm:w-[460px]" />
+          </div>
+        </div>
+
+        {/* Soft ambient halo for light phase */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute h-[320px] w-[320px] rounded-full bg-emerald-700/[0.06] blur-[85px] transition-opacity duration-[1400ms] ease-in-out sm:h-[420px] sm:w-[420px] ${
+            isLightPhase ? "opacity-100" : "opacity-0"
+          }`}
+        />
 
         <div className="relative z-10 flex flex-col items-center px-6 text-center">
           {/* Step 1: Animated Brand Logo */}
           <div className="il-animate-logo">
             <div className="relative flex items-center justify-center">
               <div
-                className="absolute -inset-4 rounded-full bg-emerald-300/10 blur-xl"
+                className={`absolute -inset-4 rounded-full blur-xl transition-colors duration-[1200ms] ease-in-out ${
+                  isLightPhase ? "bg-emerald-900/[0.04]" : "bg-emerald-300/10"
+                }`}
                 aria-hidden="true"
               />
               <InterlinkMark
                 size={96}
-                darkCard
-                className="relative h-20 w-16 drop-shadow-[0_8px_24px_rgba(0,0,0,0.4)] sm:h-24 sm:w-20 md:h-28 md:w-24"
+                darkCard={!isLightPhase}
+                className={`relative h-20 w-16 transition-[filter] duration-[1200ms] ease-in-out sm:h-24 sm:w-20 md:h-28 md:w-24 ${
+                  isLightPhase
+                    ? "drop-shadow-[0_6px_18px_rgba(15,23,42,0.14)]"
+                    : "drop-shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
+                }`}
               />
             </div>
           </div>
 
           {/* Step 2: Animated Brand Name */}
           <div className="il-animate-name mt-6 sm:mt-7">
-            <h1 className="font-display text-2xl font-light text-white drop-shadow-sm sm:text-3xl md:text-4xl">
+            <h1
+              className={`font-display text-2xl font-light transition-colors duration-[1200ms] ease-in-out sm:text-3xl md:text-4xl ${
+                isLightPhase ? "text-slate-950" : "text-white drop-shadow-sm"
+              }`}
+            >
               INTERLINK
             </h1>
           </div>
 
           {/* Step 3: Animated Tagline / Motto */}
-          <div className="il-animate-tagline mt-6 flex flex-wrap items-center justify-center gap-3 text-xs font-light tracking-wide text-white/90 sm:mt-8 sm:gap-6 sm:text-sm md:gap-8 md:text-base">
+          <div
+            className={`il-animate-tagline mt-6 flex flex-wrap items-center justify-center gap-3 text-xs font-light tracking-wide transition-colors duration-[1200ms] ease-in-out sm:mt-8 sm:gap-6 sm:text-sm md:gap-8 md:text-base ${
+              isLightPhase ? "text-slate-800" : "text-white/90"
+            }`}
+          >
             <span>Connection</span>
             <span
               className="h-4 w-px bg-interlink-gold/85 sm:h-5 md:h-6"
@@ -236,8 +260,25 @@ export function BrandPreloader() {
 
           {/* Step 4: Refined Minimal Progress Track */}
           <div className="mt-10 w-36 sm:mt-12 sm:w-44" aria-hidden="true">
-            <div className="h-[2px] w-full overflow-hidden rounded-full bg-white/15">
-              <div className="il-animate-progress h-full rounded-full bg-gradient-to-r from-interlink-gold via-emerald-200 to-white" />
+            <div
+              className={`h-[2px] w-full overflow-hidden rounded-full transition-colors duration-[1200ms] ease-in-out ${
+                isLightPhase ? "bg-slate-900/10" : "bg-white/15"
+              }`}
+            >
+              <div className="il-animate-progress relative h-full rounded-full">
+                {/* Green-phase bright fill */}
+                <span
+                  className={`absolute inset-0 rounded-full bg-gradient-to-r from-interlink-gold via-emerald-200 to-white transition-opacity duration-[1200ms] ease-in-out ${
+                    isLightPhase ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+                {/* Light-phase dark contrast fill */}
+                <span
+                  className={`absolute inset-0 rounded-full bg-gradient-to-r from-interlink-gold via-interlink-forest to-slate-900 transition-opacity duration-[1200ms] ease-in-out ${
+                    isLightPhase ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              </div>
             </div>
           </div>
         </div>
