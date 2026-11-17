@@ -11,6 +11,7 @@ export default tseslint.config(
       "**/.expo/**",
       "**/drizzle/**",
       "apps/web/next-env.d.ts",
+      "apps/web/public/**",
     ],
   },
   js.configs.recommended,

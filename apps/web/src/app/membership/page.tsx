@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Check, Info } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Badge, Card } from "@/components/ui/Card";
+import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
 import { getCurrentUser } from "@/lib/auth/session";
 
 export default async function MembershipPage() {
@@ -9,7 +10,7 @@ export default async function MembershipPage() {
 
   return (
     <PublicShell user={user}>
-      <section className="border-b border-interlink-border bg-interlink-surface py-20 sm:py-24 lg:py-28">
+      <InteractiveMatteHero>
         <div className="mx-auto max-w-[1100px] px-6 sm:px-10">
           <div className="animate-hero-up">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-interlink-forest">
@@ -25,7 +26,7 @@ export default async function MembershipPage() {
             </p>
           </div>
         </div>
-      </section>
+      </InteractiveMatteHero>
 
       <section className="bg-interlink-app-bg py-16">
         <div className="mx-auto max-w-[1100px] px-6 sm:px-10">

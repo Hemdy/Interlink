@@ -1,4 +1,4 @@
-import { desc, eq, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNull, ne, or } from "drizzle-orm";
 import { conversations, getDb, mentorships, messages, users } from "@interlink/database";
 import { apiError, ensureDatabaseConfigured, ok } from "@/lib/api/http";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -17,7 +17,7 @@ export async function GET() {
     .where(or(eq(mentorships.mentorId, user.id), eq(mentorships.menteeId, user.id)));
 
   if (userMentorships.length === 0) {
-    return ok({ conversations: [] });
+    return ok({ conversations: [], totalUnreadMessages: 0 });
   }
 
   const convRows = await db
@@ -56,20 +56,36 @@ export async function GET() {
     convRows.map(async (conv) => {
       const m = mentorshipMap.get(conv.mentorshipId);
       const partnerId = m ? (m.mentorId === user.id ? m.menteeId : m.mentorId) : "";
-      const [lastMessage] = await db
-        .select()
-        .from(messages)
-        .where(eq(messages.conversationId, conv.id))
-        .orderBy(desc(messages.createdAt))
-        .limit(1);
+      const [[lastMessage], [unreadRow]] = await Promise.all([
+        db
+          .select()
+          .from(messages)
+          .where(eq(messages.conversationId, conv.id))
+          .orderBy(desc(messages.createdAt))
+          .limit(1),
+        db
+          .select({ total: count() })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.conversationId, conv.id),
+              ne(messages.senderId, user.id),
+              isNull(messages.readAt),
+            ),
+          ),
+      ]);
+      const unreadCount = Number(unreadRow?.total ?? 0);
       return {
         ...conv,
         mentorshipStatus: m?.status ?? "active",
         partner: partnerMap.get(partnerId) ?? null,
         lastMessage: lastMessage ?? null,
+        unreadCount,
       };
     }),
   );
 
-  return ok({ conversations: items });
+  const totalUnreadMessages = items.reduce((sum, item) => sum + item.unreadCount, 0);
+
+  return ok({ conversations: items, totalUnreadMessages });
 }

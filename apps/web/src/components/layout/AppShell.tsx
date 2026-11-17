@@ -27,6 +27,19 @@ import { ADMIN_ROLES } from "@interlink/types";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { PWAInstallPrompt } from "@/features/pwa/PWAInstallPrompt";
+import {
+  ServiceWorkerRegister,
+  purgeServiceWorkerAuthCache,
+} from "@/features/pwa/ServiceWorkerRegister";
+import {
+  useNavigationMode,
+  useUnreadMessagesCount,
+} from "@/features/pwa/useNavigationMode";
+import {
+  MobilePWABottomNav,
+  PWAContextSubNav,
+} from "@/components/layout/MobilePWABottomNav";
 
 interface NavItem {
   label: string;
@@ -100,10 +113,13 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { useBottomNav } = useNavigationMode();
+  const unreadMessages = useUnreadMessagesCount(useBottomNav);
 
   const navItems = getNavItemsForUser(user);
 
   async function handleSignOut() {
+    purgeServiceWorkerAuthCache();
     await fetch("/api/v1/auth/logout", { method: "POST" });
     router.push("/");
     router.refresh();
@@ -198,13 +214,15 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-interlink-app-bg text-interlink-ink">
-      {/* Desktop fixed sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-interlink-border bg-interlink-surface lg:block">
-        {SidebarContent}
-      </aside>
+      {/* Desktop fixed sidebar (hidden when PWA bottom nav mode is active) */}
+      {!useBottomNav && (
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-interlink-border bg-interlink-surface lg:block">
+          {SidebarContent}
+        </aside>
+      )}
 
-      {/* Mobile slide-over sidebar */}
-      {sidebarOpen && (
+      {/* Mobile/Tablet browser slide-over sidebar (hidden when PWA bottom nav mode is active) */}
+      {!useBottomNav && sidebarOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
@@ -219,28 +237,30 @@ export function AppShell({
       )}
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className={useBottomNav ? "" : "lg:pl-64"}>
         <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm sm:px-8">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="rounded-[2px] p-1.5 text-interlink-muted hover:bg-interlink-app-bg lg:hidden"
-              aria-label="Open navigation"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="font-display text-lg font-semibold text-interlink-ink sm:text-xl">
+          <div className="flex min-w-0 items-center gap-3">
+            {!useBottomNav && (
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                className="rounded-[2px] p-1.5 text-interlink-muted hover:bg-interlink-app-bg lg:hidden"
+                aria-label="Open navigation"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            )}
+            <div className="min-w-0">
+              <h1 className="truncate font-display text-lg font-semibold text-interlink-ink sm:text-xl">
                 {title}
               </h1>
               {subtitle && (
-                <p className="hidden text-xs text-interlink-muted sm:block">{subtitle}</p>
+                <p className="hidden truncate text-xs text-interlink-muted sm:block">{subtitle}</p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-2.5">
             {actions}
             <ThemeToggle />
             <Link
@@ -286,8 +306,33 @@ export function AppShell({
           </div>
         )}
 
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">{children}</main>
+        <main
+          className={`mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8 ${
+            useBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))]" : ""
+          }`}
+        >
+          <ServiceWorkerRegister />
+          <PWAInstallPrompt />
+          {useBottomNav && (
+            <PWAContextSubNav
+              user={user}
+              unreadNotifications={unreadCount}
+              unreadMessages={unreadMessages}
+            />
+          )}
+          {children}
+        </main>
       </div>
+
+      {/* Fixed Bottom Navigation for Mobile/Tablet/Compact Installed PWA */}
+      {useBottomNav && (
+        <MobilePWABottomNav
+          user={user}
+          unreadNotifications={unreadCount}
+          unreadMessages={unreadMessages}
+          onSignOut={handleSignOut}
+        />
+      )}
     </div>
   );
 }

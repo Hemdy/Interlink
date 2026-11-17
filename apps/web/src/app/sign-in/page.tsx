@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input } from "@/components/ui/Input";
@@ -11,8 +11,12 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { postJson } from "@/lib/api/client";
 import { GoogleAuthButton } from "@/features/auth/ui/GoogleAuthButton";
 
-export default function SignInPage() {
+function SignInContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams.get("next");
+  const redirectTarget = nextParam && nextParam.startsWith("/") ? nextParam : "/dashboard";
+
   const { pushToast } = useToast();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +38,7 @@ export default function SignInPage() {
         return;
       }
       pushToast({ kind: "success", title: "Signed in to Interlink" });
-      router.push("/dashboard");
+      router.push(redirectTarget);
       router.refresh();
     } catch {
       setError("Network error while signing in.");
@@ -70,7 +74,13 @@ export default function SignInPage() {
           )}
 
           <div className="mt-6">
-            <GoogleAuthButton label="Continue with Google" />
+            <GoogleAuthButton
+              label="Continue with Google"
+              onSuccess={() => {
+                router.push(redirectTarget);
+                router.refresh();
+              }}
+            />
           </div>
 
           <div className="relative my-4">
@@ -139,5 +149,19 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-interlink-sage/85">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-interlink-forest border-t-transparent" />
+        </div>
+      }
+    >
+      <SignInContent />
+    </Suspense>
   );
 }

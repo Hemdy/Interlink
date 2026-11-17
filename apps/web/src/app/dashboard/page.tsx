@@ -499,13 +499,13 @@ export default async function DashboardPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/mentors"
-            className="rounded-[2px] bg-interlink-forest px-4 py-2 text-xs font-medium text-white hover:bg-interlink-forest-hover"
+            className="whitespace-nowrap rounded-[2px] bg-interlink-forest px-2.5 py-1.5 text-[11px] font-medium text-white hover:bg-interlink-forest-hover sm:px-4 sm:py-2 sm:text-xs"
           >
             Find a Mentor
           </Link>
           <Link
             href="/goals"
-            className="hidden rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest sm:inline-block"
+            className="hidden whitespace-nowrap rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest sm:inline-block"
           >
             Update My Goals
           </Link>
@@ -551,14 +551,14 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Card>
           <p className="text-xs text-interlink-muted">Profile Completion</p>
           <p className="mt-2 text-2xl font-semibold text-interlink-forest">
             {menteeProfile?.profileCompletion ?? 0}%
           </p>
           <Link href="/profile" className="mt-1 inline-block text-xs text-interlink-link hover:underline">
-            Edit profile
+            Edit profile &rarr;
           </Link>
         </Card>
 
@@ -567,11 +567,17 @@ export default async function DashboardPage() {
           <p className="mt-2 text-2xl font-semibold text-interlink-ink">
             {activeRelationships.length}
           </p>
+          <Link href="/mentorships" className="mt-1 inline-block text-xs text-interlink-link hover:underline">
+            View mentors &rarr;
+          </Link>
         </Card>
 
         <Card>
           <p className="text-xs text-interlink-muted">Pending Requests</p>
           <p className="mt-2 text-2xl font-semibold text-interlink-ink">{pendingSent.length}</p>
+          <Link href="/requests" className="mt-1 inline-block text-xs text-interlink-link hover:underline">
+            Track requests &rarr;
+          </Link>
         </Card>
 
         <Card>
@@ -579,6 +585,9 @@ export default async function DashboardPage() {
           <p className="mt-2 text-2xl font-semibold text-interlink-ink">
             {upcomingSessions.length}
           </p>
+          <Link href="/sessions" className="mt-1 inline-block text-xs text-interlink-link hover:underline">
+            View schedule &rarr;
+          </Link>
         </Card>
       </div>
 
@@ -725,7 +734,7 @@ export default async function DashboardPage() {
             ) : (
               <ul className="mt-4 space-y-2.5 text-xs">
                 {upcomingSessions.map((s) => (
-                  <li key={s.id} className="rounded-[2px] border border-slate-200 p-3">
+                  <li key={s.id} className="rounded-[2px] border border-interlink-border bg-interlink-surface/60 p-3">
                     <p className="font-semibold text-interlink-ink">{s.title}</p>
                     <p className="mt-1 text-interlink-muted">
                       {formatDateTime(s.startTime)}
@@ -753,7 +762,7 @@ export default async function DashboardPage() {
             ) : (
               <ul className="mt-3 space-y-2.5 text-xs">
                 {recentNotifs.map((n) => (
-                  <li key={n.id} className="flex items-start gap-2 border-b border-slate-100 pb-2 last:border-0">
+                  <li key={n.id} className="flex items-start gap-2 border-b border-interlink-border/60 pb-2 last:border-0">
                     <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-interlink-forest" />
                     <div>
                       <p className="font-medium text-interlink-ink">{n.title}</p>

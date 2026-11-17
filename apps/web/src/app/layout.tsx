@@ -1,10 +1,20 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { BrandPreloader } from "@/components/ui/BrandPreloader";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#285438" },
+    { media: "(prefers-color-scheme: dark)", color: "#0F1411" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: {
@@ -23,11 +33,11 @@ export const metadata: Metadata = {
     ],
     shortcut: "/favicon.ico",
   },
-  manifest: "/site.webmanifest",
+  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Interlink",
+    title: "Interlink Dashboard",
   },
 };
 

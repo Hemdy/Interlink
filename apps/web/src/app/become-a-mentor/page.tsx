@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Calendar, CheckCircle2, ShieldCheck, Sliders, Users } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Badge, Card } from "@/components/ui/Card";
+import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
 import { Reveal } from "@/components/ui/Reveal";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -59,8 +60,8 @@ export default async function BecomeMentorPage() {
 
   return (
     <PublicShell user={user}>
-      {/* Spacious Hero Section */}
-      <section className="border-b border-interlink-border bg-interlink-surface py-20 sm:py-24 lg:py-28">
+      {/* Spacious Interactive Matte Hero Section */}
+      <InteractiveMatteHero>
         <div className="mx-auto max-w-[1160px] px-6 sm:px-10">
           <div className="animate-hero-up max-w-3xl">
             <Badge tone="forest">For Experienced Professionals &amp; Founders</Badge>
@@ -88,7 +89,7 @@ export default async function BecomeMentorPage() {
             </div>
           </div>
         </div>
-      </section>
+      </InteractiveMatteHero>
 
       {/* Mentor Value Pillars */}
       <section className="border-b border-interlink-border bg-interlink-app-bg py-16 sm:py-20">
