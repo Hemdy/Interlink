@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowRight, Mail, User } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
 import { postJson } from "@/lib/api/client";
 import { AuthBackdrop, AuthPillInput } from "./AuthShell";
+import { resetClientSessionAndNavigate } from "./SessionSyncGuard";
 
 function GoogleIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -45,7 +45,6 @@ export function GoogleAuthButton({
   variant?: "default" | "pill";
   className?: string;
 }) {
-  const router = useRouter();
   const { pushToast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -95,8 +94,7 @@ export function GoogleAuthButton({
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        resetClientSessionAndNavigate("/dashboard");
       }
     } catch {
       setError("Network error authenticating with Google.");

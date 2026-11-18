@@ -55,6 +55,7 @@ export function attachSessionCookie(
     sameSite: "lax",
     secure: shouldUseSecureCookie(request),
     path: "/",
+    priority: "high",
     expires: expiresAt,
   });
 }
@@ -65,6 +66,7 @@ export function clearSessionCookieOnResponse(response: NextResponse, request?: R
     sameSite: "lax",
     secure: shouldUseSecureCookie(request),
     path: "/",
+    expires: new Date(0),
     maxAge: 0,
   });
 }
@@ -74,6 +76,18 @@ export async function createAuthSession(
   metadata?: { userAgent?: string | null; ipAddress?: string | null; request?: Request },
 ): Promise<{ token: string; expiresAt: Date }> {
   const db = getDb();
+  const cookieStore = await cookies();
+  const previousToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+  // Revoke any prior active session in this browser/PWA context before issuing a new one
+  if (previousToken) {
+    await db
+      .update(authSessions)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(authSessions.tokenHash, hashToken(previousToken)), isNull(authSessions.revokedAt)))
+      .catch(() => undefined);
+  }
+
   const token = generateOpaqueToken();
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
@@ -86,12 +100,12 @@ export async function createAuthSession(
     ipAddress: metadata?.ipAddress ?? null,
   });
 
-  const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: shouldUseSecureCookie(metadata?.request),
     path: "/",
+    priority: "high",
     expires: expiresAt,
   });
 

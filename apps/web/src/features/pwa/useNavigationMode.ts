@@ -87,6 +87,13 @@ let cachedUnreadNotifications = 0;
 let lastNotifFetchAt = 0;
 const UNREAD_CACHE_TTL_MS = 15_000;
 
+export function resetNavigationUnreadCaches() {
+  cachedUnreadMessages = 0;
+  lastUnreadFetchAt = 0;
+  cachedUnreadNotifications = 0;
+  lastNotifFetchAt = 0;
+}
+
 export function useUnreadNotificationsCount(enabled: boolean): number {
   const pathname = usePathname();
   const [unreadNotifications, setUnreadNotifications] = useState(cachedUnreadNotifications);

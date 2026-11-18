@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Bell,
   Bookmark,
@@ -27,11 +27,12 @@ import { ADMIN_ROLES } from "@interlink/types";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { UserAvatar } from "@/components/ui/UserAvatar";
-import { PWAInstallPrompt } from "@/features/pwa/PWAInstallPrompt";
 import {
-  ServiceWorkerRegister,
-  purgeServiceWorkerAuthCache,
-} from "@/features/pwa/ServiceWorkerRegister";
+  SessionSyncGuard,
+  resetClientSessionAndNavigate,
+} from "@/features/auth/ui/SessionSyncGuard";
+import { PWAInstallPrompt } from "@/features/pwa/PWAInstallPrompt";
+import { ServiceWorkerRegister } from "@/features/pwa/ServiceWorkerRegister";
 import {
   isInstalledPWA,
   useNavigationMode,
@@ -112,7 +113,6 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isStandalone, useBottomNav } = useNavigationMode();
   const unreadMessages = useUnreadMessagesCount(useBottomNav);
@@ -120,15 +120,12 @@ export function AppShell({
   const navItems = getNavItemsForUser(user);
 
   async function handleSignOut() {
-    purgeServiceWorkerAuthCache();
-    await fetch("/api/v1/auth/logout", { method: "POST" });
-    if (isStandalone || isInstalledPWA()) {
-      router.replace("/sign-in");
-      router.refresh();
-      return;
-    }
-    router.push("/");
-    router.refresh();
+    await fetch("/api/v1/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+    }).catch(() => undefined);
+    resetClientSessionAndNavigate(isStandalone || isInstalledPWA() ? "/sign-in" : "/");
   }
 
   const SidebarContent = (
@@ -332,6 +329,7 @@ export function AppShell({
           }`}
         >
           <ServiceWorkerRegister />
+          <SessionSyncGuard expectedUserId={user.id} redirectOnUnauthenticated />
           <PWAInstallPrompt />
           {useBottomNav && (
             <PWAContextSubNav

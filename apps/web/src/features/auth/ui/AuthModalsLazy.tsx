@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Lock, LogIn, Mail, User, Users } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Modal } from "@/components/ui/Modal";
@@ -16,6 +15,7 @@ import {
   AuthSubmitButton,
 } from "./AuthShell";
 import { GoogleAuthButton } from "./GoogleAuthButton";
+import { resetClientSessionAndNavigate } from "./SessionSyncGuard";
 
 export type AuthModalView = "sign-in" | "sign-up" | "forgot-password" | null;
 
@@ -35,7 +35,6 @@ export default function AuthModalsLazy({
   setRole: (role: "mentee" | "mentor") => void;
   closeAuthModal: () => void;
 }) {
-  const router = useRouter();
   const { pushToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,8 +74,7 @@ export default function AuthModalsLazy({
       }
       pushToast({ kind: "success", title: "Signed in to Interlink" });
       closeAuthModal();
-      router.push("/dashboard");
-      router.refresh();
+      resetClientSessionAndNavigate("/dashboard");
     } catch {
       setError("Network error while signing in. Please try again.");
     } finally {
@@ -117,8 +115,7 @@ export default function AuthModalsLazy({
           "Welcome to Interlink! You can customize your profile anytime from your dashboard.",
       });
       closeAuthModal();
-      router.push("/dashboard");
-      router.refresh();
+      resetClientSessionAndNavigate("/dashboard");
     } catch {
       setError("Network error while creating your account.");
     } finally {
@@ -185,8 +182,7 @@ export default function AuthModalsLazy({
               label="Continue with Google"
               onSuccess={() => {
                 closeAuthModal();
-                router.push("/dashboard");
-                router.refresh();
+                resetClientSessionAndNavigate("/dashboard");
               }}
             />
           </div>
@@ -321,8 +317,7 @@ export default function AuthModalsLazy({
               label={`Sign up as ${role === "mentor" ? "Mentor" : "Mentee"} with Google`}
               onSuccess={() => {
                 closeAuthModal();
-                router.push("/dashboard");
-                router.refresh();
+                resetClientSessionAndNavigate("/dashboard");
               }}
             />
           </div>

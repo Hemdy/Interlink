@@ -16,16 +16,24 @@ export interface DropdownMenuItem {
 export function DropdownMenu({
   triggerLabel,
   triggerSublabel,
+  triggerContent,
+  triggerAriaLabel,
+  triggerClassName,
+  menuHeader,
   items,
   align = "right",
 }: {
-  triggerLabel: string;
+  triggerLabel?: string;
   triggerSublabel?: string;
+  triggerContent?: React.ReactNode;
+  triggerAriaLabel?: string;
+  triggerClassName?: string;
+  menuHeader?: React.ReactNode;
   items: DropdownMenuItem[];
   align?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
-  const [coords, setCoords] = useState({ top: 0, left: 0, right: 0 });
+  const [coords, setCoords] = useState({ top: 0, left: 0, right: 12 });
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -34,9 +42,9 @@ export function DropdownMenu({
     if (!el) return;
     const rect = el.getBoundingClientRect();
     setCoords({
-      top: rect.bottom + 6,
-      left: rect.left,
-      right: window.innerWidth - rect.right,
+      top: rect.bottom + 8,
+      left: Math.max(12, rect.left),
+      right: Math.max(12, window.innerWidth - rect.right),
     });
   }, []);
 
@@ -69,26 +77,34 @@ export function DropdownMenu({
     };
   }, [open, updateCoords]);
 
+  const defaultTriggerClass =
+    "inline-flex items-center gap-2 rounded-[2px] border border-interlink-border bg-interlink-surface px-3 py-1.5 text-sm font-medium text-interlink-ink shadow-subtle transition-all duration-150 hover:border-interlink-forest focus-ring";
+
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-flex items-center">
       <button
         ref={triggerRef}
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={triggerAriaLabel ?? triggerLabel ?? "Account menu"}
         onClick={() => {
           updateCoords();
           setOpen((prev) => !prev);
         }}
-        className="inline-flex items-center gap-2 rounded-[2px] border border-interlink-border bg-interlink-surface px-3 py-1.5 text-sm font-medium text-interlink-ink shadow-subtle transition-all duration-150 hover:border-interlink-forest focus-ring"
+        className={triggerClassName ?? defaultTriggerClass}
       >
-        <span className="max-w-[130px] truncate">{triggerLabel}</span>
-        <ChevronDown
-          className={`h-3.5 w-3.5 text-interlink-muted transition-transform duration-200 ${
-            open ? "rotate-180 text-interlink-forest" : ""
-          }`}
-          aria-hidden="true"
-        />
+        {triggerContent ?? (
+          <>
+            <span className="max-w-[130px] truncate">{triggerLabel}</span>
+            <ChevronDown
+              className={`h-3.5 w-3.5 text-interlink-muted transition-transform duration-200 ${
+                open ? "rotate-180 text-interlink-forest" : ""
+              }`}
+              aria-hidden="true"
+            />
+          </>
+        )}
       </button>
 
       {open &&
@@ -104,45 +120,57 @@ export function DropdownMenu({
                 ? { right: `${coords.right}px` }
                 : { left: `${coords.left}px` }),
             }}
-            className="z-[9999] min-w-[210px] rounded-[2px] border border-interlink-border bg-interlink-surface p-1.5 shadow-modal"
+            className="z-[9999] min-w-[220px] rounded-xl border border-interlink-border bg-interlink-surface p-1.5 shadow-modal"
           >
-            {triggerSublabel && (
-              <div className="mb-1 border-b border-interlink-border/60 px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-wider text-interlink-muted">
-                {triggerSublabel}
+            {menuHeader ? (
+              <div className="mb-1 border-b border-interlink-border/60 px-3 py-2">
+                {menuHeader}
               </div>
+            ) : (
+              triggerSublabel && (
+                <div className="mb-1 border-b border-interlink-border/60 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wider text-interlink-muted">
+                  {triggerSublabel}
+                </div>
+              )
             )}
-            {items.map((item) =>
-              item.href ? (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  role="menuitem"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2 rounded-[2px] px-2.5 py-2 text-xs font-medium text-interlink-ink transition-colors hover:bg-interlink-app-bg hover:text-interlink-forest"
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </Link>
-              ) : (
-                <button
-                  key={item.label}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setOpen(false);
-                    item.onClick?.();
-                  }}
-                  className={`flex w-full items-center gap-2 rounded-[2px] px-2.5 py-2 text-left text-xs font-medium transition-colors ${
-                    item.destructive
-                      ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
-                      : "text-interlink-ink hover:bg-interlink-app-bg hover:text-interlink-forest"
-                  }`}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              ),
-            )}
+            {items.map((item) => {
+              const rowClass = item.destructive
+                ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                : "text-interlink-ink hover:bg-interlink-app-bg hover:text-interlink-forest";
+
+              const wrapperClass = item.destructive
+                ? "mt-1 border-t border-interlink-border/60 pt-1"
+                : "";
+
+              return (
+                <div key={item.label} className={wrapperClass}>
+                  {item.href ? (
+                    <Link
+                      href={item.href}
+                      role="menuitem"
+                      onClick={() => setOpen(false)}
+                      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${rowClass}`}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setOpen(false);
+                        item.onClick?.();
+                      }}
+                      className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${rowClass}`}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>,
           document.body,
         )}

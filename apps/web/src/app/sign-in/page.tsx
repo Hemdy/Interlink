@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Lock, Mail, Users } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -15,14 +15,17 @@ import {
   AuthSubmitButton,
 } from "@/features/auth/ui/AuthShell";
 import { GoogleAuthButton } from "@/features/auth/ui/GoogleAuthButton";
+import { resetClientSessionAndNavigate } from "@/features/auth/ui/SessionSyncGuard";
 import { useNavigationMode } from "@/features/pwa/useNavigationMode";
 
 function SignInContent() {
-  const router = useRouter();
   const { isStandalone } = useNavigationMode();
   const searchParams = useSearchParams();
   const nextParam = searchParams.get("next");
-  const redirectTarget = nextParam && nextParam.startsWith("/") ? nextParam : "/dashboard";
+  const redirectTarget =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+      ? nextParam
+      : "/dashboard";
 
   const { pushToast } = useToast();
   const [identifier, setIdentifier] = useState("");
@@ -33,15 +36,19 @@ function SignInContent() {
   useEffect(() => {
     if (!isStandalone) return;
     const controller = new AbortController();
-    fetch("/api/v1/auth/me", { signal: controller.signal, cache: "no-store" })
+    fetch("/api/v1/auth/me", {
+      signal: controller.signal,
+      credentials: "same-origin",
+      cache: "no-store",
+    })
       .then((res) => {
         if (res.ok) {
-          router.replace(redirectTarget);
+          window.location.replace(redirectTarget);
         }
       })
       .catch(() => {});
     return () => controller.abort();
-  }, [isStandalone, redirectTarget, router]);
+  }, [isStandalone, redirectTarget]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,8 +65,7 @@ function SignInContent() {
         return;
       }
       pushToast({ kind: "success", title: "Signed in to Interlink" });
-      router.replace(redirectTarget);
-      router.refresh();
+      resetClientSessionAndNavigate(redirectTarget);
     } catch {
       setError("Network error while signing in.");
     } finally {
@@ -85,8 +91,7 @@ function SignInContent() {
           variant="pill"
           label="Continue with Google"
           onSuccess={() => {
-            router.replace(redirectTarget);
-            router.refresh();
+            resetClientSessionAndNavigate(redirectTarget);
           }}
         />
       </div>

@@ -2,13 +2,15 @@
 
 import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import type { SessionUser } from "@interlink/types";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { UserAvatar } from "@/components/ui/UserAvatar";
-import { purgeServiceWorkerAuthCache } from "@/features/pwa/ServiceWorkerRegister";
+import {
+  SessionSyncGuard,
+  resetClientSessionAndNavigate,
+} from "@/features/auth/ui/SessionSyncGuard";
 import {
   useNavigationMode,
   useUnreadMessagesCount,
@@ -29,7 +31,6 @@ export function PWAPublicShellAdapter({
   footer: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const { useBottomNav } = useNavigationMode();
   const showPWAShell = Boolean(user && useBottomNav);
   const unreadMessages = useUnreadMessagesCount(showPWAShell);
@@ -39,15 +40,18 @@ export function PWAPublicShellAdapter({
   const resolvedUnreadCount = unreadCount ?? clientUnreadNotifications;
 
   async function handleSignOut() {
-    purgeServiceWorkerAuthCache();
-    await fetch("/api/v1/auth/logout", { method: "POST" });
-    router.replace("/sign-in");
-    router.refresh();
+    await fetch("/api/v1/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+    }).catch(() => undefined);
+    resetClientSessionAndNavigate("/sign-in");
   }
 
   if (!showPWAShell || !user) {
     return (
       <div className="flex min-h-screen flex-col bg-interlink-canvas text-interlink-ink">
+        <SessionSyncGuard expectedUserId={user?.id ?? null} />
         {header}
         <div className="flex-1">{children}</div>
         {footer}
@@ -57,6 +61,7 @@ export function PWAPublicShellAdapter({
 
   return (
     <div className="min-h-screen bg-interlink-app-bg text-interlink-ink">
+      <SessionSyncGuard expectedUserId={user.id} />
       <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm sm:px-8">
         <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           <Link

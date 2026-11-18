@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { LayoutDashboard, LogOut, Menu, Settings, UserCircle, X } from "lucide-react";
 import type { SessionUser } from "@interlink/types";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -11,7 +11,7 @@ import { DropdownMenu } from "@/components/ui/DropdownMenu";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useAuthModal } from "@/features/auth/ui/AuthModalProvider";
-import { purgeServiceWorkerAuthCache } from "@/features/pwa/ServiceWorkerRegister";
+import { resetClientSessionAndNavigate } from "@/features/auth/ui/SessionSyncGuard";
 import { isInstalledPWA } from "@/features/pwa/useNavigationMode";
 
 const primaryNavLinks = [
@@ -26,19 +26,70 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
   const { openSignIn, openSignUp } = useAuthModal();
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
 
   async function handleLogout() {
+    await fetch("/api/v1/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+    }).catch(() => undefined);
     if (isInstalledPWA()) {
-      purgeServiceWorkerAuthCache();
-      await fetch("/api/v1/auth/logout", { method: "POST" });
-      router.replace("/sign-in");
-      router.refresh();
+      resetClientSessionAndNavigate("/sign-in");
       return;
     }
-    await fetch("/api/v1/auth/logout", { method: "POST" });
-    router.refresh();
+    resetClientSessionAndNavigate(window.location.pathname + window.location.search);
   }
+
+  const userMenuItems = [
+    {
+      label: "Dashboard",
+      href: "/dashboard",
+      icon: <LayoutDashboard className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
+    },
+    {
+      label: "My Profile",
+      href: "/profile",
+      icon: <UserCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
+    },
+    {
+      label: "Account Settings",
+      href: "/settings",
+      icon: <Settings className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
+    },
+    {
+      label: "Sign Out",
+      onClick: () => void handleLogout(),
+      destructive: true,
+      icon: <LogOut className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
+    },
+  ];
+
+  const avatarTrigger = user ? (
+    <DropdownMenu
+      triggerAriaLabel="Open account menu"
+      triggerClassName="group inline-flex items-center justify-center rounded-full border border-interlink-border bg-interlink-surface p-0.5 shadow-subtle transition-all duration-150 hover:border-interlink-forest hover:shadow-elevated focus-ring"
+      triggerContent={
+        <UserAvatar
+          src={user.profileImage}
+          firstName={user.firstName}
+          lastName={user.lastName}
+          size="sm"
+          className="rounded-full border-0 transition-transform duration-150 group-hover:scale-[1.03]"
+        />
+      }
+      menuHeader={
+        <div className="min-w-0">
+          <p className="truncate text-xs font-semibold text-interlink-ink">
+            {user.firstName} {user.lastName}
+          </p>
+          <p className="truncate text-[11px] capitalize text-interlink-forest">
+            {user.primaryRole.replace("_", " ")}
+          </p>
+        </div>
+      }
+      items={userMenuItems}
+    />
+  ) : null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-interlink-border bg-interlink-surface/95 shadow-subtle backdrop-blur-sm">
@@ -74,48 +125,12 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
           })}
         </nav>
 
-        {/* Far Right: Theme Toggle + Separated Sign In / Sign Up (or User Account Menu) */}
+        {/* Far Right: Theme Toggle + Avatar Menu (or Sign In / Sign Up) */}
         <div className="hidden items-center justify-self-end gap-3 lg:flex">
           <ThemeToggle />
 
           {user ? (
-            <div className="flex items-center gap-2.5 border-l border-interlink-border pl-3">
-              <UserAvatar
-                src={user.profileImage}
-                firstName={user.firstName}
-                lastName={user.lastName}
-                size="xs"
-              />
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-1.5 rounded-[2px] bg-interlink-forest px-4 py-1.5 text-sm font-medium text-white shadow-subtle transition-all duration-200 hover:bg-interlink-forest-hover focus-ring"
-              >
-                <LayoutDashboard className="h-3.5 w-3.5" aria-hidden="true" />
-                Dashboard
-              </Link>
-              <DropdownMenu
-                triggerLabel={user.firstName}
-                triggerSublabel={user.primaryRole.replace("_", " ")}
-                items={[
-                  {
-                    label: "My Profile",
-                    href: "/profile",
-                    icon: <UserCircle className="h-3.5 w-3.5" />,
-                  },
-                  {
-                    label: "Account Settings",
-                    href: "/settings",
-                    icon: <Settings className="h-3.5 w-3.5" />,
-                  },
-                  {
-                    label: "Sign Out",
-                    onClick: () => void handleLogout(),
-                    destructive: true,
-                    icon: <LogOut className="h-3.5 w-3.5" />,
-                  },
-                ]}
-              />
-            </div>
+            avatarTrigger
           ) : (
             <div className="flex items-center gap-3 border-l border-interlink-border pl-3">
               <button
@@ -139,6 +154,7 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
         {/* Mobile / Tablet right controls */}
         <div className="flex items-center justify-self-end gap-2 lg:hidden">
           <ThemeToggle />
+          {avatarTrigger}
           <button
             type="button"
             onClick={() => setMobileOpen((prev) => !prev)}
@@ -174,28 +190,8 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
               );
             })}
 
-            <div className="mt-3 border-t border-interlink-border pt-4">
-              {user ? (
-                <div className="flex flex-col gap-2">
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setMobileOpen(false)}
-                    className="rounded-[2px] bg-interlink-forest px-4 py-2 text-center text-sm font-medium text-white"
-                  >
-                    Dashboard
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileOpen(false);
-                      void handleLogout();
-                    }}
-                    className="py-1.5 text-center text-xs text-interlink-muted hover:text-interlink-ink"
-                  >
-                    Sign out
-                  </button>
-                </div>
-              ) : (
+            {!user && (
+              <div className="mt-3 border-t border-interlink-border pt-4">
                 <div className="grid grid-cols-2 gap-2.5">
                   <Button
                     variant="outline"
@@ -215,8 +211,8 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
                     Sign Up
                   </Button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </nav>
         </div>
       )}

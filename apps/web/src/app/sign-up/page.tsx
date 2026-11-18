@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Lock, LogIn, Mail, User } from "lucide-react";
 import { ErrorAlert, LoadingSpinner } from "@/components/ui/Feedback";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -15,10 +15,10 @@ import {
   AuthSubmitButton,
 } from "@/features/auth/ui/AuthShell";
 import { GoogleAuthButton } from "@/features/auth/ui/GoogleAuthButton";
+import { resetClientSessionAndNavigate } from "@/features/auth/ui/SessionSyncGuard";
 import { useNavigationMode } from "@/features/pwa/useNavigationMode";
 
 function SignUpInner() {
-  const router = useRouter();
   const { isStandalone } = useNavigationMode();
   const searchParams = useSearchParams();
   const { pushToast } = useToast();
@@ -36,15 +36,19 @@ function SignUpInner() {
   useEffect(() => {
     if (!isStandalone) return;
     const controller = new AbortController();
-    fetch("/api/v1/auth/me", { signal: controller.signal, cache: "no-store" })
+    fetch("/api/v1/auth/me", {
+      signal: controller.signal,
+      credentials: "same-origin",
+      cache: "no-store",
+    })
       .then((res) => {
         if (res.ok) {
-          router.replace("/dashboard");
+          window.location.replace("/dashboard");
         }
       })
       .catch(() => {});
     return () => controller.abort();
-  }, [isStandalone, router]);
+  }, [isStandalone]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -78,8 +82,7 @@ function SignUpInner() {
         description:
           "Welcome to Interlink! You can finish setting up your profile anytime from your dashboard.",
       });
-      router.replace("/dashboard");
-      router.refresh();
+      resetClientSessionAndNavigate("/dashboard");
     } catch {
       setError("Network error creating account.");
     } finally {
@@ -133,8 +136,7 @@ function SignUpInner() {
           role={role}
           label={`Sign up as ${role === "mentor" ? "Mentor" : "Mentee"} with Google`}
           onSuccess={() => {
-            router.replace("/dashboard");
-            router.refresh();
+            resetClientSessionAndNavigate("/dashboard");
           }}
         />
       </div>

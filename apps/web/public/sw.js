@@ -1,5 +1,5 @@
-// Interlink Dashboard Service Worker - v1.0.0
-const CACHE_NAME = "interlink-dashboard-v1";
+// Interlink Dashboard Service Worker - v2.0.0
+const CACHE_NAME = "interlink-dashboard-v2";
 const OFFLINE_URL = "/offline.html";
 
 // Static assets to precache on installation
@@ -73,6 +73,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // 1b. Never cache Next.js App Router RSC payloads or prefetches (may carry per-user session state)
+  if (
+    url.searchParams.has("_rsc") ||
+    request.headers.get("RSC") === "1" ||
+    request.headers.get("Next-Router-Prefetch") === "1"
+  ) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // 2. HTML Navigation requests (pages): NETWORK-FIRST
   // Critical for security: Server-side session validation must run on every request.
   // Never serve cached authenticated HTML from previous sessions.
@@ -87,16 +97,17 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 3. Static Next.js assets, public images, icons: STALE-WHILE-REVALIDATE
+  // 3. Immutable static Next.js assets, public images, icons: STALE-WHILE-REVALIDATE
   const isStaticAsset =
-    url.pathname.startsWith("/_next/static/") ||
-    url.pathname.startsWith("/images/") ||
-    url.pathname.endsWith(".png") ||
-    url.pathname.endsWith(".svg") ||
-    url.pathname.endsWith(".ico") ||
-    url.pathname.endsWith(".woff2") ||
-    url.pathname.endsWith(".css") ||
-    url.pathname.endsWith(".js");
+    !url.searchParams.has("_rsc") &&
+    (url.pathname.startsWith("/_next/static/") ||
+      url.pathname.startsWith("/images/") ||
+      url.pathname.endsWith(".png") ||
+      url.pathname.endsWith(".svg") ||
+      url.pathname.endsWith(".ico") ||
+      url.pathname.endsWith(".woff2") ||
+      url.pathname.endsWith(".css") ||
+      url.pathname.endsWith(".js"));
 
   if (isStaticAsset) {
     event.respondWith(
