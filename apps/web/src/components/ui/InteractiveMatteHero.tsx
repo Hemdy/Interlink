@@ -185,8 +185,10 @@ export function InteractiveMatteHero({
 
     startLoopRef.current = ensureLoop;
 
-    buildGrid();
-    drawFrame();
+    const initRafId = window.requestAnimationFrame(() => {
+      buildGrid();
+      drawFrame();
+    });
 
     const resizeObserver = new ResizeObserver(() => {
       buildGrid();
@@ -204,6 +206,7 @@ export function InteractiveMatteHero({
     });
 
     return () => {
+      window.cancelAnimationFrame(initRafId);
       window.cancelAnimationFrame(rafId);
       isRunning = false;
       startLoopRef.current = null;

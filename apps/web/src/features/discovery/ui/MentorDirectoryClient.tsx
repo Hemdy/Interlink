@@ -215,38 +215,62 @@ export function MentorDirectoryClient({
       {/* Recommended Mentors Strip (when logged in & recommendations exist) */}
       {user && recommendedMentors.length > 0 && (
         <section>
-          <div className="mb-3 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-interlink-forest" />
-            <h2 className="font-display text-lg font-semibold text-interlink-ink">
-              Recommended for Your Goals
-            </h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-interlink-forest/10 text-interlink-forest">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <h2 className="font-display text-lg font-semibold text-interlink-ink">
+                Picked for Your Goals
+              </h2>
+            </div>
+            <span className="text-[11px] font-medium text-interlink-muted">Swipe on mobile &rarr;</span>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory no-scrollbar md:grid md:grid-cols-3 md:overflow-visible md:pb-0">
             {recommendedMentors.slice(0, 3).map((mentor) => (
-              <Card key={mentor.userId} className="border-interlink-forest/40 bg-interlink-surface p-5 shadow-subtle hover:border-interlink-forest">
+              <Card
+                key={mentor.userId}
+                className="min-w-[270px] shrink-0 snap-start border-interlink-forest/35 bg-gradient-to-br from-interlink-surface to-interlink-forest/[0.04] p-5 shadow-subtle hover:-translate-y-0.5 hover:border-interlink-forest md:min-w-0"
+              >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="text-sm font-semibold text-interlink-ink">
-                      {mentor.firstName} {mentor.lastName}
-                    </h3>
-                    <p className="text-xs text-interlink-muted">
-                      {mentor.currentPosition}
-                      {mentor.organisation ? ` · ${mentor.organisation}` : ""}
-                    </p>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <UserAvatar
+                      src={mentor.profileImage}
+                      firstName={mentor.firstName}
+                      lastName={mentor.lastName}
+                      size="md"
+                    />
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-semibold text-interlink-ink">
+                        {mentor.firstName} {mentor.lastName}
+                      </h3>
+                      <p className="truncate text-xs text-interlink-muted">
+                        {mentor.currentPosition}
+                        {mentor.organisation ? ` · ${mentor.organisation}` : ""}
+                      </p>
+                    </div>
                   </div>
                   {typeof mentor.matchScore === "number" && mentor.matchScore > 0 && (
-                    <Badge tone="forest">{mentor.matchScore}% match</Badge>
+                    <Badge tone="forest" className="shrink-0">{mentor.matchScore}% match</Badge>
                   )}
                 </div>
                 {mentor.matchReasons && mentor.matchReasons.length > 0 && (
-                  <p className="mt-2.5 text-xs text-interlink-muted">{mentor.matchReasons[0]}</p>
+                  <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-interlink-muted">
+                    {mentor.matchReasons[0]}
+                  </p>
                 )}
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-4 flex items-center justify-between gap-2 border-t border-interlink-border/50 pt-3">
                   <Link
                     href={`/mentors/${mentor.userId}`}
-                    className="text-xs font-semibold text-interlink-forest hover:underline"
+                    className="inline-flex items-center gap-1 rounded-full bg-interlink-forest/10 px-3.5 py-1.5 text-xs font-semibold text-interlink-forest transition-colors hover:bg-interlink-forest hover:text-white"
                   >
                     View Profile &rarr;
+                  </Link>
+                  <Link
+                    href={`/mentors/${mentor.userId}#request`}
+                    className="text-xs font-semibold text-interlink-muted hover:text-interlink-forest"
+                  >
+                    Connect
                   </Link>
                 </div>
               </Card>
@@ -445,6 +469,47 @@ export function MentorDirectoryClient({
             </div>
           </div>
 
+          {/* Quick Industry & Trust Pill Strip */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            <button
+              type="button"
+              onClick={() => handleIndustryChange("")}
+              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                industryId === ""
+                  ? "border-interlink-forest bg-interlink-forest text-white shadow-subtle"
+                  : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+              }`}
+            >
+              All Industries
+            </button>
+            <button
+              type="button"
+              onClick={() => handleVerifiedChange(!verifiedOnly)}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                verifiedOnly
+                  ? "border-interlink-forest bg-interlink-forest/15 text-interlink-forest"
+                  : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+              }`}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Verified Only
+            </button>
+            {industries.slice(0, 8).map((ind) => (
+              <button
+                key={ind.id}
+                type="button"
+                onClick={() => handleIndustryChange(industryId === ind.id ? "" : ind.id)}
+                className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                  industryId === ind.id
+                    ? "border-interlink-forest bg-interlink-forest text-white shadow-subtle"
+                    : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+                }`}
+              >
+                {ind.name}
+              </button>
+            ))}
+          </div>
+
           {/* Active Filter Chips & Results Count */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-interlink-border/40 pt-3 text-xs text-interlink-muted">
             <div className="flex flex-wrap items-center gap-1.5">
@@ -452,7 +517,7 @@ export function MentorDirectoryClient({
                 {mentors.length} {mentors.length === 1 ? "mentor" : "mentors"} found
               </span>
               {q.trim() && (
-                <span className="inline-flex items-center gap-1 rounded-[2px] border border-interlink-border bg-interlink-surface px-2 py-0.5 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
                   Search: &ldquo;{q.trim()}&rdquo;
                   <button
                     type="button"
@@ -468,7 +533,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {industryId && (
-                <span className="inline-flex items-center gap-1 rounded-[2px] border border-interlink-border bg-interlink-surface px-2 py-0.5 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
                   {industries.find((i) => i.id === industryId)?.name ?? "Industry"}
                   <button
                     type="button"
@@ -481,7 +546,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {sessionPreference && (
-                <span className="inline-flex items-center gap-1 rounded-[2px] border border-interlink-border bg-interlink-surface px-2 py-0.5 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
                   Format: {sessionPreference.replace("_", " ")}
                   <button
                     type="button"
@@ -494,7 +559,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {availability && (
-                <span className="inline-flex items-center gap-1 rounded-[2px] border border-interlink-border bg-interlink-surface px-2 py-0.5 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
                   {availability === "accepting" ? "Accepting Mentees" : "Paused"}
                   <button
                     type="button"
@@ -507,7 +572,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {minExperience && (
-                <span className="inline-flex items-center gap-1 rounded-[2px] border border-interlink-border bg-interlink-surface px-2 py-0.5 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
                   {minExperience}+ yrs exp
                   <button
                     type="button"
@@ -520,7 +585,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {verifiedOnly && (
-                <span className="inline-flex items-center gap-1 rounded-[2px] border border-interlink-border bg-interlink-surface px-2 py-0.5 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
                   Verified Only
                   <button
                     type="button"
@@ -533,7 +598,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {sort !== "relevant" && (
-                <span className="inline-flex items-center gap-1 rounded-[2px] border border-interlink-border bg-interlink-surface px-2 py-0.5 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
                   Sort: {sort === "experience" ? "Most Experienced" : "Recently Updated"}
                   <button
                     type="button"
@@ -592,19 +657,27 @@ export function MentorDirectoryClient({
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-3">
-                      <UserAvatar
-                        src={mentor.profileImage}
-                        firstName={mentor.firstName}
-                        lastName={mentor.lastName}
-                        size="md"
-                        previewable
-                        previewSubtitle={
-                          mentor.currentPosition
-                            ? `${mentor.currentPosition}${mentor.organisation ? ` · ${mentor.organisation}` : ""}`
-                            : undefined
-                        }
-                      />
-                      <div>
+                      <div className="relative shrink-0">
+                        <UserAvatar
+                          src={mentor.profileImage}
+                          firstName={mentor.firstName}
+                          lastName={mentor.lastName}
+                          size="md"
+                          previewable
+                          previewSubtitle={
+                            mentor.currentPosition
+                              ? `${mentor.currentPosition}${mentor.organisation ? ` · ${mentor.organisation}` : ""}`
+                              : undefined
+                          }
+                        />
+                        {!isFull && (
+                          <span
+                            className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-interlink-surface bg-emerald-500"
+                            title="Accepting mentees"
+                          />
+                        )}
+                      </div>
+                      <div className="min-w-0">
                         <h3 className="text-base font-semibold text-interlink-ink">
                           {mentor.firstName} {mentor.lastName}
                         </h3>
@@ -657,27 +730,27 @@ export function MentorDirectoryClient({
                   </div>
                 </div>
 
-                <div className="mt-6 space-y-3 border-t border-slate-100 pt-4">
+                <div className="mt-6 space-y-3 border-t border-interlink-border/60 pt-4">
                   <div className="flex items-center justify-between text-xs">
                     <span
-                      className={`inline-flex items-center gap-1 font-medium ${
-                        isFull ? "text-amber-700" : "text-interlink-forest"
+                      className={`inline-flex items-center gap-1 font-semibold ${
+                        isFull ? "text-amber-600 dark:text-amber-400" : "text-interlink-forest"
                       }`}
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       {isFull
-                        ? "Currently Unavailable"
-                        : `Accepting (${mentor.activeMenteeCount}/${mentor.maximumMentees} slots)`}
+                        ? "Waitlist / Full"
+                        : `Open (${mentor.activeMenteeCount}/${mentor.maximumMentees} slots)`}
                     </span>
 
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => toggleCompare(mentor.userId)}
-                        className={`rounded-[2px] border px-2 py-1 text-[11px] ${
+                        className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
                           compareIds.includes(mentor.userId)
                             ? "border-interlink-forest bg-interlink-forest/10 text-interlink-forest"
-                            : "border-slate-200 text-slate-600 hover:border-slate-400"
+                            : "border-interlink-border text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
                         }`}
                       >
                         {compareIds.includes(mentor.userId) ? "Comparing" : "Compare"}
@@ -686,33 +759,33 @@ export function MentorDirectoryClient({
                         type="button"
                         onClick={() => toggleSave(mentor)}
                         aria-label={mentor.isSaved ? "Unsave mentor" : "Save mentor"}
-                        className={`rounded-[2px] border p-1.5 ${
+                        className={`rounded-full border p-2 transition-colors ${
                           mentor.isSaved
                             ? "border-interlink-forest bg-interlink-forest/10 text-interlink-forest"
-                            : "border-slate-200 text-slate-500 hover:text-interlink-forest"
+                            : "border-interlink-border text-interlink-muted hover:border-interlink-forest hover:text-interlink-forest"
                         }`}
                       >
-                        <Bookmark className="h-3.5 w-3.5" />
+                        <Bookmark className={`h-3.5 w-3.5 ${mentor.isSaved ? "fill-current" : ""}`} />
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <Link
                       href={`/mentors/${mentor.userId}`}
-                      className="rounded-[2px] border border-interlink-hairline py-2 text-center text-xs font-medium text-interlink-ink hover:border-interlink-forest hover:text-interlink-forest"
+                      className="rounded-full border border-interlink-border py-2 text-center text-xs font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
                     >
                       View Profile
                     </Link>
                     <Link
                       href={`/mentors/${mentor.userId}#request`}
-                      className={`rounded-[2px] py-2 text-center text-xs font-medium ${
+                      className={`rounded-full py-2 text-center text-xs font-semibold transition-all active:scale-[0.98] ${
                         isFull
-                          ? "bg-slate-200 text-slate-500"
+                          ? "bg-interlink-app-bg text-interlink-muted hover:text-interlink-ink"
                           : "bg-interlink-forest text-white hover:bg-interlink-forest-hover"
                       }`}
                     >
-                      {isFull ? "View Details" : "Request Mentorship"}
+                      {isFull ? "View Details" : "Connect"}
                     </Link>
                   </div>
                 </div>
@@ -739,38 +812,38 @@ export function MentorDirectoryClient({
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             {comparedMentors.map((m) => (
-              <div key={m.userId} className="rounded-[2px] border border-slate-200 p-4">
+              <div key={m.userId} className="rounded-2xl border border-interlink-border bg-interlink-app-bg/40 p-4">
                 <h3 className="font-semibold text-interlink-ink">
                   {m.firstName} {m.lastName}
                 </h3>
                 <p className="text-xs text-interlink-muted">{m.currentPosition}</p>
                 <dl className="mt-4 space-y-2 text-xs">
                   <div>
-                    <dt className="font-medium text-slate-500">Industry</dt>
+                    <dt className="font-medium text-interlink-muted">Industry</dt>
                     <dd className="text-interlink-ink">{m.industryName ?? "General"}</dd>
                   </div>
                   <div>
-                    <dt className="font-medium text-slate-500">Experience</dt>
+                    <dt className="font-medium text-interlink-muted">Experience</dt>
                     <dd className="text-interlink-ink">{m.yearsOfExperience} years</dd>
                   </div>
                   <div>
-                    <dt className="font-medium text-slate-500">Verification</dt>
+                    <dt className="font-medium text-interlink-muted">Verification</dt>
                     <dd className="capitalize text-interlink-ink">{m.verificationStatus}</dd>
                   </div>
                   <div>
-                    <dt className="font-medium text-slate-500">Session Format</dt>
+                    <dt className="font-medium text-interlink-muted">Session Format</dt>
                     <dd className="capitalize text-interlink-ink">
                       {m.sessionPreference.replace("_", " ")}
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-medium text-slate-500">Expertise</dt>
+                    <dt className="font-medium text-interlink-muted">Expertise</dt>
                     <dd className="text-interlink-ink">{m.expertiseTags.join(", ")}</dd>
                   </div>
                 </dl>
                 <Link
                   href={`/mentors/${m.userId}`}
-                  className="mt-4 block rounded-[2px] bg-interlink-forest py-1.5 text-center text-xs font-medium text-white"
+                  className="mt-4 block rounded-full bg-interlink-forest py-2 text-center text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
                 >
                   Open Profile
                 </Link>

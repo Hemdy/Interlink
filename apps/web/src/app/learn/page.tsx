@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import Link from "next/link";
-import type { SessionUser } from "@interlink/types";
 import { desc, eq, isNull } from "drizzle-orm";
 import { BookOpen, ExternalLink, Target } from "lucide-react";
 import { getDb, isDatabaseConfigured, resources, users } from "@interlink/database";
@@ -136,8 +135,24 @@ async function SharedResourcesSection() {
   );
 }
 
-async function LearnSpotlightAndEvents({ user }: { user: SessionUser | null }) {
-  const [reels, events] = await Promise.all([
+async function ManageResourcesLink() {
+  const user = await getCurrentUser();
+  if (!user || (user.primaryRole !== "mentor" && user.primaryRole !== "admin")) {
+    return null;
+  }
+  return (
+    <Link
+      href="/dashboard"
+      className="text-xs font-medium text-interlink-forest hover:underline"
+    >
+      Manage Resources in Dashboard
+    </Link>
+  );
+}
+
+async function LearnSpotlightAndEvents() {
+  const [user, reels, events] = await Promise.all([
+    getCurrentUser(),
     listPublishedMentorReels(),
     listPublishedPlatformEvents(),
   ]);
@@ -150,11 +165,9 @@ async function LearnSpotlightAndEvents({ user }: { user: SessionUser | null }) {
   );
 }
 
-export default async function LearnPage() {
-  const user = await getCurrentUser();
-
+export default function LearnPage() {
   return (
-    <PublicShell user={user}>
+    <PublicShell>
       <InteractiveMatteHero>
         <div className="mx-auto max-w-[1200px] px-6 sm:px-10">
           <div className="animate-hero-up">
@@ -217,14 +230,9 @@ export default async function LearnPage() {
               <h2 className="font-display text-2xl font-light text-interlink-ink">
                 Shared Learning Resources
               </h2>
-              {user && (user.primaryRole === "mentor" || user.primaryRole === "admin") && (
-                <Link
-                  href="/dashboard"
-                  className="text-xs font-medium text-interlink-forest hover:underline"
-                >
-                  Manage Resources in Dashboard
-                </Link>
-              )}
+              <Suspense fallback={null}>
+                <ManageResourcesLink />
+              </Suspense>
             </div>
 
             <Suspense
@@ -233,7 +241,7 @@ export default async function LearnPage() {
                   {[0, 1, 2].map((idx) => (
                     <div
                       key={idx}
-                      className="h-44 animate-pulse rounded-[2px] border border-interlink-border bg-interlink-surface p-5 shadow-subtle"
+                      className="h-44 animate-pulse rounded-2xl border border-interlink-border bg-interlink-surface p-5 shadow-subtle"
                     />
                   ))}
                 </div>
@@ -246,7 +254,7 @@ export default async function LearnPage() {
       </section>
 
       <Suspense fallback={null}>
-        <LearnSpotlightAndEvents user={user} />
+        <LearnSpotlightAndEvents />
       </Suspense>
     </PublicShell>
   );

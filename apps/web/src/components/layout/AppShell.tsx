@@ -175,9 +175,9 @@ export function AppShell({
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center justify-between rounded-[2px] px-3 py-2 text-sm transition-colors ${
+                className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm transition-colors ${
                   active
-                    ? "bg-interlink-forest font-medium text-white shadow-subtle"
+                    ? "bg-interlink-forest font-semibold text-white shadow-subtle"
                     : "text-interlink-ink/85 hover:bg-interlink-app-bg hover:text-interlink-ink"
                 }`}
               >
@@ -206,7 +206,7 @@ export function AppShell({
         <button
           type="button"
           onClick={handleSignOut}
-          className="flex w-full items-center gap-2.5 rounded-[2px] px-3 py-2 text-sm text-interlink-muted transition-colors hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+          className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium text-interlink-muted transition-colors hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-300"
         >
           <LogOut className="h-4 w-4" aria-hidden="true" />
           <span>Sign Out</span>
@@ -269,7 +269,7 @@ export function AppShell({
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
-                className="rounded-[2px] p-1.5 text-interlink-muted hover:bg-interlink-app-bg lg:hidden"
+                className="rounded-full p-2 text-interlink-muted hover:bg-interlink-app-bg lg:hidden"
                 aria-label="Open navigation"
               >
                 <Menu className="h-5 w-5" />
@@ -282,7 +282,7 @@ export function AppShell({
             <ThemeToggle />
             <Link
               href="/notifications"
-              className="relative inline-flex h-9 w-9 items-center justify-center rounded-[2px] border border-interlink-border bg-interlink-surface text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+              className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-interlink-border bg-interlink-surface text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
               aria-label="Notifications"
             >
               <Bell className="h-4 w-4" />

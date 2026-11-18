@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import type { SessionUser } from "@interlink/types";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
 import {
@@ -23,7 +22,8 @@ function DirectorySkeleton() {
   );
 }
 
-async function MentorDirectorySection({ user }: { user: SessionUser | null }) {
+async function MentorDirectorySection() {
+  const user = await getCurrentUser();
   const [{ mentors }, industryList] = await Promise.all([
     listPublicMentors({ limit: 24, viewerUserId: user?.id ?? null }),
     listActiveIndustries(),
@@ -41,11 +41,9 @@ async function MentorDirectorySection({ user }: { user: SessionUser | null }) {
   );
 }
 
-export default async function MentorsDirectoryPage() {
-  const user = await getCurrentUser();
-
+export default function MentorsDirectoryPage() {
   return (
-    <PublicShell user={user}>
+    <PublicShell>
       <InteractiveMatteHero paddingClassName="py-12 sm:py-14">
         <div className="mx-auto max-w-[1360px] px-6 sm:px-10">
           <div className="animate-hero-up">
@@ -65,7 +63,7 @@ export default async function MentorsDirectoryPage() {
       <section className="bg-interlink-app-bg py-10">
         <div className="mx-auto max-w-[1360px] px-6 sm:px-10">
           <Suspense fallback={<DirectorySkeleton />}>
-            <MentorDirectorySection user={user} />
+            <MentorDirectorySection />
           </Suspense>
         </div>
       </section>

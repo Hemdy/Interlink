@@ -43,86 +43,98 @@ export default async function MentorDetailPage({
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
             {/* Main Profile Content */}
             <div className="space-y-6 lg:col-span-8">
-              <Card>
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <UserAvatar
-                      src={mentor.profileImage}
-                      firstName={mentor.firstName}
-                      lastName={mentor.lastName}
-                      size="xl"
-                      previewable
-                      previewSubtitle={
-                        mentor.currentPosition
-                          ? `${mentor.currentPosition}${mentor.organisation ? ` · ${mentor.organisation}` : ""}`
-                          : undefined
-                      }
-                    />
-                    <div>
-                      <h1 className="font-display text-2xl font-semibold text-interlink-ink sm:text-3xl">
-                        {mentor.firstName} {mentor.lastName}
-                      </h1>
-                      <p className="mt-1 text-sm text-interlink-muted">
-                        {mentor.currentPosition}
-                        {mentor.organisation ? ` at ${mentor.organisation}` : ""}
-                      </p>
+              <Card className="overflow-hidden p-0">
+                <div className="h-24 w-full bg-gradient-to-r from-interlink-forest/20 via-interlink-forest/10 to-interlink-gold/20 sm:h-28" />
+                <div className="px-5 pb-6 sm:px-6">
+                  <div className="-mt-10 flex flex-wrap items-end justify-between gap-4 sm:-mt-12">
+                    <div className="flex flex-wrap items-end gap-4">
+                      <div className="rounded-full bg-interlink-surface p-1 shadow-subtle">
+                        <UserAvatar
+                          src={mentor.profileImage}
+                          firstName={mentor.firstName}
+                          lastName={mentor.lastName}
+                          size="xl"
+                          previewable
+                          previewSubtitle={
+                            mentor.currentPosition
+                              ? `${mentor.currentPosition}${mentor.organisation ? ` · ${mentor.organisation}` : ""}`
+                              : undefined
+                          }
+                        />
+                      </div>
+                      <div className="pb-1">
+                        <h1 className="font-display text-2xl font-semibold text-interlink-ink sm:text-3xl">
+                          {mentor.firstName} {mentor.lastName}
+                        </h1>
+                        <p className="mt-1 text-sm text-interlink-muted">
+                          {mentor.currentPosition}
+                          {mentor.organisation ? ` at ${mentor.organisation}` : ""}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <Badge
-                    tone={
-                      mentor.verificationStatus === "verified"
-                        ? "forest"
+                    <Badge
+                      tone={
+                        mentor.verificationStatus === "verified"
+                          ? "forest"
+                          : mentor.verificationStatus === "reviewed"
+                            ? "info"
+                            : "neutral"
+                      }
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      {mentor.verificationStatus === "verified"
+                        ? "Verified Mentor"
                         : mentor.verificationStatus === "reviewed"
-                          ? "info"
-                          : "neutral"
-                    }
-                  >
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    {mentor.verificationStatus === "verified"
-                      ? "Verified Mentor"
-                      : mentor.verificationStatus === "reviewed"
-                        ? "Profile Reviewed"
-                        : "Registered Mentor"}
-                  </Badge>
-                </div>
+                          ? "Profile Reviewed"
+                          : "Registered Mentor"}
+                    </Badge>
+                  </div>
 
-                <div className="mt-4 flex flex-wrap gap-4 text-xs text-interlink-muted">
-                  {mentor.industryName && <span>Industry: {mentor.industryName}</span>}
-                  <span>Experience: {mentor.yearsOfExperience} years</span>
-                  {mentor.location && (
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" /> {mentor.location}
+                  <div className="mt-5 flex flex-wrap gap-2 text-xs">
+                    {mentor.industryName && (
+                      <span className="inline-flex items-center rounded-full bg-interlink-app-bg px-3 py-1 font-medium text-interlink-ink">
+                        {mentor.industryName}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center rounded-full bg-interlink-app-bg px-3 py-1 font-medium text-interlink-ink">
+                      {mentor.yearsOfExperience} yrs experience
                     </span>
-                  )}
-                  <span className="inline-flex items-center gap-1 capitalize">
-                    <Globe className="h-3.5 w-3.5" /> {mentor.sessionPreference.replace("_", " ")}
-                  </span>
-                </div>
+                    {mentor.location && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-interlink-app-bg px-3 py-1 font-medium text-interlink-ink">
+                        <MapPin className="h-3.5 w-3.5 text-interlink-forest" /> {mentor.location}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1 rounded-full bg-interlink-app-bg px-3 py-1 font-medium capitalize text-interlink-ink">
+                      <Globe className="h-3.5 w-3.5 text-interlink-forest" />{" "}
+                      {mentor.sessionPreference.replace("_", " ")}
+                    </span>
+                  </div>
 
-                <div className="mt-6 border-t border-slate-100 pt-5">
-                  <h2 className="text-sm font-semibold text-interlink-ink">Biography</h2>
-                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">
-                    {mentor.biography}
-                  </p>
-                </div>
-
-                {mentor.mentorshipApproach && (
-                  <div className="mt-6 border-t border-slate-100 pt-5">
-                    <h2 className="text-sm font-semibold text-interlink-ink">
-                      Mentorship Approach
-                    </h2>
-                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">
-                      {mentor.mentorshipApproach}
+                  <div className="mt-6 border-t border-interlink-border/60 pt-5">
+                    <h2 className="text-sm font-semibold text-interlink-ink">Biography</h2>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-interlink-ink/85">
+                      {mentor.biography}
                     </p>
                   </div>
-                )}
 
-                {mentor.qualifications && (
-                  <div className="mt-6 border-t border-slate-100 pt-5">
-                    <h2 className="text-sm font-semibold text-interlink-ink">Qualifications</h2>
-                    <p className="mt-2 text-sm text-slate-700">{mentor.qualifications}</p>
-                  </div>
-                )}
+                  {mentor.mentorshipApproach && (
+                    <div className="mt-6 border-t border-interlink-border/60 pt-5">
+                      <h2 className="text-sm font-semibold text-interlink-ink">
+                        Mentorship Approach
+                      </h2>
+                      <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-interlink-ink/85">
+                        {mentor.mentorshipApproach}
+                      </p>
+                    </div>
+                  )}
+
+                  {mentor.qualifications && (
+                    <div className="mt-6 border-t border-interlink-border/60 pt-5">
+                      <h2 className="text-sm font-semibold text-interlink-ink">Qualifications</h2>
+                      <p className="mt-2 text-sm text-interlink-ink/85">{mentor.qualifications}</p>
+                    </div>
+                  )}
+                </div>
               </Card>
 
               <Card>
@@ -142,8 +154,8 @@ export default async function MentorDetailPage({
                   ))}
                 </div>
 
-                <div className="mt-6 border-t border-slate-100 pt-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <div className="mt-6 border-t border-interlink-border/60 pt-4">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-interlink-muted">
                     Spoken Languages
                   </h3>
                   <p className="mt-1.5 text-sm text-interlink-ink">
@@ -156,12 +168,12 @@ export default async function MentorDetailPage({
             {/* Sidebar Actions & Availability */}
             <div className="space-y-6 lg:col-span-4">
               <Card>
-                <div className="mb-4 border-b border-slate-100 pb-4">
+                <div className="mb-4 border-b border-interlink-border/60 pb-4">
                   <p className="text-xs font-medium text-interlink-muted">Mentorship Capacity</p>
                   <p className="mt-1 text-lg font-semibold text-interlink-ink">
                     {mentor.activeMenteeCount} / {mentor.maximumMentees} active mentees
                   </p>
-                  <p className="mt-1 text-xs text-interlink-forest">
+                  <p className="mt-1 text-xs font-medium text-interlink-forest">
                     {mentor.availabilityStatus === "accepting"
                       ? "Accepting new mentorship requests"
                       : "Not accepting new requests right now"}
@@ -177,7 +189,7 @@ export default async function MentorDetailPage({
                 />
 
                 {(mentor.linkedinUrl || mentor.portfolioUrl) && (
-                  <div className="mt-5 space-y-2 border-t border-slate-100 pt-4 text-xs">
+                  <div className="mt-5 space-y-2 border-t border-interlink-border/60 pt-4 text-xs">
                     {mentor.linkedinUrl && (
                       <a
                         href={mentor.linkedinUrl}
@@ -208,11 +220,11 @@ export default async function MentorDetailPage({
                   <span>Typical Availability</span>
                 </div>
                 {mentor.availabilitySlots.length > 0 ? (
-                  <ul className="mt-3 space-y-2 text-xs text-slate-700">
+                  <ul className="mt-3 space-y-2 text-xs text-interlink-ink/85">
                     {mentor.availabilitySlots.map((slot) => (
                       <li
                         key={slot.id}
-                        className="flex items-center justify-between rounded-[2px] bg-interlink-app-bg px-3 py-2 text-interlink-ink"
+                        className="flex items-center justify-between rounded-xl bg-interlink-app-bg px-3.5 py-2.5 text-interlink-ink"
                       >
                         <span className="font-medium">{dayNames[slot.dayOfWeek]}</span>
                         <span>

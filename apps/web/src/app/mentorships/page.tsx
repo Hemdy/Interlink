@@ -57,7 +57,7 @@ export default async function MentorshipsListPage() {
           action={
             <Link
               href="/mentors"
-              className="rounded-[2px] bg-interlink-forest px-5 py-2 text-xs font-medium text-white"
+              className="inline-flex items-center rounded-full bg-interlink-forest px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
             >
               Browse Mentors
             </Link>
@@ -70,23 +70,28 @@ export default async function MentorshipsListPage() {
             const partner = userMap.get(partnerId);
             const roleLabel = m.mentorId === user.id ? "Mentee" : "Mentor";
             return (
-              <Card key={m.id} className="flex flex-col justify-between">
+              <Card key={m.id} className="flex flex-col justify-between hover:-translate-y-0.5 hover:border-interlink-forest/50">
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-3">
-                      <UserAvatar
-                        src={partner?.profileImage}
-                        firstName={partner?.firstName ?? "P"}
-                        lastName={partner?.lastName ?? ""}
-                        size="md"
-                        previewable
-                        previewSubtitle={roleLabel}
-                      />
+                      <div className="relative shrink-0">
+                        <UserAvatar
+                          src={partner?.profileImage}
+                          firstName={partner?.firstName ?? "P"}
+                          lastName={partner?.lastName ?? ""}
+                          size="md"
+                          previewable
+                          previewSubtitle={roleLabel}
+                        />
+                        {m.status === "active" && (
+                          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-interlink-surface bg-emerald-500" />
+                        )}
+                      </div>
                       <div>
-                        <p className="text-xs font-medium uppercase tracking-wider text-interlink-muted">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-interlink-muted">
                           {roleLabel}
                         </p>
-                        <h2 className="mt-1 font-display text-lg font-semibold text-interlink-ink">
+                        <h2 className="mt-0.5 font-display text-lg font-semibold text-interlink-ink">
                           {partner ? `${partner.firstName} ${partner.lastName}` : "Participant"}
                         </h2>
                       </div>
@@ -105,22 +110,30 @@ export default async function MentorshipsListPage() {
                   </div>
 
                   {m.agreedExpectations && (
-                    <p className="mt-3 line-clamp-2 text-sm text-slate-600">
+                    <p className="mt-3 line-clamp-2 text-sm text-interlink-muted">
                       {m.agreedExpectations}
                     </p>
                   )}
                 </div>
 
-                <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-xs">
+                <div className="mt-5 flex items-center justify-between border-t border-interlink-border/60 pt-4 text-xs">
                   <span className="text-interlink-muted">
                     Started {formatDate(m.startDate)}
                   </span>
-                  <Link
-                    href={`/mentorships/${m.id}`}
-                    className="font-semibold text-interlink-forest hover:underline"
-                  >
-                    Open Workspace &rarr;
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/mentorships/${m.id}?tab=messages`}
+                      className="rounded-full border border-interlink-border px-3 py-1 font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+                    >
+                      Chat
+                    </Link>
+                    <Link
+                      href={`/mentorships/${m.id}`}
+                      className="rounded-full bg-interlink-forest px-3.5 py-1 font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
+                    >
+                      Workspace &rarr;
+                    </Link>
+                  </div>
                 </div>
               </Card>
             );

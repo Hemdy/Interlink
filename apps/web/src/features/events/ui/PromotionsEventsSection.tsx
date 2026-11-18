@@ -120,15 +120,15 @@ export function PromotionsEventsSection({
           </div>
         </Reveal>
 
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="mt-6 flex gap-2 overflow-x-auto pb-1 no-scrollbar sm:flex-wrap sm:overflow-visible sm:pb-0">
           {(Object.keys(CATEGORY_LABELS) as Array<"all" | EventCategory>).map((cat) => (
             <button
               key={cat}
               type="button"
               onClick={() => setSelectedCategory(cat)}
-              className={`rounded-[2px] border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`shrink-0 rounded-full border px-4 py-1.5 text-xs font-semibold transition-all ${
                 selectedCategory === cat
-                  ? "border-interlink-forest bg-interlink-forest text-white"
+                  ? "border-interlink-forest bg-interlink-forest text-white shadow-subtle"
                   : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
               }`}
             >
@@ -145,7 +145,7 @@ export function PromotionsEventsSection({
               <Reveal key={item.id} delayMs={idx * 80} className="h-full">
                 <Card
                   elevated
-                  className="flex h-full flex-col overflow-hidden p-0 hover:-translate-y-0.5 hover:border-interlink-forest/50 sm:flex-row"
+                  className="flex h-full flex-col overflow-hidden rounded-3xl p-0 hover:-translate-y-0.5 hover:border-interlink-forest/50 sm:flex-row"
                 >
                   <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-interlink-app-bg sm:aspect-auto sm:w-48 md:w-52">
                     <Image
@@ -164,7 +164,7 @@ export function PromotionsEventsSection({
                           {item.category}
                         </Badge>
                         {item.isFeatured && (
-                          <span className="text-[11px] font-semibold uppercase tracking-wider text-interlink-gold">
+                          <span className="rounded-full bg-interlink-gold/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-interlink-gold">
                             Featured
                           </span>
                         )}
@@ -191,21 +191,21 @@ export function PromotionsEventsSection({
                       </div>
                     </div>
 
-                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-interlink-border/70 pt-3.5">
-                      <span className="inline-flex items-center gap-1 text-[11px] text-interlink-muted">
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-interlink-border/60 pt-3.5">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-interlink-app-bg px-2.5 py-1 text-[11px] font-medium text-interlink-muted">
                         <Users className="h-3.5 w-3.5 text-interlink-forest" aria-hidden="true" />
-                        {item.registrationCount ?? 0} registered
+                        {item.registrationCount ?? 0} going
                       </span>
 
                       {isRegistered ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-interlink-forest">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-interlink-forest/10 px-3 py-1 text-xs font-semibold text-interlink-forest">
                           <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          Registered
+                          Going
                         </span>
                       ) : item.ctaUrl ? (
                         <Link
                           href={item.ctaUrl}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-interlink-forest hover:underline"
+                          className="inline-flex items-center gap-1 rounded-full bg-interlink-forest/10 px-3.5 py-1.5 text-xs font-semibold text-interlink-forest transition-colors hover:bg-interlink-forest hover:text-white"
                         >
                           {item.ctaLabel} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                         </Link>

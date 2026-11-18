@@ -31,23 +31,17 @@ export function Reveal({
       return;
     }
 
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight * 0.92) {
-      setVisible(true);
-      return;
-    }
-
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
+          if (entry.isIntersecting || entry.boundingClientRect.top < window.innerHeight * 0.92) {
             setVisible(true);
             observer.disconnect();
             break;
           }
         }
       },
-      { threshold: 0.08, rootMargin: "0px 0px -24px 0px" },
+      { threshold: 0.05, rootMargin: "0px 0px -16px 0px" },
     );
 
     observer.observe(el);

@@ -24,7 +24,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
         ref={ref}
         id={inputId}
         aria-invalid={error ? "true" : undefined}
-        className={`w-full rounded-[2px] border bg-interlink-surface px-3.5 py-2.5 text-sm text-interlink-ink shadow-subtle placeholder:text-interlink-muted/75 transition-colors focus:border-interlink-forest focus:outline-none focus:ring-1 focus:ring-interlink-forest disabled:opacity-60 ${
+        className={`w-full rounded-xl border bg-interlink-surface px-4 py-2.5 text-sm text-interlink-ink shadow-subtle placeholder:text-interlink-muted/75 transition-colors focus:border-interlink-forest focus:outline-none focus:ring-2 focus:ring-interlink-forest/20 disabled:opacity-60 ${
           error ? "border-red-500" : "border-interlink-border"
         } ${className}`}
         {...props}
@@ -59,7 +59,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
         id={inputId}
         rows={rows}
         aria-invalid={error ? "true" : undefined}
-        className={`w-full rounded-[2px] border bg-interlink-surface px-3.5 py-2.5 text-sm text-interlink-ink shadow-subtle placeholder:text-interlink-muted/75 transition-colors focus:border-interlink-forest focus:outline-none focus:ring-1 focus:ring-interlink-forest disabled:opacity-60 ${
+        className={`w-full rounded-xl border bg-interlink-surface px-4 py-2.5 text-sm text-interlink-ink shadow-subtle placeholder:text-interlink-muted/75 transition-colors focus:border-interlink-forest focus:outline-none focus:ring-2 focus:ring-interlink-forest/20 disabled:opacity-60 ${
           error ? "border-red-500" : "border-interlink-border"
         } ${className}`}
         {...props}

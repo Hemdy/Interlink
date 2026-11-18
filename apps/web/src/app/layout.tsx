@@ -21,7 +21,7 @@ const inter = Inter({
   weight: ["400", "500", "600"],
   display: "swap",
   variable: "--font-sans",
-  preload: false,
+  preload: true,
 });
 
 export const viewport: Viewport = {

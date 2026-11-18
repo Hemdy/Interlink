@@ -12,7 +12,6 @@ import { PublicShell } from "@/components/layout/PublicShell";
 import { Card } from "@/components/ui/Card";
 import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
 import { Reveal } from "@/components/ui/Reveal";
-import { getCurrentUser } from "@/lib/auth/session";
 
 const guidelineSections = [
   {
@@ -124,11 +123,9 @@ const guidelineSections = [
   },
 ];
 
-export default async function GuidelinesPage() {
-  const user = await getCurrentUser();
-
+export default function GuidelinesPage() {
   return (
-    <PublicShell user={user}>
+    <PublicShell>
       {/* Header */}
       <InteractiveMatteHero paddingClassName="py-16 sm:py-20">
         <div className="mx-auto max-w-[1100px] px-6 sm:px-10">

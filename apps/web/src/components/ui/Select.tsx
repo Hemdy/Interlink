@@ -251,8 +251,8 @@ export function Select({
         disabled={disabled}
         onClick={() => (open ? closeMenu() : openMenu())}
         onKeyDown={handleKeyDown}
-        className={`flex w-full items-center justify-between gap-2 rounded-[2px] border bg-interlink-surface text-left text-interlink-ink shadow-subtle transition-all duration-150 focus:border-interlink-forest focus:outline-none focus:ring-1 focus:ring-interlink-forest disabled:cursor-not-allowed disabled:opacity-60 ${
-          error ? "border-red-500" : open ? "border-interlink-forest ring-1 ring-interlink-forest" : "border-interlink-border hover:border-interlink-hairline"
+        className={`flex w-full items-center justify-between gap-2 rounded-xl border bg-interlink-surface text-left text-interlink-ink shadow-subtle transition-all duration-150 focus:border-interlink-forest focus:outline-none focus:ring-2 focus:ring-interlink-forest/20 disabled:cursor-not-allowed disabled:opacity-60 ${
+          error ? "border-red-500" : open ? "border-interlink-forest ring-2 ring-interlink-forest/20" : "border-interlink-border hover:border-interlink-hairline"
         } ${sizeClasses}`}
       >
         <span className={`truncate ${selectedOption ? "text-interlink-ink" : "text-interlink-muted"}`}>
@@ -282,7 +282,7 @@ export function Select({
                 ? { bottom: `${window.innerHeight - coords.top}px` }
                 : { top: `${coords.top}px` }),
             }}
-            className="z-[9999] max-h-64 overflow-y-auto rounded-[2px] border border-interlink-border bg-interlink-surface p-1 shadow-modal"
+            className="z-[9999] max-h-64 overflow-y-auto rounded-xl border border-interlink-border bg-interlink-surface p-1.5 shadow-modal"
           >
             {options.map((opt, idx) => {
               const isSelected = opt.value === currentValue;
@@ -296,7 +296,7 @@ export function Select({
                   disabled={opt.disabled}
                   onMouseEnter={() => setHighlightedIndex(idx)}
                   onClick={() => !opt.disabled && commitValue(opt.value)}
-                  className={`flex w-full items-center justify-between gap-2 rounded-[2px] px-3 py-2 text-left transition-colors ${
+                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
                     size === "sm" ? "text-xs" : "text-sm"
                   } ${
                     opt.disabled

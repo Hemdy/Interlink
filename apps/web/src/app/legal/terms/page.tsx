@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { PublicShell } from "@/components/layout/PublicShell";
-import { getCurrentUser } from "@/lib/auth/session";
 
-export default async function TermsPage() {
-  const user = await getCurrentUser();
+export default function TermsPage() {
   return (
-    <PublicShell user={user}>
+    <PublicShell>
       <main className="mx-auto max-w-3xl px-6 py-14">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-interlink-forest">
           Legal &amp; Governance

@@ -125,15 +125,15 @@ export function MentorSpotlightSection({
           </div>
         </Reveal>
 
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="mt-6 flex gap-2 overflow-x-auto pb-1 no-scrollbar sm:flex-wrap sm:overflow-visible sm:pb-0">
           {topics.map((topic) => (
             <button
               key={topic}
               type="button"
               onClick={() => setSelectedTopic(topic)}
-              className={`rounded-[2px] border px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`shrink-0 rounded-full border px-4 py-1.5 text-xs font-semibold transition-all ${
                 selectedTopic === topic
-                  ? "border-interlink-forest bg-interlink-forest text-white"
+                  ? "border-interlink-forest bg-interlink-forest text-white shadow-subtle"
                   : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
               }`}
             >
@@ -147,7 +147,7 @@ export function MentorSpotlightSection({
             <Reveal key={reel.id} delayMs={idx * 80} className="h-full">
               <Card
                 elevated
-                className="flex h-full flex-col justify-between overflow-hidden p-0 hover:-translate-y-0.5 hover:border-interlink-forest/50"
+                className="flex h-full flex-col justify-between overflow-hidden rounded-3xl p-0 hover:-translate-y-0.5 hover:border-interlink-forest/50"
               >
                 <div>
                   <button
@@ -166,11 +166,11 @@ export function MentorSpotlightSection({
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <span className="absolute left-3 top-3 rounded-[2px] bg-interlink-forest/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                    <span className="absolute left-3 top-3 rounded-full bg-interlink-forest/95 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
                       {reel.topicTag}
                     </span>
-                    <span className="absolute right-3 top-3 rounded-[2px] bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white">
+                    <span className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
                       {reel.durationLabel}
                     </span>
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -191,7 +191,7 @@ export function MentorSpotlightSection({
                     <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-interlink-muted">
                       {reel.summary}
                     </p>
-                    <div className="mt-3 flex items-start gap-2 rounded-[2px] border border-interlink-border bg-interlink-app-bg px-3 py-2 text-[11px] text-interlink-ink">
+                    <div className="mt-3 flex items-start gap-2 rounded-xl border border-interlink-border bg-interlink-app-bg px-3 py-2 text-[11px] text-interlink-ink">
                       <Route className="mt-0.5 h-3.5 w-3.5 shrink-0 text-interlink-forest" aria-hidden="true" />
                       <span>
                         <span className="font-semibold text-interlink-forest">Career path:</span>{" "}
@@ -201,14 +201,14 @@ export function MentorSpotlightSection({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-interlink-border/70 px-5 py-3.5">
+                <div className="flex items-center justify-between border-t border-interlink-border/60 px-5 py-3.5">
                   <button
                     type="button"
                     onClick={() => {
                       setVideoError(false);
                       setActiveReel(reel);
                     }}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-interlink-forest hover:underline"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-interlink-forest/10 px-3 py-1.5 text-xs font-semibold text-interlink-forest transition-colors hover:bg-interlink-forest hover:text-white"
                   >
                     <Video className="h-3.5 w-3.5" aria-hidden="true" />
                     Watch Reel
@@ -216,14 +216,14 @@ export function MentorSpotlightSection({
                   {reel.mentorId ? (
                     <Link
                       href={`/mentors/${reel.mentorId}`}
-                      className="text-xs font-medium text-interlink-muted hover:text-interlink-forest"
+                      className="text-xs font-semibold text-interlink-muted hover:text-interlink-forest"
                     >
                       View Mentor &rarr;
                     </Link>
                   ) : (
                     <Link
                       href="/mentors"
-                      className="text-xs font-medium text-interlink-muted hover:text-interlink-forest"
+                      className="text-xs font-semibold text-interlink-muted hover:text-interlink-forest"
                     >
                       Explore Mentors &rarr;
                     </Link>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { and, count, desc, eq, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { formatDate, formatDateTime } from "@interlink/utils";
 import {
   getDb,
@@ -20,6 +20,9 @@ import {
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge, Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/Feedback";
+import { UserAvatar } from "@/components/ui/UserAvatar";
+import { listPublishedPlatformEvents } from "@/features/content/infrastructure/contentQueries";
+import { SocialMomentumBanner } from "@/features/dashboard/ui/SocialMomentumBanner";
 import { getRecommendedMentorsForUser } from "@/features/discovery/infrastructure/mentorQueries";
 import { getCurrentUser, isAdminRole } from "@/lib/auth/session";
 import { getUnreadNotificationCount } from "@/lib/notifications/unread";
@@ -28,11 +31,12 @@ import {
   Calendar,
   CheckCircle2,
   Compass,
-  Globe,
   Inbox,
+  MessageSquare,
+  Play,
   ShieldCheck,
+  Sparkles,
   Target,
-  UserCircle,
   Users,
 } from "lucide-react";
 
@@ -91,31 +95,33 @@ export default async function DashboardPage() {
         actions={
           <Link
             href="/admin"
-            className="rounded-[2px] bg-interlink-forest px-4 py-2 text-xs font-medium text-white hover:bg-interlink-forest-hover"
+            className="rounded-full bg-interlink-forest px-4 py-2 text-xs font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
           >
             Open Admin Console
           </Link>
         }
       >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {[
-            { label: "Total Registered Users", value: Number(totalUsers?.total ?? 0) },
+            { label: "Total Users", value: Number(totalUsers?.total ?? 0) },
             {
               label: "Mentors / Mentees",
               value: `${Number(mentorsCount?.total ?? 0)} / ${Number(menteesCount?.total ?? 0)}`,
             },
-            { label: "Active Mentorships", value: Number(activeMentorships?.total ?? 0) },
+            { label: "Active Circles", value: Number(activeMentorships?.total ?? 0) },
             { label: "Completed Sessions", value: Number(completedSessions?.total ?? 0) },
           ].map((stat) => (
             <Card key={stat.label}>
               <p className="text-xs font-medium text-interlink-muted">{stat.label}</p>
-              <p className="mt-2 text-2xl font-semibold text-interlink-ink">{stat.value}</p>
+              <p className="mt-2 font-display text-2xl font-semibold text-interlink-ink">
+                {stat.value}
+              </p>
             </Card>
           ))}
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Card>
+        <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+          <Card elevated>
             <div className="flex items-center justify-between">
               <h2 className="font-display text-base font-semibold text-interlink-ink">
                 Pending Mentor Verifications
@@ -123,17 +129,17 @@ export default async function DashboardPage() {
               <Badge tone="gold">{Number(pendingVerifs?.total ?? 0)} pending</Badge>
             </div>
             <p className="mt-2 text-sm text-interlink-muted">
-              Review mentor professional profiles, credentials, and supporting references.
+              Review mentor profiles, credentials, and supporting references.
             </p>
             <Link
               href="/admin?tab=verifications"
-              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-interlink-forest hover:underline"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-interlink-forest/10 px-4 py-2 text-xs font-semibold text-interlink-forest transition-colors hover:bg-interlink-forest hover:text-white"
             >
-              Review Verification Queue <ArrowRight className="h-3.5 w-3.5" />
+              Review Queue <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </Card>
 
-          <Card>
+          <Card elevated>
             <div className="flex items-center justify-between">
               <h2 className="font-display text-base font-semibold text-interlink-ink">
                 Open Safety Reports
@@ -143,11 +149,11 @@ export default async function DashboardPage() {
               </Badge>
             </div>
             <p className="mt-2 text-sm text-interlink-muted">
-              Investigate user complaints, record outcomes, and enforce community guidelines.
+              Investigate user complaints and enforce community guidelines.
             </p>
             <Link
               href="/admin?tab=reports"
-              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-interlink-forest hover:underline"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-interlink-forest/10 px-4 py-2 text-xs font-semibold text-interlink-forest transition-colors hover:bg-interlink-forest hover:text-white"
             >
               Investigate Reports <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -157,7 +163,7 @@ export default async function DashboardPage() {
     );
   }
 
-  // Load shared relationship & role context concurrently
+  // Stage 1: Load user relationship & role context concurrently
   const [
     unreadCount,
     userMentorships,
@@ -166,6 +172,7 @@ export default async function DashboardPage() {
     mentorProfile,
     menteeProfile,
     recommendedMentors,
+    featuredEvents,
   ] = await Promise.all([
     getUnreadNotificationCount(user.id),
     db
@@ -187,7 +194,7 @@ export default async function DashboardPage() {
       .from(notifications)
       .where(eq(notifications.userId, user.id))
       .orderBy(desc(notifications.createdAt))
-      .limit(5),
+      .limit(4),
     isMentor
       ? db
           .select()
@@ -204,18 +211,23 @@ export default async function DashboardPage() {
           .limit(1)
           .then((r) => r[0] ?? null)
       : Promise.resolve(null),
-    !isMentor ? getRecommendedMentorsForUser(user.id, 3) : Promise.resolve([]),
+    !isMentor ? getRecommendedMentorsForUser(user.id, 6) : Promise.resolve([]),
+    !isMentor ? listPublishedPlatformEvents() : Promise.resolve([]),
   ]);
 
   const activeRelationships = userMentorships.filter((m) => m.status === "active");
   const mentorshipIds = activeRelationships.map((m) => m.id);
-  const partnerIds = Array.from(
-    new Set(
-      activeRelationships.map((m) => (m.mentorId === user.id ? m.menteeId : m.mentorId)),
-    ),
+  const allMentorshipIds = userMentorships.map((m) => m.id);
+
+  const relatedUserIds = Array.from(
+    new Set([
+      ...activeRelationships.map((m) => (m.mentorId === user.id ? m.menteeId : m.mentorId)),
+      ...incomingOrSentReqs.slice(0, 6).map((r) => (isMentor ? r.menteeId : r.mentorId)),
+    ]),
   );
 
-  const [upcomingSessions, activeGoals, partners] = await Promise.all([
+  // Stage 2: Load sessions, goals, completed sessions count, and partner avatars concurrently
+  const [upcomingSessions, activeGoals, [completedSessionRow], partners] = await Promise.all([
     mentorshipIds.length > 0
       ? db
           .select()
@@ -227,7 +239,7 @@ export default async function DashboardPage() {
             ),
           )
           .orderBy(sessions.startTime)
-          .limit(5)
+          .limit(4)
       : Promise.resolve([]),
     mentorshipIds.length > 0
       ? db
@@ -235,152 +247,486 @@ export default async function DashboardPage() {
           .from(mentorshipGoals)
           .where(inArray(mentorshipGoals.mentorshipId, mentorshipIds))
           .orderBy(desc(mentorshipGoals.updatedAt))
-          .limit(5)
+          .limit(4)
       : Promise.resolve([]),
-    partnerIds.length > 0
+    allMentorshipIds.length > 0
       ? db
-          .select({ id: users.id, firstName: users.firstName, lastName: users.lastName })
+          .select({ total: count() })
+          .from(sessions)
+          .where(
+            and(
+              inArray(sessions.mentorshipId, allMentorshipIds),
+              eq(sessions.status, "completed"),
+            ),
+          )
+      : Promise.resolve([{ total: 0 }]),
+    relatedUserIds.length > 0
+      ? db
+          .select({
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            profileImage: sql<string | null>`CASE WHEN ${users.profileImage} LIKE 'data:%' THEN NULL ELSE ${users.profileImage} END`,
+          })
           .from(users)
-          .where(inArray(users.id, partnerIds))
+          .where(inArray(users.id, relatedUserIds))
       : Promise.resolve([]),
   ]);
 
   const partnerMap = new Map(partners.map((p) => [p.id, p]));
+  const completedSessionsCount = Number(completedSessionRow?.total ?? 0);
 
   if (isMentor) {
     const pendingIncoming = incomingOrSentReqs.filter((r) =>
       ["pending", "info_requested"].includes(r.status),
     );
+    const mentorCompletion = mentorProfile?.profileCompletion ?? (mentorProfile?.biography ? 85 : 35);
 
     return (
       <AppShell
         user={user}
         unreadCount={unreadCount}
         title={`Welcome back, ${user.firstName}`}
-        subtitle="Manage your mentorship commitments, availability, and active mentees"
+        subtitle="Connect with mentees, review requests, and track your guidance impact"
         actions={
           <div className="flex items-center gap-2">
             <Link
               href="/requests"
-              className="rounded-[2px] bg-interlink-forest px-4 py-2 text-xs font-medium text-white hover:bg-interlink-forest-hover"
+              className="rounded-full bg-interlink-forest px-4 py-2 text-xs font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
             >
-              Review Requests ({pendingIncoming.length})
-            </Link>
-            <Link
-              href="/profile#availability"
-              className="hidden rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest sm:inline-block"
-            >
-              Manage Availability
+              Requests ({pendingIncoming.length})
             </Link>
           </div>
         }
       >
-        {/* Mentor Profile Setup & Public Profile Configuration Card */}
-        <div className="mb-6 rounded-[2px] border border-interlink-border bg-interlink-surface p-5 shadow-subtle sm:p-6">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div className="flex items-start gap-3.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[2px] border border-interlink-forest/20 bg-interlink-app-bg text-interlink-forest">
-                <Globe className="h-5 w-5" />
+        <div className="space-y-6">
+          <SocialMomentumBanner
+            firstName={user.firstName}
+            role="mentor"
+            profileCompletion={mentorCompletion}
+            activeConnections={activeRelationships.length}
+            completedSessions={completedSessionsCount}
+            goalsCount={activeGoals.length}
+            pendingRequestsCount={pendingIncoming.length}
+            verificationStatus={mentorProfile?.verificationStatus}
+            primaryAction={
+              pendingIncoming.length > 0
+                ? { label: `Review ${pendingIncoming.length} Request${pendingIncoming.length === 1 ? "" : "s"}`, href: "/requests" }
+                : { label: "Preview Public Profile", href: `/mentors/${user.id}` }
+            }
+          />
+
+          {/* Compact Social Stats Pills */}
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+            <Card padded={false} className="p-3.5 sm:p-5">
+              <p className="text-[11px] font-medium text-interlink-muted sm:text-xs">Badge Tier</p>
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-interlink-forest" aria-hidden="true" />
+                <span className="truncate font-display text-sm font-semibold capitalize text-interlink-ink sm:text-base">
+                  {mentorProfile?.verificationStatus ?? "registered"}
+                </span>
               </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-base font-semibold text-interlink-ink">
-                    Public Profile & Mentorship Setup
-                  </h2>
-                  <Badge tone={mentorProfile?.biography ? "forest" : "neutral"}>
-                    {mentorProfile?.biography ? "Profile Configured" : "Setup Incomplete"}
-                  </Badge>
+            </Card>
+
+            <Card padded={false} className="p-3.5 sm:p-5">
+              <p className="text-[11px] font-medium text-interlink-muted sm:text-xs">Active Mentees</p>
+              <p className="mt-1.5 font-display text-base font-semibold text-interlink-ink sm:text-xl">
+                {activeRelationships.length}{" "}
+                <span className="text-xs font-normal text-interlink-muted">
+                  / {mentorProfile?.maximumMentees ?? 3}
+                </span>
+              </p>
+            </Card>
+
+            <Card padded={false} className="p-3.5 sm:p-5">
+              <p className="text-[11px] font-medium text-interlink-muted sm:text-xs">Sessions</p>
+              <p className="mt-1.5 font-display text-base font-semibold text-interlink-ink sm:text-xl">
+                {upcomingSessions.length}{" "}
+                <span className="text-xs font-normal text-interlink-muted">upcoming</span>
+              </p>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Left Feed: Requests & Active Circle */}
+            <div className="space-y-6 lg:col-span-7">
+              <Card>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-interlink-forest" aria-hidden="true" />
+                    <h2 className="font-display text-base font-semibold text-interlink-ink">
+                      Mentees Waiting to Connect
+                    </h2>
+                  </div>
+                  <Link href="/requests" className="text-xs font-semibold text-interlink-forest hover:underline">
+                    View all
+                  </Link>
                 </div>
-                <p className="mt-1 text-xs text-interlink-muted">
-                  Update your bio, industry, skills, and session availability anytime so mentees can find you.
-                </p>
-              </div>
+
+                {pendingIncoming.length === 0 ? (
+                  <p className="mt-4 text-sm text-interlink-muted">
+                    You&apos;re all caught up — no pending requests right now.
+                  </p>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {pendingIncoming.slice(0, 4).map((req) => {
+                      const applicant = partnerMap.get(req.menteeId);
+                      return (
+                        <Link
+                          key={req.id}
+                          href="/requests"
+                          className="group flex items-center justify-between gap-3 rounded-2xl border border-interlink-border/80 bg-interlink-app-bg/50 p-3.5 transition-all hover:border-interlink-forest hover:bg-interlink-surface"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <UserAvatar
+                              src={applicant?.profileImage}
+                              firstName={applicant?.firstName ?? "M"}
+                              lastName={applicant?.lastName ?? ""}
+                              size="md"
+                            />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-interlink-ink">
+                                {applicant ? `${applicant.firstName} ${applicant.lastName}` : "Mentee"}
+                              </p>
+                              <p className="mt-0.5 line-clamp-1 text-xs text-interlink-muted">
+                                {req.careerObjective}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-interlink-forest px-3 py-1.5 text-[11px] font-semibold text-white transition-transform group-hover:scale-[1.03]">
+                            Review
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+
+              <Card>
+                <div className="flex items-center justify-between">
+                  <h2 className="font-display text-base font-semibold text-interlink-ink">
+                    Your Mentee Circle
+                  </h2>
+                  <Link href="/mentorships" className="text-xs font-semibold text-interlink-forest hover:underline">
+                    See all
+                  </Link>
+                </div>
+
+                {activeRelationships.length === 0 ? (
+                  <div className="mt-4">
+                    <EmptyState
+                      icon={<Users className="h-5 w-5" />}
+                      title="No active mentees yet"
+                      description="Keep your profile updated and availability active so aligned mentees can connect."
+                      action={
+                        <Link
+                          href="/profile"
+                          className="rounded-full bg-interlink-forest px-5 py-2 text-xs font-semibold text-white"
+                        >
+                          Update Profile
+                        </Link>
+                      }
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {activeRelationships.map((m) => {
+                      const mentee = partnerMap.get(m.menteeId);
+                      return (
+                        <div
+                          key={m.id}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-interlink-border/80 bg-interlink-app-bg/45 p-3.5 transition-colors hover:border-interlink-forest/60"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="relative">
+                              <UserAvatar
+                                src={mentee?.profileImage}
+                                firstName={mentee?.firstName ?? "M"}
+                                lastName={mentee?.lastName ?? ""}
+                                size="md"
+                              />
+                              <span
+                                className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-interlink-surface"
+                                aria-hidden="true"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-interlink-ink">
+                                {mentee ? `${mentee.firstName} ${mentee.lastName}` : "Mentee"}
+                              </p>
+                              <p className="text-xs text-interlink-muted">
+                                Connected {formatDate(m.startDate)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/mentorships/${m.id}?tab=messages`}
+                              className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1.5 text-xs font-medium text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+                              Chat
+                            </Link>
+                            <Link
+                              href={`/mentorships/${m.id}`}
+                              className="rounded-full bg-interlink-forest/10 px-3 py-1.5 text-xs font-semibold text-interlink-forest transition-colors hover:bg-interlink-forest hover:text-white"
+                            >
+                              Open
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
-              <Link
-                href="/profile"
-                className="rounded-[2px] bg-interlink-forest px-4 py-2 text-xs font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
-              >
-                Complete / Edit Profile
-              </Link>
-              <Link
-                href="/profile#visibility"
-                className="rounded-[2px] border border-interlink-border bg-interlink-app-bg px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
-              >
-                Configure Public Profile
-              </Link>
-              <Link
-                href={`/mentors/${user.id}`}
-                className="rounded-[2px] border border-interlink-border bg-interlink-app-bg px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
-              >
-                Preview Public Profile
-              </Link>
+            {/* Right Pulse: Sessions, Spotlight & Activity */}
+            <div className="space-y-6 lg:col-span-5">
+              <Card>
+                <div className="flex items-center justify-between">
+                  <h2 className="font-display text-base font-semibold text-interlink-ink">
+                    Upcoming Sessions
+                  </h2>
+                  <Link href="/sessions" className="text-xs font-semibold text-interlink-forest hover:underline">
+                    Schedule
+                  </Link>
+                </div>
+                {upcomingSessions.length === 0 ? (
+                  <p className="mt-3 text-sm text-interlink-muted">
+                    No sessions scheduled yet.
+                  </p>
+                ) : (
+                  <ul className="mt-4 space-y-2.5 text-xs">
+                    {upcomingSessions.map((s) => (
+                      <li
+                        key={s.id}
+                        className="rounded-xl border border-interlink-border/80 bg-interlink-app-bg/50 p-3"
+                      >
+                        <p className="font-semibold text-interlink-ink">{s.title}</p>
+                        <p className="mt-1 text-interlink-muted">
+                          {formatDateTime(s.startTime)} &middot;{" "}
+                          <span className="capitalize text-interlink-forest">{s.status}</span>
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+
+              <Card className="bg-gradient-to-br from-interlink-forest/5 to-transparent">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-interlink-forest">
+                      Creator Community
+                    </p>
+                    <h2 className="mt-1 font-display text-base font-semibold text-interlink-ink">
+                      Inspire with a 60s Reel
+                    </h2>
+                    <p className="mt-1 text-xs text-interlink-muted">
+                      Share a quick career pivot story on the Learn feed.
+                    </p>
+                  </div>
+                  <Link
+                    href="/learn"
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-interlink-forest text-white shadow-subtle transition-transform hover:scale-105"
+                    aria-label="Go to Learn spotlight"
+                  >
+                    <Play className="ml-0.5 h-4 w-4 fill-current" />
+                  </Link>
+                </div>
+              </Card>
+
+              <Card>
+                <div className="flex items-center justify-between">
+                  <h2 className="font-display text-base font-semibold text-interlink-ink">
+                    Activity Pulse
+                  </h2>
+                  <Link href="/notifications" className="text-xs font-semibold text-interlink-forest hover:underline">
+                    All
+                  </Link>
+                </div>
+                {recentNotifs.length === 0 ? (
+                  <p className="mt-3 text-sm text-interlink-muted">No recent activity yet.</p>
+                ) : (
+                  <ul className="mt-3 space-y-2.5 text-xs">
+                    {recentNotifs.map((n) => (
+                      <li key={n.id} className="flex items-start gap-2 border-b border-interlink-border/60 pb-2.5 last:border-0 last:pb-0">
+                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-interlink-forest" />
+                        <div className="min-w-0">
+                          <p className="font-medium text-interlink-ink">{n.title}</p>
+                          <p className="line-clamp-2 text-interlink-muted">{n.message}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
             </div>
           </div>
         </div>
+      </AppShell>
+    );
+  }
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <p className="text-xs text-interlink-muted">Verification Status</p>
-            <div className="mt-2 flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-interlink-forest" />
-              <span className="text-base font-semibold capitalize text-interlink-ink">
-                {mentorProfile?.verificationStatus ?? "registered"}
-              </span>
-            </div>
-          </Card>
+  // MENTEE SOCIAL DISCOVERY DASHBOARD
+  const pendingSent = incomingOrSentReqs.filter((r) =>
+    ["pending", "info_requested"].includes(r.status),
+  );
+  const menteeCompletion = menteeProfile?.profileCompletion ?? 0;
 
-          <Card>
-            <p className="text-xs text-interlink-muted">Mentee Capacity</p>
-            <p className="mt-2 text-2xl font-semibold text-interlink-ink">
-              {activeRelationships.length} / {mentorProfile?.maximumMentees ?? 3}
-            </p>
-            <p className="mt-0.5 text-xs text-interlink-forest">
-              {mentorProfile?.availabilityStatus === "accepting"
-                ? "Accepting requests"
-                : "Requests paused"}
-            </p>
-          </Card>
+  return (
+    <AppShell
+      user={user}
+      unreadCount={unreadCount}
+      title={`Welcome, ${user.firstName}`}
+      subtitle="Discover mentors, join live events, and grow your streak"
+      actions={
+        <div className="flex items-center gap-2">
+          <Link
+            href="/mentors"
+            className="whitespace-nowrap rounded-full bg-interlink-forest px-4 py-2 text-xs font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
+          >
+            Discover Mentors
+          </Link>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        <SocialMomentumBanner
+          firstName={user.firstName}
+          role="mentee"
+          profileCompletion={menteeCompletion}
+          activeConnections={activeRelationships.length}
+          completedSessions={completedSessionsCount}
+          goalsCount={activeGoals.length}
+          pendingRequestsCount={pendingSent.length}
+          primaryAction={{ label: "Discover Mentors", href: "/mentors" }}
+        />
 
-          <Card>
-            <p className="text-xs text-interlink-muted">Incoming Requests</p>
-            <p className="mt-2 text-2xl font-semibold text-interlink-ink">
-              {pendingIncoming.length}
-            </p>
-          </Card>
-
-          <Card>
-            <p className="text-xs text-interlink-muted">Upcoming Sessions</p>
-            <p className="mt-2 text-2xl font-semibold text-interlink-ink">
-              {upcomingSessions.length}
-            </p>
-          </Card>
+        {/* IG / TikTok-Style Quick Action Pills */}
+        <div className="no-scrollbar flex items-center gap-2.5 overflow-x-auto pb-1">
+          {[
+            { label: "Explore Mentors", href: "/mentors", icon: Compass },
+            { label: "Watch Reels & Events", href: "/learn", icon: Play },
+            { label: `My Goals (${activeGoals.length})`, href: "/goals", icon: Target },
+            { label: `Sessions (${upcomingSessions.length})`, href: "/sessions", icon: Calendar },
+            { label: `Requests (${pendingSent.length})`, href: "/requests", icon: Inbox },
+          ].map((pill) => {
+            const Icon = pill.icon;
+            return (
+              <Link
+                key={pill.label}
+                href={pill.href}
+                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-interlink-border bg-interlink-surface px-4 py-2 text-xs font-semibold text-interlink-ink shadow-subtle transition-all hover:border-interlink-forest hover:text-interlink-forest active:scale-[0.97]"
+              >
+                <Icon className="h-3.5 w-3.5 text-interlink-forest" aria-hidden="true" />
+                <span>{pill.label}</span>
+              </Link>
+            );
+          })}
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Horizontal Creator Match Rail (Instagram/TikTok Discover Pattern) */}
+        {recommendedMentors.length > 0 && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-interlink-forest" aria-hidden="true" />
+                <h2 className="font-display text-base font-semibold text-interlink-ink sm:text-lg">
+                  Top Mentors Picked For You
+                </h2>
+              </div>
+              <Link href="/mentors" className="text-xs font-semibold text-interlink-forest hover:underline">
+                Explore all &rarr;
+              </Link>
+            </div>
+
+            <div className="no-scrollbar flex snap-x gap-3.5 overflow-x-auto pb-2">
+              {recommendedMentors.map((mentor) => (
+                <Link
+                  key={mentor.userId}
+                  href={`/mentors/${mentor.userId}`}
+                  className="group flex w-[250px] shrink-0 snap-start flex-col justify-between rounded-2xl border border-interlink-border/80 bg-interlink-surface p-4 shadow-subtle transition-all duration-200 hover:-translate-y-0.5 hover:border-interlink-forest/60 hover:shadow-elevated sm:w-[270px]"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="relative">
+                        <UserAvatar
+                          src={mentor.profileImage}
+                          firstName={mentor.firstName}
+                          lastName={mentor.lastName}
+                          size="md"
+                          className="ring-2 ring-interlink-forest/20"
+                        />
+                        {mentor.availabilityStatus === "accepting" && (
+                          <span
+                            className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-interlink-surface"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </div>
+                      {typeof mentor.matchScore === "number" && mentor.matchScore > 0 && (
+                        <Badge tone="forest">{mentor.matchScore}% Match</Badge>
+                      )}
+                    </div>
+
+                    <h3 className="mt-3 truncate font-display text-sm font-semibold text-interlink-ink group-hover:text-interlink-forest">
+                      {mentor.firstName} {mentor.lastName}
+                    </h3>
+                    <p className="mt-0.5 truncate text-xs text-interlink-muted">
+                      {mentor.currentPosition}
+                      {mentor.organisation ? ` · ${mentor.organisation}` : ""}
+                    </p>
+
+                    {mentor.expertiseTags.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1">
+                        {mentor.expertiseTags.slice(0, 2).map((tag) => (
+                          <Badge key={tag} tone="neutral">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between border-t border-interlink-border/60 pt-3 text-xs font-semibold text-interlink-forest">
+                    <span>Connect</span>
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Main 2-Column Focus Stream */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="space-y-6 lg:col-span-7">
             <Card>
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-base font-semibold text-interlink-ink">
-                  Active Mentees
+                  Your Mentor Circle
                 </h2>
-                <Link href="/mentorships" className="text-xs font-medium text-interlink-forest">
-                  View all &rarr;
+                <Link href="/mentorships" className="text-xs font-semibold text-interlink-forest hover:underline">
+                  All connections
                 </Link>
               </div>
               {activeRelationships.length === 0 ? (
                 <div className="mt-4">
                   <EmptyState
-                    icon={<Users className="h-5 w-5" />}
-                    title="No active mentees yet"
-                    description="Complete your mentor profile and review incoming mentorship requests to start mentoring."
+                    icon={<Compass className="h-5 w-5" />}
+                    title="Ready for your first mentor?"
+                    description="Tap any mentor above or explore the feed to send a quick intro."
                     action={
                       <Link
-                        href="/profile"
-                        className="rounded-[2px] bg-interlink-forest px-4 py-2 text-xs font-medium text-white"
+                        href="/mentors"
+                        className="rounded-full bg-interlink-forest px-5 py-2 text-xs font-semibold text-white"
                       >
-                        Update Mentor Profile
+                        Browse Mentors
                       </Link>
                     }
                   />
@@ -388,85 +734,152 @@ export default async function DashboardPage() {
               ) : (
                 <div className="mt-4 space-y-3">
                   {activeRelationships.map((m) => {
-                    const mentee = partnerMap.get(m.menteeId);
+                    const mentor = partnerMap.get(m.mentorId);
                     return (
-                      <Link
+                      <div
                         key={m.id}
-                        href={`/mentorships/${m.id}`}
-                        className="flex items-center justify-between rounded-[2px] border border-interlink-border bg-interlink-surface/60 p-3.5 transition-colors hover:border-interlink-forest hover:bg-interlink-surface"
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-interlink-border/80 bg-interlink-app-bg/50 p-3.5 transition-colors hover:border-interlink-forest/60"
                       >
-                        <div>
-                          <p className="text-sm font-semibold text-interlink-ink">
-                            {mentee ? `${mentee.firstName} ${mentee.lastName}` : "Mentee"}
-                          </p>
-                          <p className="text-xs text-interlink-muted">
-                            Started {formatDate(m.startDate)}
-                          </p>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="relative">
+                            <UserAvatar
+                              src={mentor?.profileImage}
+                              firstName={mentor?.firstName ?? "M"}
+                              lastName={mentor?.lastName ?? ""}
+                              size="md"
+                            />
+                            <span
+                              className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-interlink-surface"
+                              aria-hidden="true"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-interlink-ink">
+                              {mentor ? `${mentor.firstName} ${mentor.lastName}` : "Mentor"}
+                            </p>
+                            <p className="text-xs text-interlink-muted">
+                              Connected {formatDate(m.startDate)}
+                            </p>
+                          </div>
                         </div>
-                        <Badge tone="forest">Open Workspace &rarr;</Badge>
-                      </Link>
+
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/mentorships/${m.id}?tab=messages`}
+                            className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1.5 text-xs font-medium text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+                            Message
+                          </Link>
+                          <Link
+                            href={`/mentorships/${m.id}`}
+                            className="rounded-full bg-interlink-forest/10 px-3 py-1.5 text-xs font-semibold text-interlink-forest transition-colors hover:bg-interlink-forest hover:text-white"
+                          >
+                            Workspace
+                          </Link>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
               )}
             </Card>
 
-            <Card>
-              <div className="flex items-center justify-between">
-                <h2 className="font-display text-base font-semibold text-interlink-ink">
-                  Incoming Mentorship Requests
-                </h2>
-                <Link href="/requests" className="text-xs font-medium text-interlink-forest">
-                  Manage &rarr;
-                </Link>
-              </div>
-              {pendingIncoming.length === 0 ? (
-                <p className="mt-4 text-sm text-interlink-muted">
-                  You have no pending mentorship requests right now.
-                </p>
-              ) : (
+            {/* Live Community Events Drops */}
+            {featuredEvents.length > 0 && (
+              <Card>
+                <div className="flex items-center justify-between">
+                  <h2 className="font-display text-base font-semibold text-interlink-ink">
+                    Live Community Events
+                  </h2>
+                  <Link href="/learn" className="text-xs font-semibold text-interlink-forest hover:underline">
+                    See all events
+                  </Link>
+                </div>
                 <div className="mt-4 space-y-2.5">
-                  {pendingIncoming.slice(0, 3).map((req) => (
+                  {featuredEvents.slice(0, 3).map((ev) => (
                     <Link
-                      key={req.id}
-                      href="/requests"
-                      className="block rounded-[2px] border border-slate-200 p-3 hover:border-interlink-forest"
+                      key={ev.id}
+                      href="/learn"
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-interlink-border/80 bg-interlink-app-bg/45 p-3.5 transition-all hover:border-interlink-forest/60 hover:bg-interlink-surface"
                     >
-                      <p className="text-sm font-medium text-interlink-ink">
-                        {req.careerObjective}
-                      </p>
-                      <p className="mt-1 text-xs text-interlink-muted">
-                        Received {formatDate(req.createdAt)} &middot; Status:{" "}
-                        {req.status}
-                      </p>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Badge tone="forest" className="capitalize">
+                            {ev.category}
+                          </Badge>
+                          <span className="truncate text-[11px] text-interlink-muted">
+                            {ev.locationOrFormat}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 truncate text-sm font-semibold text-interlink-ink">
+                          {ev.title}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-interlink-forest/10 px-3 py-1 text-[11px] font-semibold text-interlink-forest">
+                        Join
+                      </span>
                     </Link>
                   ))}
                 </div>
-              )}
-            </Card>
+              </Card>
+            )}
           </div>
 
+          {/* Right Pulse Column */}
           <div className="space-y-6 lg:col-span-5">
             <Card>
-              <h2 className="font-display text-base font-semibold text-interlink-ink">
-                Upcoming Sessions
-              </h2>
-              {upcomingSessions.length === 0 ? (
-                <p className="mt-3 text-sm text-interlink-muted">
-                  No upcoming mentorship sessions scheduled.
-                </p>
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-base font-semibold text-interlink-ink">
+                  Goal Tracker
+                </h2>
+                <Link href="/goals" className="text-xs font-semibold text-interlink-forest hover:underline">
+                  View all
+                </Link>
+              </div>
+              {activeGoals.length === 0 ? (
+                <div className="mt-3 flex items-start gap-2.5 text-sm text-interlink-muted">
+                  <Target className="mt-0.5 h-4 w-4 shrink-0 text-interlink-forest" />
+                  <span>Goals unlock inside your workspace once you connect with a mentor.</span>
+                </div>
               ) : (
-                <ul className="mt-4 space-y-3">
+                <ul className="mt-4 space-y-2.5 text-xs">
+                  {activeGoals.map((goal) => (
+                    <li
+                      key={goal.id}
+                      className="flex items-center justify-between gap-2 rounded-xl border border-interlink-border/80 bg-interlink-app-bg/50 p-3"
+                    >
+                      <span className="truncate font-semibold text-interlink-ink">{goal.title}</span>
+                      <Badge tone="forest">{goal.status.replace(/_/g, " ")}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+
+            <Card>
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-base font-semibold text-interlink-ink">
+                  Next Sessions
+                </h2>
+                <Link href="/sessions" className="text-xs font-semibold text-interlink-forest hover:underline">
+                  Calendar
+                </Link>
+              </div>
+              {upcomingSessions.length === 0 ? (
+                <div className="mt-3 flex items-start gap-2.5 text-sm text-interlink-muted">
+                  <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-interlink-forest" />
+                  <span>No upcoming sessions scheduled yet.</span>
+                </div>
+              ) : (
+                <ul className="mt-4 space-y-2.5 text-xs">
                   {upcomingSessions.map((s) => (
                     <li
                       key={s.id}
-                      className="rounded-[2px] border border-slate-200 p-3 text-xs"
+                      className="rounded-xl border border-interlink-border/80 bg-interlink-app-bg/50 p-3"
                     >
                       <p className="font-semibold text-interlink-ink">{s.title}</p>
-                      <p className="mt-1 text-interlink-muted">
-                        {formatDateTime(s.startTime)} &middot;{" "}
-                        <span className="capitalize">{s.status}</span>
-                      </p>
+                      <p className="mt-1 text-interlink-muted">{formatDateTime(s.startTime)}</p>
                     </li>
                   ))}
                 </ul>
@@ -474,317 +887,37 @@ export default async function DashboardPage() {
             </Card>
 
             <Card>
-              <h2 className="font-display text-base font-semibold text-interlink-ink">
-                Recent Notifications
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-base font-semibold text-interlink-ink">
+                  Activity Pulse
+                </h2>
+                <Link href="/notifications" className="text-xs font-semibold text-interlink-forest hover:underline">
+                  All
+                </Link>
+              </div>
               {recentNotifs.length === 0 ? (
-                <p className="mt-3 text-sm text-interlink-muted">No recent notifications.</p>
+                <div className="mt-3 flex items-center gap-2 text-sm text-interlink-muted">
+                  <Inbox className="h-4 w-4" />
+                  <span>No recent notifications.</span>
+                </div>
               ) : (
                 <ul className="mt-3 space-y-2.5 text-xs">
                   {recentNotifs.map((n) => (
-                    <li key={n.id} className="border-b border-slate-100 pb-2 last:border-0">
-                      <p className="font-medium text-interlink-ink">{n.title}</p>
-                      <p className="text-interlink-muted">{n.message}</p>
+                    <li
+                      key={n.id}
+                      className="flex items-start gap-2 border-b border-interlink-border/60 pb-2.5 last:border-0 last:pb-0"
+                    >
+                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-interlink-forest" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-interlink-ink">{n.title}</p>
+                        <p className="line-clamp-2 text-interlink-muted">{n.message}</p>
+                      </div>
                     </li>
                   ))}
                 </ul>
               )}
             </Card>
           </div>
-        </div>
-      </AppShell>
-    );
-  }
-
-  // MENTEE DASHBOARD
-  const pendingSent = incomingOrSentReqs.filter((r) =>
-    ["pending", "info_requested"].includes(r.status),
-  );
-
-  return (
-    <AppShell
-      user={user}
-      unreadCount={unreadCount}
-      title={`Welcome, ${user.firstName}`}
-      subtitle="Track your mentorship relationships, goals, and next career steps"
-      actions={
-        <div className="flex items-center gap-2">
-          <Link
-            href="/mentors"
-            className="whitespace-nowrap rounded-[2px] bg-interlink-forest px-2.5 py-1.5 text-[11px] font-medium text-white hover:bg-interlink-forest-hover sm:px-4 sm:py-2 sm:text-xs"
-          >
-            Find a Mentor
-          </Link>
-          <Link
-            href="/goals"
-            className="hidden whitespace-nowrap rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest sm:inline-block"
-          >
-            Update My Goals
-          </Link>
-        </div>
-      }
-    >
-      {/* Mentee Profile Setup & Public Profile Configuration Card */}
-      <div className="mb-6 rounded-[2px] border border-interlink-border bg-interlink-surface p-5 shadow-subtle sm:p-6">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="flex items-start gap-3.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[2px] border border-interlink-forest/20 bg-interlink-app-bg text-interlink-forest">
-              <UserCircle className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-base font-semibold text-interlink-ink">
-                  Profile Setup & Public Profile
-                </h2>
-                <Badge tone={(menteeProfile?.profileCompletion ?? 0) >= 80 ? "forest" : "neutral"}>
-                  {menteeProfile?.profileCompletion ?? 0}% Complete
-                </Badge>
-              </div>
-              <p className="mt-1 text-xs text-interlink-muted">
-                Keep your background, learning goals, and career interests up to date to get matching mentor recommendations.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Link
-              href="/profile"
-              className="rounded-[2px] bg-interlink-forest px-4 py-2 text-xs font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
-            >
-              Complete / Edit Profile
-            </Link>
-            <Link
-              href="/profile#visibility"
-              className="rounded-[2px] border border-interlink-border bg-interlink-app-bg px-4 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
-            >
-              Configure Public Profile
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <Card>
-          <p className="text-xs text-interlink-muted">Profile Completion</p>
-          <p className="mt-2 text-2xl font-semibold text-interlink-forest">
-            {menteeProfile?.profileCompletion ?? 0}%
-          </p>
-          <Link href="/profile" className="mt-1 inline-block text-xs text-interlink-link hover:underline">
-            Edit profile &rarr;
-          </Link>
-        </Card>
-
-        <Card>
-          <p className="text-xs text-interlink-muted">Active Mentors</p>
-          <p className="mt-2 text-2xl font-semibold text-interlink-ink">
-            {activeRelationships.length}
-          </p>
-          <Link href="/mentorships" className="mt-1 inline-block text-xs text-interlink-link hover:underline">
-            View mentors &rarr;
-          </Link>
-        </Card>
-
-        <Card>
-          <p className="text-xs text-interlink-muted">Pending Requests</p>
-          <p className="mt-2 text-2xl font-semibold text-interlink-ink">{pendingSent.length}</p>
-          <Link href="/requests" className="mt-1 inline-block text-xs text-interlink-link hover:underline">
-            Track requests &rarr;
-          </Link>
-        </Card>
-
-        <Card>
-          <p className="text-xs text-interlink-muted">Upcoming Sessions</p>
-          <p className="mt-2 text-2xl font-semibold text-interlink-ink">
-            {upcomingSessions.length}
-          </p>
-          <Link href="/sessions" className="mt-1 inline-block text-xs text-interlink-link hover:underline">
-            View schedule &rarr;
-          </Link>
-        </Card>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="space-y-6 lg:col-span-7">
-          <Card>
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-base font-semibold text-interlink-ink">
-                My Active Mentorships
-              </h2>
-              <Link href="/mentorships" className="text-xs font-medium text-interlink-forest">
-                All workspaces &rarr;
-              </Link>
-            </div>
-            {activeRelationships.length === 0 ? (
-              <div className="mt-4">
-                <EmptyState
-                  icon={<Compass className="h-5 w-5" />}
-                  title="Start your first mentorship"
-                  description="Browse verified mentors aligned with your industry and submit a structured mentorship request."
-                  action={
-                    <Link
-                      href="/mentors"
-                      className="rounded-[2px] bg-interlink-forest px-5 py-2 text-xs font-medium text-white"
-                    >
-                      Find a Mentor
-                    </Link>
-                  }
-                />
-              </div>
-            ) : (
-              <div className="mt-4 space-y-3">
-                {activeRelationships.map((m) => {
-                  const mentor = partnerMap.get(m.mentorId);
-                  return (
-                    <Link
-                      key={m.id}
-                      href={`/mentorships/${m.id}`}
-                      className="flex items-center justify-between rounded-[2px] border border-interlink-border bg-interlink-surface/60 p-3.5 transition-colors hover:border-interlink-forest hover:bg-interlink-surface"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-interlink-ink">
-                          {mentor ? `${mentor.firstName} ${mentor.lastName}` : "Mentor"}
-                        </p>
-                        <p className="text-xs text-interlink-muted">
-                          Active since {formatDate(m.startDate)}
-                        </p>
-                      </div>
-                      <Badge tone="forest">Open Workspace &rarr;</Badge>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-base font-semibold text-interlink-ink">
-                Recommended Mentors
-              </h2>
-              <Link href="/mentors" className="text-xs font-medium text-interlink-forest">
-                Browse directory &rarr;
-              </Link>
-            </div>
-            {recommendedMentors.length === 0 ? (
-              <p className="mt-3 text-sm text-interlink-muted">
-                No mentor recommendations available yet. Update your career interests or check the
-                directory.
-              </p>
-            ) : (
-              <div className="mt-4 space-y-3">
-                {recommendedMentors.map((mentor) => (
-                  <Link
-                    key={mentor.userId}
-                    href={`/mentors/${mentor.userId}`}
-                    className="flex items-center justify-between rounded-[2px] border border-interlink-border bg-interlink-surface/60 p-3.5 transition-colors hover:border-interlink-forest hover:bg-interlink-surface"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-interlink-ink">
-                        {mentor.firstName} {mentor.lastName}
-                      </p>
-                      <p className="text-xs text-interlink-muted">
-                        {mentor.currentPosition}
-                        {mentor.industryName ? ` · ${mentor.industryName}` : ""}
-                      </p>
-                    </div>
-                    {typeof mentor.matchScore === "number" && mentor.matchScore > 0 && (
-                      <Badge tone="forest">{mentor.matchScore}% match</Badge>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </Card>
-        </div>
-
-        <div className="space-y-6 lg:col-span-5">
-          <Card>
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-base font-semibold text-interlink-ink">
-                Active Goals
-              </h2>
-              <Link href="/goals" className="text-xs font-medium text-interlink-forest">
-                View all &rarr;
-              </Link>
-            </div>
-            {activeGoals.length === 0 ? (
-              <div className="mt-3 flex items-start gap-2.5 text-sm text-interlink-muted">
-                <Target className="mt-0.5 h-4 w-4 shrink-0 text-interlink-forest" />
-                <span>
-                  Development goals are created inside your mentorship workspace once a request is
-                  accepted.
-                </span>
-              </div>
-            ) : (
-              <ul className="mt-4 space-y-2.5 text-xs">
-                {activeGoals.map((goal) => (
-                  <li key={goal.id} className="rounded-[2px] border border-interlink-border bg-interlink-surface/60 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-interlink-ink">{goal.title}</span>
-                      <Badge tone="neutral">{goal.status.replace(/_/g, " ")}</Badge>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-base font-semibold text-interlink-ink">
-                Upcoming Sessions
-              </h2>
-              <Link href="/sessions" className="text-xs font-medium text-interlink-forest">
-                Calendar &rarr;
-              </Link>
-            </div>
-            {upcomingSessions.length === 0 ? (
-              <div className="mt-3 flex items-start gap-2.5 text-sm text-interlink-muted">
-                <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-interlink-forest" />
-                <span>No upcoming sessions scheduled yet.</span>
-              </div>
-            ) : (
-              <ul className="mt-4 space-y-2.5 text-xs">
-                {upcomingSessions.map((s) => (
-                  <li key={s.id} className="rounded-[2px] border border-interlink-border bg-interlink-surface/60 p-3">
-                    <p className="font-semibold text-interlink-ink">{s.title}</p>
-                    <p className="mt-1 text-interlink-muted">
-                      {formatDateTime(s.startTime)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-base font-semibold text-interlink-ink">
-                Recent Activity
-              </h2>
-              <Link href="/notifications" className="text-xs font-medium text-interlink-forest">
-                All &rarr;
-              </Link>
-            </div>
-            {recentNotifs.length === 0 ? (
-              <div className="mt-3 flex items-center gap-2 text-sm text-interlink-muted">
-                <Inbox className="h-4 w-4" />
-                <span>No recent notifications.</span>
-              </div>
-            ) : (
-              <ul className="mt-3 space-y-2.5 text-xs">
-                {recentNotifs.map((n) => (
-                  <li key={n.id} className="flex items-start gap-2 border-b border-interlink-border/60 pb-2 last:border-0">
-                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-interlink-forest" />
-                    <div>
-                      <p className="font-medium text-interlink-ink">{n.title}</p>
-                      <p className="text-interlink-muted">{n.message}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
         </div>
       </div>
     </AppShell>

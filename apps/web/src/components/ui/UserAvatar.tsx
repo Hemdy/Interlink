@@ -86,7 +86,7 @@ export function UserAvatar({
     <span aria-hidden="true">{initials}</span>
   );
 
-  const baseFrameClass = `flex shrink-0 items-center justify-center overflow-hidden rounded-[2px] border border-interlink-border bg-interlink-app-bg font-semibold text-interlink-forest ${SIZE_CLASSES[size]} ${className}`;
+  const baseFrameClass = `flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-interlink-border/90 bg-interlink-app-bg font-semibold text-interlink-forest ${SIZE_CLASSES[size]} ${className}`;
 
   return (
     <>

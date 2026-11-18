@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import type { SessionUser } from "@interlink/types";
 import {
   ArrowRight,
   Award,
@@ -148,9 +147,9 @@ async function TrustMetricsSection() {
         const Icon = item.icon;
         return (
           <Reveal key={item.label} delayMs={idx * 70} className="h-full">
-            <div className="flex h-full min-h-[114px] flex-col justify-between rounded-[2px] border border-interlink-border bg-interlink-app-bg/70 p-5 shadow-subtle transition-all duration-200 hover:-translate-y-0.5 hover:border-interlink-forest/50 hover:bg-interlink-surface hover:shadow-elevated">
+            <div className="flex h-full min-h-[114px] flex-col justify-between rounded-2xl border border-interlink-border bg-interlink-app-bg/70 p-5 shadow-subtle transition-all duration-200 hover:-translate-y-0.5 hover:border-interlink-forest/50 hover:bg-interlink-surface hover:shadow-elevated">
               <div className="flex items-start gap-3.5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-interlink-forest/20 bg-interlink-surface text-interlink-forest">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-interlink-forest/20 bg-interlink-surface text-interlink-forest">
                   <Icon className="h-4 w-4" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -175,10 +174,10 @@ function FeaturedMentorsSkeleton() {
       {[0, 1, 2].map((idx) => (
         <div
           key={idx}
-          className="h-60 animate-pulse rounded-[2px] border border-interlink-border bg-interlink-surface p-6 shadow-subtle"
+          className="h-60 animate-pulse rounded-2xl border border-interlink-border bg-interlink-surface p-6 shadow-subtle"
         >
           <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-[2px] bg-interlink-border/60" />
+            <div className="h-11 w-11 rounded-full bg-interlink-border/60" />
             <div className="space-y-2">
               <div className="h-4 w-32 rounded bg-interlink-border/60" />
               <div className="h-3 w-40 rounded bg-interlink-border/45" />
@@ -192,16 +191,17 @@ function FeaturedMentorsSkeleton() {
   );
 }
 
-async function FeaturedMentorsSection({ viewerUserId }: { viewerUserId: string | null }) {
+async function FeaturedMentorsSection() {
+  const user = await getCurrentUser();
   const { mentors } = await listPublicMentors({
     limit: 3,
-    viewerUserId,
+    viewerUserId: user?.id ?? null,
   });
 
   if (mentors.length === 0) {
     return (
       <Reveal delayMs={80}>
-        <div className="mt-8 rounded-[2px] border border-interlink-border bg-interlink-surface p-8 shadow-subtle">
+        <div className="mt-8 rounded-2xl border border-interlink-border bg-interlink-surface p-8 shadow-subtle">
           <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
             <div>
               <h3 className="text-base font-semibold text-interlink-ink">
@@ -214,7 +214,7 @@ async function FeaturedMentorsSection({ viewerUserId }: { viewerUserId: string |
             </div>
             <Link
               href="/mentors"
-              className="rounded-[2px] bg-interlink-forest px-5 py-2.5 text-sm font-medium text-white shadow-subtle transition-colors duration-200 hover:bg-interlink-forest-hover"
+              className="rounded-full bg-interlink-forest px-5 py-2.5 text-sm font-semibold text-white shadow-subtle transition-colors duration-200 hover:bg-interlink-forest-hover"
             >
               Open Mentor Directory
             </Link>
@@ -298,7 +298,7 @@ function SpotlightEventsSkeleton() {
         {[0, 1, 2].map((idx) => (
           <div
             key={idx}
-            className="h-72 animate-pulse rounded-[2px] border border-interlink-border bg-interlink-surface p-5 shadow-subtle"
+            className="h-72 animate-pulse rounded-2xl border border-interlink-border bg-interlink-surface p-5 shadow-subtle"
           />
         ))}
       </div>
@@ -306,8 +306,19 @@ function SpotlightEventsSkeleton() {
   );
 }
 
-async function SpotlightAndEventsSection({ user }: { user: SessionUser | null }) {
-  const [reels, events] = await Promise.all([
+async function AsyncPWAEntryGuard() {
+  const user = await getCurrentUser();
+  return <PWAEntryGuard isAuthenticated={Boolean(user)} />;
+}
+
+async function AsyncHeroActions() {
+  const user = await getCurrentUser();
+  return <LandingHeroActions user={user} />;
+}
+
+async function SpotlightAndEventsSection() {
+  const [user, reels, events] = await Promise.all([
+    getCurrentUser(),
     listPublishedMentorReels(),
     listPublishedPlatformEvents(),
   ]);
@@ -320,12 +331,12 @@ async function SpotlightAndEventsSection({ user }: { user: SessionUser | null })
   );
 }
 
-export default async function HomePage() {
-  const user = await getCurrentUser();
-
+export default function HomePage() {
   return (
-    <PublicShell user={user}>
-      <PWAEntryGuard isAuthenticated={Boolean(user)} />
+    <PublicShell>
+      <Suspense fallback={null}>
+        <AsyncPWAEntryGuard />
+      </Suspense>
       {/* HERO SECTION — Visually aligned to Reference Image 1 with interactive matte canvas */}
       <InteractiveMatteHero
         paddingClassName=""
@@ -341,7 +352,9 @@ export default async function HomePage() {
                 journey.
               </h1>
               <div className="animate-hero-up-delay-1">
-                <LandingHeroActions user={user} />
+                <Suspense fallback={<LandingHeroActions user={null} />}>
+                  <AsyncHeroActions />
+                </Suspense>
               </div>
             </div>
 
@@ -351,7 +364,7 @@ export default async function HomePage() {
 
           {/* Enlarged Forest Green Brand Container — Overlapping Column Intersection on Desktop */}
           <div className="px-6 py-10 sm:px-10 sm:py-12 lg:p-0">
-            <div className="animate-hero-card mx-auto flex aspect-[1.35/1] w-full max-w-[580px] items-center justify-center bg-interlink-forest-card px-8 py-12 shadow-card sm:px-12 sm:py-16 lg:absolute lg:left-[46%] lg:top-[400px] lg:z-10 lg:w-[50%] lg:max-w-[680px]">
+            <div className="animate-hero-card mx-auto flex aspect-[1.35/1] w-full max-w-[580px] items-center justify-center rounded-3xl bg-interlink-forest-card px-8 py-12 shadow-card sm:px-12 sm:py-16 lg:absolute lg:left-[46%] lg:top-[400px] lg:z-10 lg:w-[50%] lg:max-w-[680px]">
               <InterlinkLogo variant="card" />
             </div>
           </div>
@@ -432,7 +445,7 @@ export default async function HomePage() {
               </div>
               <Link
                 href="/mentors"
-                className="inline-flex items-center gap-1.5 rounded-[2px] border border-interlink-hairline bg-interlink-surface px-4 py-2 text-sm font-medium text-interlink-ink shadow-subtle transition-all duration-200 hover:border-interlink-forest hover:text-interlink-forest"
+                className="inline-flex items-center gap-1.5 rounded-full border border-interlink-hairline bg-interlink-surface px-5 py-2 text-sm font-semibold text-interlink-ink shadow-subtle transition-all duration-200 hover:border-interlink-forest hover:text-interlink-forest"
               >
                 Browse All Mentors <ArrowRight className="h-4 w-4" />
               </Link>
@@ -440,7 +453,7 @@ export default async function HomePage() {
           </Reveal>
 
           <Suspense fallback={<FeaturedMentorsSkeleton />}>
-            <FeaturedMentorsSection viewerUserId={user?.id ?? null} />
+            <FeaturedMentorsSection />
           </Suspense>
         </div>
       </section>
@@ -450,7 +463,7 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-[1360px] grid-cols-1 items-center gap-10 px-6 sm:px-10 lg:grid-cols-12">
           <div className="lg:col-span-6">
             <Reveal>
-              <div className="relative aspect-[16/10] overflow-hidden rounded-[2px] border border-interlink-border shadow-elevated">
+              <div className="relative aspect-[16/10] overflow-hidden rounded-3xl border border-interlink-border shadow-elevated">
                 <Image
                   src="/images/mentorship-coaching.jpg"
                   alt="Mentor and mentee collaborating on a career roadmap"
@@ -477,13 +490,13 @@ export default async function HomePage() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   href="/mentors"
-                  className="rounded-[2px] bg-interlink-forest px-5 py-2.5 text-sm font-medium text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
+                  className="rounded-full bg-interlink-forest px-6 py-2.5 text-sm font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
                 >
                   Find Your Mentor
                 </Link>
                 <Link
                   href="/become-a-mentor"
-                  className="rounded-[2px] border border-interlink-hairline bg-interlink-surface px-5 py-2.5 text-sm font-medium text-interlink-ink transition-colors hover:border-interlink-forest"
+                  className="rounded-full border border-interlink-hairline bg-interlink-surface px-6 py-2.5 text-sm font-semibold text-interlink-ink transition-colors hover:border-interlink-forest"
                 >
                   Become a Mentor
                 </Link>
@@ -494,7 +507,7 @@ export default async function HomePage() {
       </section>
 
       <Suspense fallback={<SpotlightEventsSkeleton />}>
-        <SpotlightAndEventsSection user={user} />
+        <SpotlightAndEventsSection />
       </Suspense>
 
       {/* TRUST, CREDIBILITY & GOALS */}
@@ -521,7 +534,7 @@ export default async function HomePage() {
               const Icon = item.icon;
               return (
                 <Reveal key={item.title} delayMs={idx * 90}>
-                  <div className="h-full border border-white/15 bg-white/5 p-6 transition-colors duration-200 hover:border-white/30 hover:bg-white/[0.08]">
+                  <div className="h-full rounded-2xl border border-white/15 bg-white/5 p-6 transition-colors duration-200 hover:border-white/30 hover:bg-white/[0.08]">
                     <Icon className="h-6 w-6 text-interlink-gold" />
                     <h3 className="mt-4 font-display text-lg font-medium">{item.title}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-white/80">{item.body}</p>

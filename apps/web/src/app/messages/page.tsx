@@ -100,7 +100,7 @@ export default async function MessagesPage() {
           action={
             <Link
               href="/mentors"
-              className="rounded-[2px] bg-interlink-forest px-5 py-2 text-xs font-medium text-white"
+              className="inline-flex items-center rounded-full bg-interlink-forest px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
             >
               Discover Mentors
             </Link>
@@ -109,16 +109,21 @@ export default async function MessagesPage() {
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
-            <Link key={item.conv.id} href={`/mentorships/${item.conv.mentorshipId}?tab=messages`}>
-              <Card className="transition-all hover:border-interlink-forest hover:shadow-subtle">
+            <Link key={item.conv.id} href={`/mentorships/${item.conv.mentorshipId}?tab=messages`} className="block">
+              <Card className="transition-all hover:-translate-y-0.5 hover:border-interlink-forest/60 hover:shadow-subtle">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <UserAvatar
-                      src={item.partner?.profileImage}
-                      firstName={item.partner?.firstName ?? "P"}
-                      lastName={item.partner?.lastName ?? ""}
-                      size="md"
-                    />
+                    <div className="relative shrink-0">
+                      <UserAvatar
+                        src={item.partner?.profileImage}
+                        firstName={item.partner?.firstName ?? "P"}
+                        lastName={item.partner?.lastName ?? ""}
+                        size="md"
+                      />
+                      {item.mentorshipStatus === "active" && (
+                        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-interlink-surface bg-emerald-500" />
+                      )}
+                    </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <h2 className="text-sm font-semibold text-interlink-ink truncate">
@@ -131,12 +136,12 @@ export default async function MessagesPage() {
                       <p className="mt-1 text-xs text-interlink-muted truncate max-w-xl">
                         {item.lastMessage
                           ? item.lastMessage.content
-                          : "No messages exchanged yet — click to open private conversation."}
+                          : "No messages exchanged yet — tap to start the conversation."}
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-medium text-interlink-forest shrink-0 hover:underline">
-                    Open Chat &rarr;
+                  <span className="shrink-0 rounded-full bg-interlink-forest/10 px-3.5 py-1.5 text-xs font-semibold text-interlink-forest transition-colors hover:bg-interlink-forest hover:text-white">
+                    Message &rarr;
                   </span>
                 </div>
               </Card>

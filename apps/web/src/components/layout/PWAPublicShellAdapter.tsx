@@ -23,12 +23,14 @@ export function PWAPublicShellAdapter({
   unreadCount,
   header,
   footer,
+  chromeOnly = false,
   children,
 }: {
   user: SessionUser | null;
   unreadCount?: number;
   header: React.ReactNode;
   footer: React.ReactNode;
+  chromeOnly?: boolean;
   children: React.ReactNode;
 }) {
   const { useBottomNav } = useNavigationMode();
@@ -49,6 +51,7 @@ export function PWAPublicShellAdapter({
   }
 
   if (!showPWAShell || !user) {
+    if (chromeOnly) return null;
     return (
       <div className="flex min-h-screen flex-col bg-interlink-canvas text-interlink-ink">
         <SessionSyncGuard expectedUserId={user?.id ?? null} />
@@ -56,6 +59,57 @@ export function PWAPublicShellAdapter({
         <div className="flex-1">{children}</div>
         {footer}
       </div>
+    );
+  }
+
+  if (chromeOnly) {
+    return (
+      <>
+        <header className="fixed inset-x-0 top-0 z-40 flex h-[72px] items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm sm:px-8">
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <Link
+              href="/profile"
+              aria-label={`View ${user.firstName} ${user.lastName}'s profile`}
+              className="group shrink-0 rounded-full focus-ring"
+            >
+              <UserAvatar
+                src={user.profileImage}
+                firstName={user.firstName}
+                lastName={user.lastName}
+                size="sm"
+                className="rounded-full border-interlink-forest/25 shadow-subtle transition-transform duration-200 group-hover:scale-105"
+              />
+            </Link>
+            <span className="h-5 w-px shrink-0 bg-interlink-border" aria-hidden="true" />
+            <Link href="/dashboard" className="focus-ring rounded-[2px]">
+              <InterlinkLogo variant="compact" />
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <ThemeToggle />
+            <Link
+              href="/notifications"
+              className="relative inline-flex h-9 w-9 items-center justify-center rounded-[2px] border border-interlink-border bg-interlink-surface text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {resolvedUnreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-interlink-forest px-1 text-[10px] font-bold text-white">
+                  {resolvedUnreadCount}
+                </span>
+              )}
+            </Link>
+          </div>
+        </header>
+
+        <MobilePWABottomNav
+          user={user}
+          unreadNotifications={resolvedUnreadCount}
+          unreadMessages={unreadMessages}
+          onSignOut={handleSignOut}
+        />
+      </>
     );
   }
 

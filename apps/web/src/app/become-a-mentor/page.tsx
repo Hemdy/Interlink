@@ -4,7 +4,7 @@ import { PublicShell } from "@/components/layout/PublicShell";
 import { Badge, Card } from "@/components/ui/Card";
 import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
 import { Reveal } from "@/components/ui/Reveal";
-import { getCurrentUser } from "@/lib/auth/session";
+import { SessionLink } from "@/components/ui/SessionLink";
 
 const mentorBenefits = [
   {
@@ -55,11 +55,9 @@ const steps = [
   },
 ];
 
-export default async function BecomeMentorPage() {
-  const user = await getCurrentUser();
-
+export default function BecomeMentorPage() {
   return (
-    <PublicShell user={user}>
+    <PublicShell>
       {/* Spacious Interactive Matte Hero Section */}
       <InteractiveMatteHero>
         <div className="mx-auto max-w-[1160px] px-6 sm:px-10">
@@ -74,15 +72,16 @@ export default async function BecomeMentorPage() {
               unstructured inbox noise.
             </p>
             <div className="mt-8 flex flex-wrap gap-3.5">
-              <Link
-                href={user ? "/profile" : "/sign-up?role=mentor"}
-                className="rounded-[2px] bg-interlink-forest px-6 py-2.5 text-sm font-medium text-white shadow-subtle transition-all duration-200 hover:bg-interlink-forest-hover hover:shadow-elevated"
-              >
-                {user ? "Manage Mentor Profile" : "Join as a Mentor"}
-              </Link>
+              <SessionLink
+                authedHref="/profile"
+                authedLabel="Manage Mentor Profile"
+                guestHref="/sign-up?role=mentor"
+                guestLabel="Join as a Mentor"
+                className="rounded-full bg-interlink-forest px-6 py-2.5 text-sm font-semibold text-white shadow-subtle transition-all duration-200 hover:bg-interlink-forest-hover hover:shadow-elevated"
+              />
               <Link
                 href="/mentors"
-                className="rounded-[2px] border border-interlink-hairline bg-interlink-surface px-6 py-2.5 text-sm font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+                className="rounded-full border border-interlink-hairline bg-interlink-surface px-6 py-2.5 text-sm font-semibold text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
               >
                 Explore Mentor Directory
               </Link>
@@ -106,7 +105,7 @@ export default async function BecomeMentorPage() {
               return (
                 <Reveal key={benefit.title} delayMs={idx * 75} className="h-full">
                   <Card elevated className="h-full p-6 hover:-translate-y-0.5 hover:border-interlink-forest/40">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-[2px] border border-interlink-forest/20 bg-interlink-app-bg text-interlink-forest">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-interlink-forest/20 bg-interlink-app-bg text-interlink-forest">
                       <Icon className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <h3 className="mt-4 font-display text-lg font-semibold text-interlink-ink">
@@ -168,12 +167,13 @@ export default async function BecomeMentorPage() {
                     </p>
                   </div>
                 </div>
-                <Link
-                  href={user ? "/profile" : "/sign-up?role=mentor"}
-                  className="shrink-0 rounded-[2px] bg-interlink-forest px-6 py-2.5 text-sm font-medium text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
-                >
-                  {user ? "Go to Mentor Profile" : "Apply as a Mentor"}
-                </Link>
+                <SessionLink
+                  authedHref="/profile"
+                  authedLabel="Go to Mentor Profile"
+                  guestHref="/sign-up?role=mentor"
+                  guestLabel="Apply as a Mentor"
+                  className="shrink-0 rounded-full bg-interlink-forest px-6 py-2.5 text-sm font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
+                />
               </div>
             </Card>
           </Reveal>

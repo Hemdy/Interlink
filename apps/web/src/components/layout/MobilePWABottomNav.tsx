@@ -368,7 +368,7 @@ export function MobilePWABottomNav({
           aria-label="More navigation options"
         >
           <div
-            className="mx-auto w-full max-w-2xl rounded-t-[12px] border-t border-interlink-border bg-interlink-surface text-interlink-ink shadow-2xl"
+            className="mx-auto w-full max-w-2xl rounded-t-3xl border-t border-interlink-border bg-interlink-surface text-interlink-ink shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drag Handle */}
@@ -397,7 +397,7 @@ export function MobilePWABottomNav({
               <button
                 type="button"
                 onClick={() => setMoreOpen(false)}
-                className="rounded-[4px] p-1.5 text-interlink-muted transition-colors hover:bg-interlink-app-bg hover:text-interlink-ink"
+                className="rounded-full p-1.5 text-interlink-muted transition-colors hover:bg-interlink-app-bg hover:text-interlink-ink"
                 aria-label="Close menu"
               >
                 <X className="h-5 w-5" />
@@ -412,7 +412,7 @@ export function MobilePWABottomNav({
                     <p className="mb-2 px-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-interlink-muted">
                       {section.title}
                     </p>
-                    <div className="overflow-hidden rounded-[4px] border border-interlink-border bg-interlink-app-bg/40 divide-y divide-interlink-border/70">
+                    <div className="overflow-hidden rounded-2xl border border-interlink-border bg-interlink-app-bg/40 divide-y divide-interlink-border/70">
                       {section.items.map((item) => {
                         const Icon = item.icon;
                         const baseHref = item.href.split("#")[0] ?? item.href;
@@ -433,7 +433,7 @@ export function MobilePWABottomNav({
                           >
                             <div className="flex min-w-0 items-center gap-3">
                               <div
-                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] ${
+                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                                   active
                                     ? "bg-interlink-forest text-white"
                                     : "border border-interlink-border bg-interlink-surface text-interlink-forest"
@@ -476,7 +476,7 @@ export function MobilePWABottomNav({
                   setMoreOpen(false);
                   void onSignOut();
                 }}
-                className="flex w-full items-center justify-center gap-2 rounded-[4px] border border-red-200 bg-red-50/70 px-4 py-2.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50"
+                className="flex w-full items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50/70 px-4 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50"
               >
                 <LogOut className="h-4 w-4" aria-hidden="true" />
                 <span>Sign Out</span>

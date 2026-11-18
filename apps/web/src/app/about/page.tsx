@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/Card";
 import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { Reveal } from "@/components/ui/Reveal";
-import { getCurrentUser } from "@/lib/auth/session";
 
 const principles = [
   {
@@ -34,11 +33,9 @@ const principles = [
   },
 ];
 
-export default async function AboutPage() {
-  const user = await getCurrentUser();
-
+export default function AboutPage() {
   return (
-    <PublicShell user={user}>
+    <PublicShell>
       <InteractiveMatteHero paddingClassName="py-16 sm:py-20">
         <div className="mx-auto max-w-[1100px] px-6 sm:px-10">
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
@@ -57,20 +54,20 @@ export default async function AboutPage() {
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
                   href="/mentors"
-                  className="rounded-[2px] bg-interlink-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-interlink-forest-hover"
+                  className="rounded-full bg-interlink-forest px-6 py-2.5 text-sm font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
                 >
                   Browse Mentors
                 </Link>
                 <Link
                   href="/learn"
-                  className="rounded-[2px] border border-interlink-hairline bg-interlink-surface px-5 py-2.5 text-sm font-medium text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+                  className="rounded-full border border-interlink-hairline bg-interlink-surface px-6 py-2.5 text-sm font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
                 >
                   Explore Career Paths
                 </Link>
               </div>
             </div>
 
-            <div className="animate-hero-card bg-interlink-forest-card px-8 py-12 shadow-card lg:col-span-5">
+            <div className="animate-hero-card rounded-3xl bg-interlink-forest-card px-8 py-12 shadow-card lg:col-span-5">
               <InterlinkLogo variant="card" />
             </div>
           </div>
@@ -138,7 +135,7 @@ export default async function AboutPage() {
               </div>
               <Link
                 href="/legal/guidelines"
-                className="shrink-0 rounded-[2px] border border-interlink-hairline px-4 py-2 text-xs font-medium text-interlink-ink hover:border-interlink-forest hover:text-interlink-forest"
+                className="shrink-0 rounded-full border border-interlink-hairline px-5 py-2 text-xs font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
               >
                 Read Community Guidelines
               </Link>

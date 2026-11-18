@@ -1,15 +1,12 @@
-import Link from "next/link";
 import { Check, Info } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Badge, Card } from "@/components/ui/Card";
 import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
-import { getCurrentUser } from "@/lib/auth/session";
+import { SessionLink } from "@/components/ui/SessionLink";
 
-export default async function MembershipPage() {
-  const user = await getCurrentUser();
-
+export default function MembershipPage() {
   return (
-    <PublicShell user={user}>
+    <PublicShell>
       <InteractiveMatteHero>
         <div className="mx-auto max-w-[1100px] px-6 sm:px-10">
           <div className="animate-hero-up">
@@ -65,12 +62,13 @@ export default async function MembershipPage() {
               </div>
 
               <div className="mt-8">
-                <Link
-                  href={user ? "/mentors" : "/sign-up"}
-                  className="block w-full rounded-[2px] bg-interlink-forest py-2.5 text-center text-sm font-medium text-white hover:bg-interlink-forest-hover"
-                >
-                  {user ? "Browse Mentors" : "Create Free Mentee Account"}
-                </Link>
+                <SessionLink
+                  authedHref="/mentors"
+                  authedLabel="Browse Mentors"
+                  guestHref="/sign-up"
+                  guestLabel="Create Free Mentee Account"
+                  className="block w-full rounded-full bg-interlink-forest py-2.5 text-center text-sm font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
+                />
               </div>
             </Card>
 
@@ -108,12 +106,13 @@ export default async function MembershipPage() {
               </div>
 
               <div className="mt-8">
-                <Link
-                  href={user ? "/profile" : "/sign-up?role=mentor"}
-                  className="block w-full rounded-[2px] border border-interlink-hairline bg-interlink-surface py-2.5 text-center text-sm font-medium text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
-                >
-                  {user ? "Manage Mentor Profile" : "Join as a Mentor"}
-                </Link>
+                <SessionLink
+                  authedHref="/profile"
+                  authedLabel="Manage Mentor Profile"
+                  guestHref="/sign-up?role=mentor"
+                  guestLabel="Join as a Mentor"
+                  className="block w-full rounded-full border border-interlink-hairline bg-interlink-surface py-2.5 text-center text-sm font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+                />
               </div>
             </Card>
           </div>
