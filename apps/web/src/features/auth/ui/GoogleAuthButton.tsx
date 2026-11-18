@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -35,11 +36,13 @@ export function GoogleAuthButton({
   role = "mentee",
   label = "Continue with Google",
   onSuccess,
+  variant = "default",
   className = "",
 }: {
   role?: "mentee" | "mentor";
   label?: string;
   onSuccess?: () => void;
+  variant?: "default" | "pill";
   className?: string;
 }) {
   const router = useRouter();
@@ -102,24 +105,43 @@ export function GoogleAuthButton({
     }
   }
 
-  function handleQuickAccount(account: { email: string; name: string }) {
-    setGoogleEmail(account.email);
-    setGoogleFullName(account.name);
-  }
+  // function handleQuickAccount(account: { email: string; name: string }) {
+  //   setGoogleEmail(account.email);
+  //   setGoogleFullName(account.name);
+  // }
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => {
-          setError(null);
-          setModalOpen(true);
-        }}
-        className={`flex w-full items-center justify-center gap-2.5 rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2.5 text-sm font-medium text-interlink-ink shadow-subtle transition-all duration-200 hover:border-interlink-forest hover:bg-interlink-app-bg focus-ring ${className}`}
-      >
-        <GoogleIcon className="h-4 w-4 shrink-0" />
-        <span>{label}</span>
-      </button>
+      {variant === "pill" ? (
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setModalOpen(true);
+          }}
+          className={`flex w-full items-center justify-between rounded-full border border-interlink-border/90 bg-interlink-surface/90 px-5 py-3.5 text-sm font-medium text-interlink-ink shadow-subtle backdrop-blur-sm transition-all duration-200 hover:border-interlink-forest/70 hover:bg-interlink-surface focus-ring ${className}`}
+        >
+          <span className="flex flex-1 items-center justify-center gap-3 pl-4">
+            <GoogleIcon className="h-[18px] w-[18px] shrink-0" />
+            <span>{label}</span>
+          </span>
+          <span className="flex items-center gap-3 border-l border-interlink-border/70 pl-3.5 text-interlink-muted">
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setModalOpen(true);
+          }}
+          className={`flex w-full items-center justify-center gap-2.5 rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2.5 text-sm font-medium text-interlink-ink shadow-subtle transition-all duration-200 hover:border-interlink-forest hover:bg-interlink-app-bg focus-ring ${className}`}
+        >
+          <GoogleIcon className="h-4 w-4 shrink-0" />
+          <span>{label}</span>
+        </button>
+      )}
 
       <Modal
         open={modalOpen}
@@ -149,7 +171,7 @@ export function GoogleAuthButton({
           )}
 
           {/* Quick Select demo Google accounts for rapid one-click testing */}
-          <div className="mt-4 space-y-2">
+          {/* <div className="mt-4 space-y-2">
             <p className="text-[11px] font-medium text-interlink-muted">
               Choose an account or enter your Google email:
             </p>
@@ -176,7 +198,7 @@ export function GoogleAuthButton({
                 </button>
               ))}
             </div>
-          </div>
+          </div> */}
 
           <form onSubmit={handleGoogleSubmit} className="mt-4 space-y-3.5">
             <Input

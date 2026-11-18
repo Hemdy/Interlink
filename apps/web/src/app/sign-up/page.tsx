@@ -3,12 +3,17 @@
 import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { Lock, LogIn, Mail, User } from "lucide-react";
 import { ErrorAlert, LoadingSpinner } from "@/components/ui/Feedback";
-import { Input } from "@/components/ui/Input";
-import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { useToast } from "@/components/ui/ToastProvider";
 import { postJson } from "@/lib/api/client";
+import {
+  AuthBottomCard,
+  AuthDivider,
+  AuthPillInput,
+  AuthShell,
+  AuthSubmitButton,
+} from "@/features/auth/ui/AuthShell";
 import { GoogleAuthButton } from "@/features/auth/ui/GoogleAuthButton";
 import { useNavigationMode } from "@/features/pwa/useNavigationMode";
 
@@ -70,7 +75,8 @@ function SignUpInner() {
       pushToast({
         kind: "success",
         title: "Account created!",
-        description: "Welcome to Interlink! You can finish setting up your profile anytime from your dashboard.",
+        description:
+          "Welcome to Interlink! You can finish setting up your profile anytime from your dashboard.",
       });
       router.replace("/dashboard");
       router.refresh();
@@ -82,73 +88,63 @@ function SignUpInner() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-interlink-sage/85 px-4 py-10">
-      <div className="mb-6">
-        <Link
-          href={isStandalone ? "/sign-in" : "/"}
-          className="inline-block rounded-[2px] border border-interlink-border bg-interlink-surface px-4 py-2 shadow-subtle"
+    <AuthShell
+      logoHref={isStandalone ? "/sign-in" : "/"}
+      titleLeading="Create"
+      titleHighlight="Account"
+      subtitle="Start your mentorship journey as a mentee or mentor."
+      maxWidthClass="max-w-[460px]"
+    >
+      {/* Role Selector Pill */}
+      <div className="mt-6 grid grid-cols-2 gap-1.5 rounded-full border border-interlink-border/90 bg-interlink-surface/85 p-1 shadow-subtle backdrop-blur-sm">
+        <button
+          type="button"
+          onClick={() => setRole("mentee")}
+          className={`rounded-full py-2 text-xs font-semibold transition-all ${
+            role === "mentee"
+              ? "bg-gradient-to-r from-interlink-forest to-interlink-forest-deep text-white shadow-sm"
+              : "text-interlink-muted hover:text-interlink-ink"
+          }`}
         >
-          <InterlinkLogo variant="compact" />
-        </Link>
+          Join as Mentee
+        </button>
+        <button
+          type="button"
+          onClick={() => setRole("mentor")}
+          className={`rounded-full py-2 text-xs font-semibold transition-all ${
+            role === "mentor"
+              ? "bg-gradient-to-r from-interlink-forest to-interlink-forest-deep text-white shadow-sm"
+              : "text-interlink-muted hover:text-interlink-ink"
+          }`}
+        >
+          Join as Mentor
+        </button>
       </div>
 
-      <div className="w-full max-w-[440px] rounded-[2px] bg-interlink-modal p-8 shadow-modal sm:p-10">
-        <h1 className="text-center font-display text-2xl font-bold text-interlink-forest">
-          Welcome
-        </h1>
-        <p className="mt-1 text-center font-display text-xl font-light text-interlink-ink">
-          Create Your Account
-        </p>
-
-        <div className="mt-5 grid grid-cols-2 gap-1.5 rounded-[2px] border border-interlink-border bg-interlink-surface p-1">
-          <button
-            type="button"
-            onClick={() => setRole("mentee")}
-            className={`rounded-[2px] py-1.5 text-xs font-medium transition-colors ${
-              role === "mentee" ? "bg-interlink-forest text-white" : "text-interlink-muted hover:text-interlink-ink"
-            }`}
-          >
-            Join as Mentee
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole("mentor")}
-            className={`rounded-[2px] py-1.5 text-xs font-medium transition-colors ${
-              role === "mentor" ? "bg-interlink-forest text-white" : "text-interlink-muted hover:text-interlink-ink"
-            }`}
-          >
-            Join as Mentor
-          </button>
-        </div>
-
-        {error && (
-          <div className="mt-4">
-            <ErrorAlert message={error} />
-          </div>
-        )}
-
+      {error && (
         <div className="mt-4">
-          <GoogleAuthButton
-            role={role}
-            label={`Sign up as ${role === "mentor" ? "Mentor" : "Mentee"} with Google`}
-            onSuccess={() => {
-              router.replace("/dashboard");
-              router.refresh();
-            }}
-          />
+          <ErrorAlert message={error} />
         </div>
+      )}
 
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-interlink-border" />
-          </div>
-          <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
-            <span className="bg-interlink-modal px-2 text-interlink-muted">or register with email</span>
-          </div>
-        </div>
+      <div className="mt-4">
+        <GoogleAuthButton
+          variant="pill"
+          role={role}
+          label={`Sign up as ${role === "mentor" ? "Mentor" : "Mentee"} with Google`}
+          onSuccess={() => {
+            router.replace("/dashboard");
+            router.refresh();
+          }}
+        />
+      </div>
 
-        <form onSubmit={handleSubmit} className="mt-3 space-y-3">
-          <Input
+      <AuthDivider label="or register with email" />
+
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <AuthPillInput
+            icon={User}
             name="firstName"
             placeholder="First Name"
             aria-label="First Name"
@@ -157,7 +153,8 @@ function SignUpInner() {
             required
             autoComplete="given-name"
           />
-          <Input
+          <AuthPillInput
+            icon={User}
             name="lastName"
             placeholder="Last Name"
             aria-label="Last Name"
@@ -166,75 +163,85 @@ function SignUpInner() {
             required
             autoComplete="family-name"
           />
-          <Input
-            name="email"
-            type="email"
-            placeholder="E-mail"
-            aria-label="E-mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
-          <Input
-            name="password"
-            type="password"
-            placeholder="Create Password"
-            aria-label="Create Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-          <Input
-            name="confirmPassword"
-            type="password"
-            placeholder="Confirm Password"
-            aria-label="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-          <div className="pt-2 text-center">
-            <Button type="submit" loading={loading} className="min-w-[130px] px-8">
-              Sign Up
-            </Button>
-          </div>
-        </form>
+        </div>
 
-        <p className="mt-5 text-center text-[11px] leading-relaxed text-interlink-muted">
-          By clicking Sign Up, you agree to our{" "}
-          <Link href="/legal/terms" className="text-interlink-link underline">
-            Terms and Condition
-          </Link>
-          . Learn how to process your data in our{" "}
-          <Link href="/legal/privacy" className="text-interlink-link underline">
-            Privacy Policy
-          </Link>{" "}
-          and{" "}
-          <Link href="/legal/cookies" className="text-interlink-link underline">
-            Cookie Policy
-          </Link>
-          .
-        </p>
+        <AuthPillInput
+          icon={Mail}
+          name="email"
+          type="email"
+          placeholder="E-mail"
+          aria-label="E-mail"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+        />
 
-        <p className="mt-4 text-center text-xs text-interlink-muted">
-          Already have an account?{" "}
-          <Link href="/sign-in" className="font-medium text-interlink-forest hover:underline">
-            Sign In
-          </Link>
-        </p>
-      </div>
-    </div>
+        <AuthPillInput
+          icon={Lock}
+          showPasswordToggle
+          name="password"
+          placeholder="Create Password"
+          aria-label="Create Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
+
+        <AuthPillInput
+          icon={Lock}
+          showPasswordToggle
+          name="confirmPassword"
+          placeholder="Confirm Password"
+          aria-label="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
+
+        <AuthSubmitButton loading={loading} label="Sign Up" loadingLabel="Creating account..." />
+      </form>
+
+      <p className="mt-5 text-center text-[11px] leading-relaxed text-interlink-muted">
+        By clicking Sign Up, you agree to our{" "}
+        <Link href="/legal/terms" className="font-medium text-interlink-forest hover:underline">
+          Terms and Condition
+        </Link>
+        . Learn how we process your data in our{" "}
+        <Link href="/legal/privacy" className="font-medium text-interlink-forest hover:underline">
+          Privacy Policy
+        </Link>{" "}
+        and{" "}
+        <Link href="/legal/cookies" className="font-medium text-interlink-forest hover:underline">
+          Cookie Policy
+        </Link>
+        .
+      </p>
+
+      <AuthBottomCard
+        icon={LogIn}
+        title="Already have an account?"
+        description="Sign in to access your mentorship workspace"
+        ctaLabel="Sign In"
+        ctaHref="/sign-in"
+      />
+    </AuthShell>
   );
 }
 
 export default function SignUpPage() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-interlink-canvas">
+          <LoadingSpinner />
+        </div>
+      }
+    >
       <SignUpInner />
     </Suspense>
   );
