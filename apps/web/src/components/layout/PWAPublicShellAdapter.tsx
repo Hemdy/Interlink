@@ -7,6 +7,7 @@ import { Bell } from "lucide-react";
 import type { SessionUser } from "@interlink/types";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { purgeServiceWorkerAuthCache } from "@/features/pwa/ServiceWorkerRegister";
 import {
   useNavigationMode,
@@ -57,9 +58,25 @@ export function PWAPublicShellAdapter({
   return (
     <div className="min-h-screen bg-interlink-app-bg text-interlink-ink">
       <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm sm:px-8">
-        <Link href="/dashboard" className="focus-ring rounded-[2px]">
-          <InterlinkLogo variant="compact" />
-        </Link>
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+          <Link
+            href="/profile"
+            aria-label={`View ${user.firstName} ${user.lastName}'s profile`}
+            className="group shrink-0 rounded-full focus-ring"
+          >
+            <UserAvatar
+              src={user.profileImage}
+              firstName={user.firstName}
+              lastName={user.lastName}
+              size="sm"
+              className="rounded-full border-interlink-forest/25 shadow-subtle transition-transform duration-200 group-hover:scale-105"
+            />
+          </Link>
+          <span className="h-5 w-px shrink-0 bg-interlink-border" aria-hidden="true" />
+          <Link href="/dashboard" className="focus-ring rounded-[2px]">
+            <InterlinkLogo variant="compact" />
+          </Link>
+        </div>
 
         <div className="flex items-center gap-2.5">
           <ThemeToggle />

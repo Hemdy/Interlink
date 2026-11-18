@@ -246,7 +246,29 @@ export function AppShell({
       <div className={useBottomNav ? "" : "lg:pl-64"}>
         <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm sm:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            {!useBottomNav && (
+            {useBottomNav ? (
+              <Link
+                href="/profile"
+                aria-label={`View ${user.firstName} ${user.lastName}'s profile`}
+                className="group flex min-w-0 items-center gap-2.5 rounded-full py-1 pr-2 transition-colors focus-ring"
+              >
+                <UserAvatar
+                  src={user.profileImage}
+                  firstName={user.firstName}
+                  lastName={user.lastName}
+                  size="sm"
+                  className="rounded-full border-interlink-forest/25 shadow-subtle transition-transform duration-200 group-hover:scale-105"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold leading-tight text-interlink-ink">
+                    {user.firstName} {user.lastName}
+                  </p>
+                  <p className="truncate text-[11px] capitalize leading-tight text-interlink-forest">
+                    {user.primaryRole.replace("_", " ")}
+                  </p>
+                </div>
+              </Link>
+            ) : (
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
@@ -256,14 +278,6 @@ export function AppShell({
                 <Menu className="h-5 w-5" />
               </button>
             )}
-            {/* <div className="min-w-0">
-              <h1 className="truncate font-display text-lg font-semibold text-interlink-ink sm:text-xl">
-                {title}
-              </h1>
-              {subtitle && (
-                <p className="hidden truncate text-xs text-interlink-muted sm:block">{subtitle}</p>
-              )}
-            </div> */}
           </div>
 
           <div className="flex shrink-0 items-center gap-2.5">

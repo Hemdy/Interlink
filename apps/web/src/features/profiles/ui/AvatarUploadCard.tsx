@@ -131,6 +131,8 @@ export function AvatarUploadCard({
           firstName={firstName}
           lastName={lastName}
           size={compact ? "lg" : "xl"}
+          previewable
+          previewSubtitle="Profile photograph"
         />
         <div>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-[2px] border border-interlink-hairline bg-interlink-surface px-3.5 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest">

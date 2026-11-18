@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Plus, Route, Sparkles, Video } from "lucide-react";
+import { ArrowRight, Clock, Play, Plus, Route, Sparkles, Video, X } from "lucide-react";
 import type { MentorReelItem, SessionUser } from "@interlink/types";
 import { Badge, Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -240,59 +240,118 @@ export function MentorSpotlightSection({
         open={Boolean(activeReel)}
         onClose={() => setActiveReel(null)}
         title={activeReel?.title ?? "Mentor Spotlight"}
-        maxWidthClass="max-w-[720px]"
+        maxWidthClass="max-w-[780px]"
+        containerClassName="overflow-hidden rounded-2xl border border-interlink-border bg-interlink-surface shadow-modal"
+        hideCloseButton
       >
         {activeReel && (
-          <div className="space-y-4">
-            <div className="overflow-hidden rounded-[2px] border border-interlink-border bg-black">
-              {!videoError ? (
-                <video
-                  key={activeReel.id}
-                  src={activeReel.videoUrl}
-                  poster={activeReel.posterImageUrl || "/images/mentor-spotlight.jpg"}
-                  controls
-                  autoPlay
-                  playsInline
-                  onError={() => setVideoError(true)}
-                  className="aspect-video w-full object-cover"
-                />
-              ) : (
-                <div className="relative aspect-video w-full">
-                  <Image
-                    src={activeReel.posterImageUrl || "/images/mentor-spotlight.jpg"}
-                    alt={activeReel.mentorName}
-                    fill
-                    className="object-cover opacity-50"
+          <div>
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 border-b border-interlink-border bg-interlink-app-bg/80 px-5 py-4 sm:px-6 sm:py-5">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone="forest">{activeReel.topicTag}</Badge>
+                  <span className="inline-flex items-center gap-1 rounded-[2px] border border-interlink-border bg-interlink-surface px-2 py-0.5 text-[11px] font-medium text-interlink-muted">
+                    <Clock className="h-3 w-3 text-interlink-forest" aria-hidden="true" />
+                    {activeReel.durationLabel}
+                  </span>
+                </div>
+                <h3 className="mt-2.5 font-display text-lg font-semibold leading-snug text-interlink-ink sm:text-xl">
+                  {activeReel.title}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveReel(null)}
+                aria-label="Close video modal"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-interlink-border bg-interlink-surface text-interlink-muted transition-colors hover:border-interlink-forest hover:text-interlink-ink focus-ring"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="space-y-5 p-5 sm:p-6">
+              <div className="overflow-hidden rounded-xl border border-interlink-border bg-black shadow-elevated">
+                {!videoError ? (
+                  <video
+                    key={activeReel.id}
+                    src={activeReel.videoUrl}
+                    poster={activeReel.posterImageUrl || "/images/mentor-spotlight.jpg"}
+                    controls
+                    autoPlay
+                    playsInline
+                    onError={() => setVideoError(true)}
+                    className="aspect-video w-full object-cover"
                   />
-                  <div className="relative z-10 flex h-full flex-col items-center justify-center p-6 text-center text-white">
-                    <Sparkles className="h-6 w-6 text-interlink-gold" />
-                    <p className="mt-2 text-sm font-semibold">
-                      Video stream unavailable in this network view
+                ) : (
+                  <div className="relative aspect-video w-full">
+                    <Image
+                      src={activeReel.posterImageUrl || "/images/mentor-spotlight.jpg"}
+                      alt={activeReel.mentorName}
+                      fill
+                      className="object-cover opacity-50"
+                    />
+                    <div className="relative z-10 flex h-full flex-col items-center justify-center p-6 text-center text-white">
+                      <Sparkles className="h-6 w-6 text-interlink-gold" />
+                      <p className="mt-2 text-sm font-semibold">
+                        Video stream unavailable in this network view
+                      </p>
+                      <p className="mt-1 max-w-md text-xs text-white/80">
+                        {activeReel.summary}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Mentor & Career Path Details */}
+              <div className="space-y-4 rounded-xl border border-interlink-border bg-interlink-app-bg/55 p-4 sm:p-5">
+                <div className="flex flex-col gap-3 border-b border-interlink-border/70 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-interlink-forest">
+                      Featured Speaker
                     </p>
-                    <p className="mt-1 max-w-md text-xs text-white/80">
-                      {activeReel.summary}
-                    </p>
+                    <h4 className="mt-0.5 font-display text-base font-semibold text-interlink-ink sm:text-lg">
+                      {activeReel.mentorName}
+                    </h4>
+                    <p className="text-xs text-interlink-muted">{activeReel.profession}</p>
+                  </div>
+
+                  <Link
+                    href={activeReel.mentorId ? `/mentors/${activeReel.mentorId}` : "/mentors"}
+                    onClick={() => setActiveReel(null)}
+                    className="inline-flex w-fit items-center gap-1.5 rounded-[2px] border border-interlink-hairline bg-interlink-surface px-3.5 py-2 text-xs font-semibold text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest focus-ring"
+                  >
+                    <span>
+                      {activeReel.mentorId ? "View Mentor Profile" : "Explore Mentors"}
+                    </span>
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </div>
+
+                <div className="flex items-start gap-2.5 rounded-lg border border-interlink-border bg-interlink-surface px-3.5 py-3 text-xs leading-relaxed text-interlink-ink">
+                  <Route
+                    className="mt-0.5 h-4 w-4 shrink-0 text-interlink-forest"
+                    aria-hidden="true"
+                  />
+                  <div>
+                    <span className="font-semibold text-interlink-forest">Career Path: </span>
+                    <span className="text-interlink-ink/90">{activeReel.careerPath}</span>
                   </div>
                 </div>
-              )}
-            </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h4 className="font-display text-base font-semibold text-interlink-ink">
-                  {activeReel.mentorName}
-                </h4>
-                <p className="text-xs text-interlink-muted">{activeReel.profession}</p>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-interlink-muted">
+                    Key Takeaway
+                  </p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-interlink-ink/85">
+                    {activeReel.summary}
+                  </p>
+                </div>
               </div>
-              <Badge tone="forest">{activeReel.topicTag}</Badge>
             </div>
-
-            <div className="rounded-[2px] border border-interlink-border bg-interlink-app-bg px-3.5 py-2.5 text-xs text-interlink-ink">
-              <span className="font-semibold text-interlink-forest">Career Path: </span>
-              {activeReel.careerPath}
-            </div>
-
-            <p className="text-sm leading-relaxed text-interlink-muted">{activeReel.summary}</p>
           </div>
         )}
       </Modal>
@@ -303,7 +362,16 @@ export function MentorSpotlightSection({
         onClose={() => setCreateOpen(false)}
         title="Share a Mentor Motivational Reel"
         maxWidthClass="max-w-[560px]"
+        containerClassName="overflow-hidden rounded-2xl border border-interlink-border bg-interlink-surface p-5 shadow-modal sm:p-6"
       >
+        <div className="mb-4 pr-8">
+          <h3 className="font-display text-lg font-semibold text-interlink-ink">
+            Share a Mentor Motivational Reel
+          </h3>
+          <p className="mt-1 text-xs text-interlink-muted">
+            Inspire learners with your career progression and key lessons learned.
+          </p>
+        </div>
         <form onSubmit={handlePublishReel} className="space-y-4">
           {formError && <ErrorAlert message={formError} />}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

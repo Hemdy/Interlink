@@ -597,6 +597,12 @@ export function MentorDirectoryClient({
                         firstName={mentor.firstName}
                         lastName={mentor.lastName}
                         size="md"
+                        previewable
+                        previewSubtitle={
+                          mentor.currentPosition
+                            ? `${mentor.currentPosition}${mentor.organisation ? ` · ${mentor.organisation}` : ""}`
+                            : undefined
+                        }
                       />
                       <div>
                         <h3 className="text-base font-semibold text-interlink-ink">

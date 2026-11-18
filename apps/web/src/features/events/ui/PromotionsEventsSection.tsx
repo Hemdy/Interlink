@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Calendar, CheckCircle2, MapPin, Megaphone, Users } from "lucide-react";
+import { ArrowRight, Calendar, CheckCircle2, MapPin, Megaphone, Users, X } from "lucide-react";
 import type { EventCategory, PlatformEventItem, SessionUser } from "@interlink/types";
 import { formatDateTime } from "@interlink/utils";
 import { Badge, Card } from "@/components/ui/Card";
@@ -233,39 +233,98 @@ export function PromotionsEventsSection({
         open={Boolean(rsvpTarget)}
         onClose={() => setRsvpTarget(null)}
         title={rsvpTarget ? `Register: ${rsvpTarget.title}` : "Event Registration"}
-        maxWidthClass="max-w-[460px]"
+        maxWidthClass="max-w-[520px]"
+        containerClassName="overflow-hidden rounded-2xl border border-interlink-border bg-interlink-surface shadow-modal"
+        hideCloseButton
       >
         {rsvpTarget && (
-          <form onSubmit={handleRegister} className="space-y-4">
-            <p className="text-xs leading-relaxed text-interlink-muted">
-              {rsvpTarget.locationOrFormat}
-              {rsvpTarget.eventDate ? ` · ${formatDateTime(rsvpTarget.eventDate)} UTC` : ""}
-            </p>
-            {formError && <ErrorAlert message={formError} />}
-            <Input
-              label="Full Name"
-              value={attendeeName}
-              onChange={(e) => setAttendeeName(e.target.value)}
-              placeholder="Your full name"
-              required
-            />
-            <Input
-              label="Email Address"
-              type="email"
-              value={attendeeEmail}
-              onChange={(e) => setAttendeeEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-            />
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setRsvpTarget(null)}>
-                Cancel
-              </Button>
-              <Button type="submit" loading={submitting}>
-                Confirm Registration
-              </Button>
+          <div>
+            {/* Event Reservation Header */}
+            <div className="border-b border-interlink-border bg-interlink-app-bg/80 px-5 py-4 sm:px-6 sm:py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone={CATEGORY_TONES[rsvpTarget.category]} className="capitalize">
+                      {rsvpTarget.category}
+                    </Badge>
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-interlink-forest">
+                      Reserve Your Seat
+                    </span>
+                  </div>
+                  <h3 className="mt-2 font-display text-lg font-semibold leading-snug text-interlink-ink sm:text-xl">
+                    {rsvpTarget.title}
+                  </h3>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setRsvpTarget(null)}
+                  aria-label="Close registration modal"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-interlink-border bg-interlink-surface text-interlink-muted transition-colors hover:border-interlink-forest hover:text-interlink-ink focus-ring"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+
+              <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-interlink-muted">
+                {rsvpTarget.eventDate && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-interlink-forest" aria-hidden="true" />
+                    <span>{formatDateTime(rsvpTarget.eventDate)} UTC</span>
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-interlink-forest" aria-hidden="true" />
+                  <span>{rsvpTarget.locationOrFormat}</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-interlink-forest" aria-hidden="true" />
+                  <span>{rsvpTarget.registrationCount ?? 0} registered</span>
+                </span>
+              </div>
             </div>
-          </form>
+
+            {/* Form Content */}
+            <form onSubmit={handleRegister} className="space-y-5 p-5 sm:p-6">
+              <p className="rounded-lg border border-interlink-border/80 bg-interlink-app-bg/50 px-3.5 py-2.5 text-xs leading-relaxed text-interlink-muted">
+                {rsvpTarget.summary}
+              </p>
+
+              {formError && <ErrorAlert message={formError} />}
+
+              <div className="space-y-4">
+                <Input
+                  label="Full Name"
+                  value={attendeeName}
+                  onChange={(e) => setAttendeeName(e.target.value)}
+                  placeholder="Your full name"
+                  required
+                />
+                <Input
+                  label="Email Address"
+                  type="email"
+                  value={attendeeEmail}
+                  onChange={(e) => setAttendeeEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col-reverse gap-2.5 border-t border-interlink-border/70 pt-4 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setRsvpTarget(null)}
+                  className="w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" loading={submitting} className="w-full sm:w-auto">
+                  Confirm Reservation
+                </Button>
+              </div>
+            </form>
+          </div>
         )}
       </Modal>
     </section>

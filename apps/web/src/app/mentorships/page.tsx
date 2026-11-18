@@ -79,6 +79,8 @@ export default async function MentorshipsListPage() {
                         firstName={partner?.firstName ?? "P"}
                         lastName={partner?.lastName ?? ""}
                         size="md"
+                        previewable
+                        previewSubtitle={roleLabel}
                       />
                       <div>
                         <p className="text-xs font-medium uppercase tracking-wider text-interlink-muted">

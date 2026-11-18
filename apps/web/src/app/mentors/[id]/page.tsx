@@ -51,6 +51,12 @@ export default async function MentorDetailPage({
                       firstName={mentor.firstName}
                       lastName={mentor.lastName}
                       size="xl"
+                      previewable
+                      previewSubtitle={
+                        mentor.currentPosition
+                          ? `${mentor.currentPosition}${mentor.organisation ? ` · ${mentor.organisation}` : ""}`
+                          : undefined
+                      }
                     />
                     <div>
                       <h1 className="font-display text-2xl font-semibold text-interlink-ink sm:text-3xl">
