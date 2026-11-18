@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { eventRegistrations, getDb, isDatabaseConfigured, platformEvents } from "@interlink/database";
 import { registerEventSchema, uuidSchema } from "@interlink/validation";
@@ -36,6 +37,9 @@ export async function POST(request: Request) {
           attendeeEmail,
         })
         .returning({ id: eventRegistrations.id });
+
+      revalidatePath("/");
+      revalidatePath("/learn");
 
       return created({
         registered: true,

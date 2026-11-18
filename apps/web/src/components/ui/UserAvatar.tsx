@@ -52,6 +52,8 @@ export function UserAvatar({
         <img
           src={resolved}
           alt={`${firstName} ${lastName}`}
+          loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover"
           onError={() => setFailedSrc(resolved)}
         />

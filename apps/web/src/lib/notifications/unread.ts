@@ -1,7 +1,8 @@
+import { cache } from "react";
 import { and, count, eq } from "drizzle-orm";
 import { getDb, isDatabaseConfigured, notifications } from "@interlink/database";
 
-export async function getUnreadNotificationCount(userId: string): Promise<number> {
+export const getUnreadNotificationCount = cache(async (userId: string): Promise<number> => {
   if (!isDatabaseConfigured()) return 0;
   try {
     const [row] = await getDb()
@@ -12,4 +13,4 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
   } catch {
     return 0;
   }
-}
+});

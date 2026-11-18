@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import type { SessionUser } from "@interlink/types";
 import {
   ArrowRight,
   Award,
@@ -12,6 +14,7 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Badge, Card } from "@/components/ui/Card";
+import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { Reveal } from "@/components/ui/Reveal";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -60,14 +63,30 @@ const lifecycleStages = [
   },
 ];
 
-export default async function HomePage() {
-  const user = await getCurrentUser();
-  const [{ mentors }, metrics, reels, events] = await Promise.all([
-    listPublicMentors({ limit: 3, viewerUserId: user?.id ?? null }),
-    getPlatformTrustMetrics(),
-    listPublishedMentorReels(),
-    listPublishedPlatformEvents(),
-  ]);
+function TrustMetricsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {[0, 1, 2, 3].map((idx) => (
+        <div
+          key={idx}
+          className="flex h-full min-h-[114px] animate-pulse flex-col justify-between rounded-[2px] border border-interlink-border bg-interlink-app-bg/70 p-5 shadow-subtle"
+        >
+          <div className="flex items-start gap-3.5">
+            <div className="h-9 w-9 shrink-0 rounded-[2px] bg-interlink-border/50" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-5 w-24 rounded bg-interlink-border/60" />
+              <div className="h-3 w-28 rounded bg-interlink-border/45" />
+              <div className="h-3 w-36 rounded bg-interlink-border/35" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+async function TrustMetricsSection() {
+  const metrics = await getPlatformTrustMetrics();
 
   const trustItems = metrics.hasLiveMetrics
     ? [
@@ -124,10 +143,195 @@ export default async function HomePage() {
       ];
 
   return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {trustItems.map((item, idx) => {
+        const Icon = item.icon;
+        return (
+          <Reveal key={item.label} delayMs={idx * 70} className="h-full">
+            <div className="flex h-full min-h-[114px] flex-col justify-between rounded-[2px] border border-interlink-border bg-interlink-app-bg/70 p-5 shadow-subtle transition-all duration-200 hover:-translate-y-0.5 hover:border-interlink-forest/50 hover:bg-interlink-surface hover:shadow-elevated">
+              <div className="flex items-start gap-3.5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-interlink-forest/20 bg-interlink-surface text-interlink-forest">
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-lg font-semibold leading-snug text-interlink-ink">
+                    {item.value}
+                  </p>
+                  <p className="text-xs font-semibold text-interlink-forest">{item.label}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-interlink-muted">{item.detail}</p>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        );
+      })}
+    </div>
+  );
+}
+
+function FeaturedMentorsSkeleton() {
+  return (
+    <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+      {[0, 1, 2].map((idx) => (
+        <div
+          key={idx}
+          className="h-60 animate-pulse rounded-[2px] border border-interlink-border bg-interlink-surface p-6 shadow-subtle"
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-[2px] bg-interlink-border/60" />
+            <div className="space-y-2">
+              <div className="h-4 w-32 rounded bg-interlink-border/60" />
+              <div className="h-3 w-40 rounded bg-interlink-border/45" />
+            </div>
+          </div>
+          <div className="mt-4 h-3 w-full rounded bg-interlink-border/40" />
+          <div className="mt-2 h-3 w-5/6 rounded bg-interlink-border/40" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+async function FeaturedMentorsSection({ viewerUserId }: { viewerUserId: string | null }) {
+  const { mentors } = await listPublicMentors({
+    limit: 3,
+    viewerUserId,
+  });
+
+  if (mentors.length === 0) {
+    return (
+      <Reveal delayMs={80}>
+        <div className="mt-8 rounded-[2px] border border-interlink-border bg-interlink-surface p-8 shadow-subtle">
+          <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <h3 className="text-base font-semibold text-interlink-ink">
+                Mentor profiles appear here as professionals complete onboarding
+              </h3>
+              <p className="mt-1 max-w-2xl text-sm text-interlink-muted">
+                Explore the full directory or join Interlink as a Mentor to share your
+                industry expertise with aspiring professionals.
+              </p>
+            </div>
+            <Link
+              href="/mentors"
+              className="rounded-[2px] bg-interlink-forest px-5 py-2.5 text-sm font-medium text-white shadow-subtle transition-colors duration-200 hover:bg-interlink-forest-hover"
+            >
+              Open Mentor Directory
+            </Link>
+          </div>
+        </div>
+      </Reveal>
+    );
+  }
+
+  return (
+    <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+      {mentors.map((mentor, idx) => (
+        <Reveal key={mentor.userId} delayMs={idx * 90} className="h-full">
+          <Card
+            elevated
+            className="flex h-full flex-col justify-between hover:-translate-y-0.5 hover:border-interlink-forest/50"
+          >
+            <div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <UserAvatar
+                    src={mentor.profileImage}
+                    firstName={mentor.firstName}
+                    lastName={mentor.lastName}
+                    size="md"
+                  />
+                  <div>
+                    <h3 className="text-base font-semibold text-interlink-ink">
+                      {mentor.firstName} {mentor.lastName}
+                    </h3>
+                    <p className="text-xs text-interlink-muted">
+                      {mentor.currentPosition}
+                      {mentor.organisation ? ` · ${mentor.organisation}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <Badge tone={mentor.verificationStatus === "verified" ? "forest" : "neutral"}>
+                  {mentor.verificationStatus === "verified"
+                    ? "Verified Mentor"
+                    : mentor.verificationStatus === "reviewed"
+                      ? "Reviewed"
+                      : "Registered"}
+                </Badge>
+              </div>
+
+              <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-interlink-muted">
+                {mentor.biography}
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {mentor.expertiseTags.slice(0, 3).map((tag) => (
+                  <Badge key={tag} tone="neutral">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between border-t border-interlink-border/70 pt-4">
+              <span className="text-xs text-interlink-muted">
+                {mentor.yearsOfExperience}+ yrs experience
+              </span>
+              <Link
+                href={`/mentors/${mentor.userId}`}
+                className="text-xs font-semibold text-interlink-forest hover:underline"
+              >
+                View Profile &rarr;
+              </Link>
+            </div>
+          </Card>
+        </Reveal>
+      ))}
+    </div>
+  );
+}
+
+function SpotlightEventsSkeleton() {
+  return (
+    <div className="border-t border-interlink-border bg-interlink-canvas py-16">
+      <div className="mx-auto grid max-w-[1360px] grid-cols-1 gap-6 px-6 sm:px-10 md:grid-cols-3">
+        {[0, 1, 2].map((idx) => (
+          <div
+            key={idx}
+            className="h-72 animate-pulse rounded-[2px] border border-interlink-border bg-interlink-surface p-5 shadow-subtle"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+async function SpotlightAndEventsSection({ user }: { user: SessionUser | null }) {
+  const [reels, events] = await Promise.all([
+    listPublishedMentorReels(),
+    listPublishedPlatformEvents(),
+  ]);
+
+  return (
+    <>
+      <MentorSpotlightSection initialReels={reels} user={user} />
+      <PromotionsEventsSection initialEvents={events} user={user} />
+    </>
+  );
+}
+
+export default async function HomePage() {
+  const user = await getCurrentUser();
+
+  return (
     <PublicShell user={user}>
       <PWAEntryGuard isAuthenticated={Boolean(user)} />
-      {/* HERO SECTION — Visually aligned to Reference Image 1 */}
-      <section className="relative overflow-x-clip bg-interlink-canvas">
+      {/* HERO SECTION — Visually aligned to Reference Image 1 with interactive matte canvas */}
+      <InteractiveMatteHero
+        paddingClassName=""
+        surfaceClassName="overflow-x-clip bg-interlink-canvas"
+        vignetteTone="canvas"
+      >
         <div className="relative mx-auto max-w-[1360px] lg:min-h-[850px] xl:min-h-[960px]">
           <div className="grid grid-cols-1 lg:grid-cols-12">
             {/* Upper-Left Quadrant */}
@@ -152,7 +356,7 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
-      </section>
+      </InteractiveMatteHero>
 
       {/* COMPACT TRUST INDICATORS */}
       <section
@@ -160,29 +364,9 @@ export default async function HomePage() {
         className="border-t border-interlink-border bg-interlink-surface py-10 sm:py-12"
       >
         <div className="mx-auto max-w-[1360px] px-6 sm:px-10">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {trustItems.map((item, idx) => {
-              const Icon = item.icon;
-              return (
-                <Reveal key={item.label} delayMs={idx * 70} className="h-full">
-                  <div className="flex h-full min-h-[114px] flex-col justify-between rounded-[2px] border border-interlink-border bg-interlink-app-bg/70 p-5 shadow-subtle transition-all duration-200 hover:-translate-y-0.5 hover:border-interlink-forest/50 hover:bg-interlink-surface hover:shadow-elevated">
-                    <div className="flex items-start gap-3.5">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-interlink-forest/20 bg-interlink-surface text-interlink-forest">
-                        <Icon className="h-4 w-4" aria-hidden="true" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-display text-lg font-semibold leading-snug text-interlink-ink">
-                          {item.value}
-                        </p>
-                        <p className="text-xs font-semibold text-interlink-forest">{item.label}</p>
-                        <p className="mt-1 text-xs leading-relaxed text-interlink-muted">{item.detail}</p>
-                      </div>
-                    </div>
-                  </div>
-                </Reveal>
-              );
-            })}
-          </div>
+          <Suspense fallback={<TrustMetricsSkeleton />}>
+            <TrustMetricsSection />
+          </Suspense>
         </div>
       </section>
 
@@ -255,97 +439,9 @@ export default async function HomePage() {
             </div>
           </Reveal>
 
-          {mentors.length > 0 ? (
-            <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-              {mentors.map((mentor, idx) => (
-                <Reveal key={mentor.userId} delayMs={idx * 90} className="h-full">
-                  <Card
-                    elevated
-                    className="flex h-full flex-col justify-between hover:-translate-y-0.5 hover:border-interlink-forest/50"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <UserAvatar
-                            src={mentor.profileImage}
-                            firstName={mentor.firstName}
-                            lastName={mentor.lastName}
-                            size="md"
-                          />
-                          <div>
-                            <h3 className="text-base font-semibold text-interlink-ink">
-                              {mentor.firstName} {mentor.lastName}
-                            </h3>
-                            <p className="text-xs text-interlink-muted">
-                              {mentor.currentPosition}
-                              {mentor.organisation ? ` · ${mentor.organisation}` : ""}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge
-                          tone={
-                            mentor.verificationStatus === "verified" ? "forest" : "neutral"
-                          }
-                        >
-                          {mentor.verificationStatus === "verified"
-                            ? "Verified Mentor"
-                            : mentor.verificationStatus === "reviewed"
-                              ? "Reviewed"
-                              : "Registered"}
-                        </Badge>
-                      </div>
-
-                      <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-interlink-muted">
-                        {mentor.biography}
-                      </p>
-
-                      <div className="mt-4 flex flex-wrap gap-1.5">
-                        {mentor.expertiseTags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} tone="neutral">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-6 flex items-center justify-between border-t border-interlink-border/70 pt-4">
-                      <span className="text-xs text-interlink-muted">
-                        {mentor.yearsOfExperience}+ yrs experience
-                      </span>
-                      <Link
-                        href={`/mentors/${mentor.userId}`}
-                        className="text-xs font-semibold text-interlink-forest hover:underline"
-                      >
-                        View Profile &rarr;
-                      </Link>
-                    </div>
-                  </Card>
-                </Reveal>
-              ))}
-            </div>
-          ) : (
-            <Reveal delayMs={80}>
-              <div className="mt-8 rounded-[2px] border border-interlink-border bg-interlink-surface p-8 shadow-subtle">
-                <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-                  <div>
-                    <h3 className="text-base font-semibold text-interlink-ink">
-                      Mentor profiles appear here as professionals complete onboarding
-                    </h3>
-                    <p className="mt-1 max-w-2xl text-sm text-interlink-muted">
-                      Explore the full directory or join Interlink as a Mentor to share your
-                      industry expertise with aspiring professionals.
-                    </p>
-                  </div>
-                  <Link
-                    href="/mentors"
-                    className="rounded-[2px] bg-interlink-forest px-5 py-2.5 text-sm font-medium text-white shadow-subtle transition-colors duration-200 hover:bg-interlink-forest-hover"
-                  >
-                    Open Mentor Directory
-                  </Link>
-                </div>
-              </div>
-            </Reveal>
-          )}
+          <Suspense fallback={<FeaturedMentorsSkeleton />}>
+            <FeaturedMentorsSection viewerUserId={user?.id ?? null} />
+          </Suspense>
         </div>
       </section>
 
@@ -397,11 +493,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* MENTOR SPOTLIGHT / MOTIVATIONAL REELS */}
-      <MentorSpotlightSection initialReels={reels} user={user} />
-
-      {/* PROMOTIONS & UPCOMING EVENTS */}
-      <PromotionsEventsSection initialEvents={events} user={user} />
+      <Suspense fallback={<SpotlightEventsSkeleton />}>
+        <SpotlightAndEventsSection user={user} />
+      </Suspense>
 
       {/* TRUST, CREDIBILITY & GOALS */}
       <section className="border-t border-interlink-border bg-interlink-forest-deep py-16 text-white">

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Card } from "@/components/ui/Card";
+import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
 import { Reveal } from "@/components/ui/Reveal";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -129,7 +130,7 @@ export default async function GuidelinesPage() {
   return (
     <PublicShell user={user}>
       {/* Header */}
-      <section className="border-b border-interlink-border bg-interlink-surface py-16 sm:py-20">
+      <InteractiveMatteHero paddingClassName="py-16 sm:py-20">
         <div className="mx-auto max-w-[1100px] px-6 sm:px-10">
           <div className="animate-hero-up">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-interlink-forest">
@@ -144,7 +145,7 @@ export default async function GuidelinesPage() {
             </p>
           </div>
         </div>
-      </section>
+      </InteractiveMatteHero>
 
       {/* Alternating Categorised Guideline Sections */}
       {guidelineSections.map((section, sectionIdx) => {

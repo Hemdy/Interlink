@@ -18,25 +18,27 @@ export default async function SavedMentorsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
-  const unreadCount = await getUnreadNotificationCount(user.id);
   const db = isDatabaseConfigured() ? getDb() : null;
 
-  const saved = db
-    ? await db
-        .select({
-          mentorId: savedMentors.mentorId,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          currentPosition: mentorProfiles.currentPosition,
-          organisation: mentorProfiles.organisation,
-          verificationStatus: mentorProfiles.verificationStatus,
-          availabilityStatus: mentorProfiles.availabilityStatus,
-        })
-        .from(savedMentors)
-        .innerJoin(users, eq(savedMentors.mentorId, users.id))
-        .leftJoin(mentorProfiles, eq(savedMentors.mentorId, mentorProfiles.userId))
-        .where(eq(savedMentors.menteeId, user.id))
-    : [];
+  const [unreadCount, saved] = await Promise.all([
+    getUnreadNotificationCount(user.id),
+    db
+      ? db
+          .select({
+            mentorId: savedMentors.mentorId,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            currentPosition: mentorProfiles.currentPosition,
+            organisation: mentorProfiles.organisation,
+            verificationStatus: mentorProfiles.verificationStatus,
+            availabilityStatus: mentorProfiles.availabilityStatus,
+          })
+          .from(savedMentors)
+          .innerJoin(users, eq(savedMentors.mentorId, users.id))
+          .leftJoin(mentorProfiles, eq(savedMentors.mentorId, mentorProfiles.userId))
+          .where(eq(savedMentors.menteeId, user.id))
+      : Promise.resolve([]),
+  ]);
 
   return (
     <AppShell

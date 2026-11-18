@@ -22,10 +22,9 @@ export default async function AdminPage() {
   if (!user) redirect("/sign-in");
   if (!isAdminRole(user.roles)) redirect("/dashboard");
 
-  const unreadCount = await getUnreadNotificationCount(user.id);
   if (!isDatabaseConfigured()) {
     return (
-      <AppShell user={user} unreadCount={unreadCount} title="Admin Console">
+      <AppShell user={user} unreadCount={0} title="Admin Console">
         <EmptyState
           title="Database not configured"
           description="Set DATABASE_URL to administer users, mentor verifications, and reports."
@@ -35,8 +34,10 @@ export default async function AdminPage() {
   }
 
   const db = getDb();
-  const [userRows, roleRows, verifRows, reportRows, industryRows, logRows] = await Promise.all([
-    db.select().from(users).orderBy(desc(users.createdAt)).limit(100),
+  const [unreadCount, userRows, roleRows, verifRows, reportRows, industryRows, logRows] =
+    await Promise.all([
+      getUnreadNotificationCount(user.id),
+      db.select().from(users).orderBy(desc(users.createdAt)).limit(100),
     db.select().from(userRoles),
     db
       .select({

@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { desc, eq, sql } from "drizzle-orm";
 import {
   eventRegistrations,
@@ -115,42 +116,96 @@ export const DEFAULT_PLATFORM_EVENTS: PlatformEventItem[] = [
   },
 ];
 
+const getCachedMentorReels = unstable_cache(
+  async (): Promise<MentorReelItem[]> => {
+    try {
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(mentorReels)
+        .where(eq(mentorReels.isPublished, true))
+        .orderBy(desc(mentorReels.createdAt))
+        .limit(12);
+
+      if (rows.length === 0) {
+        return DEFAULT_MENTOR_REELS;
+      }
+
+      return rows.map((row) => ({
+        id: row.id,
+        mentorId: row.mentorId,
+        mentorName: row.mentorName,
+        profession: row.profession,
+        careerPath: row.careerPath,
+        title: row.title,
+        summary: row.summary,
+        videoUrl: row.videoUrl,
+        posterImageUrl: row.posterImageUrl,
+        durationLabel: row.durationLabel,
+        topicTag: row.topicTag,
+        createdAt: row.createdAt.toISOString(),
+      }));
+    } catch {
+      return DEFAULT_MENTOR_REELS;
+    }
+  },
+  ["published-mentor-reels"],
+  { revalidate: 60 },
+);
+
 export async function listPublishedMentorReels(): Promise<MentorReelItem[]> {
   if (!isDatabaseConfigured()) {
     return DEFAULT_MENTOR_REELS;
   }
-
-  try {
-    const db = getDb();
-    const rows = await db
-      .select()
-      .from(mentorReels)
-      .where(eq(mentorReels.isPublished, true))
-      .orderBy(desc(mentorReels.createdAt))
-      .limit(12);
-
-    if (rows.length === 0) {
-      return DEFAULT_MENTOR_REELS;
-    }
-
-    return rows.map((row) => ({
-      id: row.id,
-      mentorId: row.mentorId,
-      mentorName: row.mentorName,
-      profession: row.profession,
-      careerPath: row.careerPath,
-      title: row.title,
-      summary: row.summary,
-      videoUrl: row.videoUrl,
-      posterImageUrl: row.posterImageUrl,
-      durationLabel: row.durationLabel,
-      topicTag: row.topicTag,
-      createdAt: row.createdAt.toISOString(),
-    }));
-  } catch {
-    return DEFAULT_MENTOR_REELS;
-  }
+  return getCachedMentorReels();
 }
+
+const getCachedPlatformEvents = unstable_cache(
+  async (): Promise<PlatformEventItem[]> => {
+    try {
+      const db = getDb();
+      const [rows, regCounts] = await Promise.all([
+        db
+          .select()
+          .from(platformEvents)
+          .where(eq(platformEvents.isPublished, true))
+          .orderBy(desc(platformEvents.isFeatured), desc(platformEvents.createdAt))
+          .limit(16),
+        db
+          .select({
+            eventId: eventRegistrations.eventId,
+            total: sql<number>`count(*)::int`,
+          })
+          .from(eventRegistrations)
+          .groupBy(eventRegistrations.eventId),
+      ]);
+
+      if (rows.length === 0) {
+        return DEFAULT_PLATFORM_EVENTS;
+      }
+
+      const countMap = new Map(regCounts.map((r) => [r.eventId, Number(r.total)]));
+
+      return rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        category: (row.category as EventCategory) || "workshop",
+        summary: row.summary,
+        imageUrl: row.imageUrl,
+        eventDate: row.eventDate ? row.eventDate.toISOString() : null,
+        locationOrFormat: row.locationOrFormat,
+        ctaLabel: row.ctaLabel,
+        ctaUrl: row.ctaUrl,
+        isFeatured: row.isFeatured,
+        registrationCount: countMap.get(row.id) ?? 0,
+      }));
+    } catch {
+      return DEFAULT_PLATFORM_EVENTS;
+    }
+  },
+  ["published-platform-events"],
+  { revalidate: 60 },
+);
 
 export async function listPublishedPlatformEvents(
   category?: EventCategory,
@@ -161,49 +216,6 @@ export async function listPublishedPlatformEvents(
       : DEFAULT_PLATFORM_EVENTS;
   }
 
-  try {
-    const db = getDb();
-    const rows = await db
-      .select()
-      .from(platformEvents)
-      .where(eq(platformEvents.isPublished, true))
-      .orderBy(desc(platformEvents.isFeatured), desc(platformEvents.createdAt))
-      .limit(16);
-
-    if (rows.length === 0) {
-      return category
-        ? DEFAULT_PLATFORM_EVENTS.filter((e) => e.category === category)
-        : DEFAULT_PLATFORM_EVENTS;
-    }
-
-    const regCounts = await db
-      .select({
-        eventId: eventRegistrations.eventId,
-        total: sql<number>`count(*)::int`,
-      })
-      .from(eventRegistrations)
-      .groupBy(eventRegistrations.eventId);
-
-    const countMap = new Map(regCounts.map((r) => [r.eventId, Number(r.total)]));
-
-    const mapped: PlatformEventItem[] = rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      category: (row.category as EventCategory) || "workshop",
-      summary: row.summary,
-      imageUrl: row.imageUrl,
-      eventDate: row.eventDate ? row.eventDate.toISOString() : null,
-      locationOrFormat: row.locationOrFormat,
-      ctaLabel: row.ctaLabel,
-      ctaUrl: row.ctaUrl,
-      isFeatured: row.isFeatured,
-      registrationCount: countMap.get(row.id) ?? 0,
-    }));
-
-    return category ? mapped.filter((item) => item.category === category) : mapped;
-  } catch {
-    return category
-      ? DEFAULT_PLATFORM_EVENTS.filter((e) => e.category === category)
-      : DEFAULT_PLATFORM_EVENTS;
-  }
+  const mapped = await getCachedPlatformEvents();
+  return category ? mapped.filter((item) => item.category === category) : mapped;
 }

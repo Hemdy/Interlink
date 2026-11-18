@@ -3,12 +3,13 @@
 import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { ArrowRight, CheckCircle2, MailCheck, Settings } from "lucide-react";
 import { ErrorAlert, LoadingSpinner } from "@/components/ui/Feedback";
-import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
+import { AuthBottomCard, AuthShell } from "@/features/auth/ui/AuthShell";
+import { useNavigationMode } from "@/features/pwa/useNavigationMode";
 
 function VerifyEmailInner() {
+  const { isStandalone } = useNavigationMode();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const [status, setStatus] = useState<"idle" | "verifying" | "success" | "error">(
@@ -46,62 +47,79 @@ function VerifyEmailInner() {
   }, [token]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-interlink-sage/30 px-4">
-      <div className="w-full max-w-md rounded-[2px] border border-interlink-border bg-interlink-surface p-8 shadow-card">
-        <div className="flex justify-center">
-          <InterlinkLogo />
+    <AuthShell
+      logoHref={isStandalone ? "/sign-in" : "/"}
+      titleLeading="Email"
+      titleHighlight="Verification"
+      subtitle="Confirm your email address to activate full Interlink access."
+    >
+      {status === "verifying" && (
+        <div className="mt-8 flex flex-col items-center">
+          <LoadingSpinner label="Verifying your email address..." />
         </div>
-        <h1 className="mt-6 text-center font-display text-2xl font-bold text-interlink-forest">
-          Email Verification
-        </h1>
+      )}
 
-        {status === "verifying" && <LoadingSpinner label="Verifying your email address..." />}
-
-        {status === "success" && (
-          <div className="mt-6 text-center">
-            <CheckCircle2 className="mx-auto h-10 w-10 text-interlink-forest" />
-            <p className="mt-3 text-sm text-interlink-ink">
-              Your email address has been verified successfully.
-            </p>
-            <Link
-              href="/dashboard"
-              className="mt-6 inline-block rounded-[2px] bg-interlink-forest px-6 py-2 text-sm font-medium text-white hover:bg-interlink-forest-hover"
-            >
-              Continue to Dashboard
-            </Link>
+      {status === "success" && (
+        <div className="mt-7 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-interlink-forest/12 text-interlink-forest">
+            <CheckCircle2 className="h-7 w-7" aria-hidden="true" />
           </div>
-        )}
+          <p className="mt-4 text-sm leading-relaxed text-interlink-ink">
+            Your email address has been verified successfully.
+          </p>
+          <Link
+            href="/dashboard"
+            className="relative mt-6 flex w-full items-center justify-center rounded-full bg-gradient-to-r from-interlink-forest via-interlink-forest-card to-interlink-forest-deep py-3.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(50,93,60,0.3)] transition-all hover:brightness-110 focus-ring"
+          >
+            <span>Continue to Dashboard</span>
+            <ArrowRight className="absolute right-5 h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+      )}
 
-        {status === "error" && (
-          <div className="mt-6 space-y-4">
-            <ErrorAlert message={error ?? "Invalid verification token."} />
-            <Link
-              href="/dashboard"
-              className="block text-center text-xs font-medium text-interlink-forest hover:underline"
-            >
-              Return to Dashboard
-            </Link>
-          </div>
-        )}
+      {status === "error" && (
+        <div className="mt-6 space-y-5">
+          <ErrorAlert message={error ?? "Invalid verification token."} />
+          <Link
+            href="/dashboard"
+            className="relative flex w-full items-center justify-center rounded-full border border-interlink-forest/40 bg-interlink-surface py-3 text-sm font-semibold text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:bg-interlink-forest hover:text-white focus-ring"
+          >
+            <span>Return to Dashboard</span>
+            <ArrowRight className="absolute right-5 h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+      )}
 
-        {status === "idle" && (
-          <div className="mt-6 text-center text-sm text-interlink-muted">
-            <p>Open the verification link sent to your email, or request a new link from settings.</p>
-            <div className="mt-5">
-              <Link href="/settings">
-                <Button variant="outline">Go to Account Settings</Button>
-              </Link>
-            </div>
+      {status === "idle" && (
+        <div className="mt-7 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-interlink-forest/20 bg-interlink-forest/10 text-interlink-forest">
+            <MailCheck className="h-7 w-7" aria-hidden="true" />
           </div>
-        )}
-      </div>
-    </div>
+          <p className="mt-4 text-sm leading-relaxed text-interlink-muted">
+            Open the verification link sent to your email, or request a new link from your account settings.
+          </p>
+          <AuthBottomCard
+            icon={Settings}
+            title="Need a new link?"
+            description="Request another verification email in settings"
+            ctaLabel="Settings"
+            ctaHref="/settings"
+          />
+        </div>
+      )}
+    </AuthShell>
   );
 }
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-interlink-canvas">
+          <LoadingSpinner />
+        </div>
+      }
+    >
       <VerifyEmailInner />
     </Suspense>
   );

@@ -20,19 +20,25 @@ export default async function MessagesPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
-  const unreadCount = await getUnreadNotificationCount(user.id);
   const db = isDatabaseConfigured() ? getDb() : null;
 
-  const userMentorships = db
-    ? await db
-        .select()
-        .from(mentorships)
-        .where(or(eq(mentorships.mentorId, user.id), eq(mentorships.menteeId, user.id)))
-    : [];
+  const [unreadCount, userMentorships] = await Promise.all([
+    getUnreadNotificationCount(user.id),
+    db
+      ? db
+          .select()
+          .from(mentorships)
+          .where(or(eq(mentorships.mentorId, user.id), eq(mentorships.menteeId, user.id)))
+      : Promise.resolve([]),
+  ]);
 
-  const convRows =
+  const partnerIds = Array.from(
+    new Set(userMentorships.map((m) => (m.mentorId === user.id ? m.menteeId : m.mentorId))),
+  );
+
+  const [convRows, partners] = await Promise.all([
     db && userMentorships.length > 0
-      ? await db
+      ? db
           .select()
           .from(conversations)
           .where(
@@ -42,14 +48,9 @@ export default async function MessagesPage() {
             ),
           )
           .orderBy(desc(conversations.updatedAt))
-      : [];
-
-  const partnerIds = Array.from(
-    new Set(userMentorships.map((m) => (m.mentorId === user.id ? m.menteeId : m.mentorId))),
-  );
-  const partners =
+      : Promise.resolve([]),
     db && partnerIds.length > 0
-      ? await db
+      ? db
           .select({
             id: users.id,
             firstName: users.firstName,
@@ -58,7 +59,8 @@ export default async function MessagesPage() {
           })
           .from(users)
           .where(inArray(users.id, partnerIds))
-      : [];
+      : Promise.resolve([]),
+  ]);
 
   const partnerMap = new Map(partners.map((p) => [p.id, p]));
   const mentorshipMap = new Map(userMentorships.map((m) => [m.id, m]));

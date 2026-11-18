@@ -14,16 +14,18 @@ export default async function MentorshipsListPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
-  const unreadCount = await getUnreadNotificationCount(user.id);
   const db = isDatabaseConfigured() ? getDb() : null;
 
-  const rows = db
-    ? await db
-        .select()
-        .from(mentorships)
-        .where(or(eq(mentorships.mentorId, user.id), eq(mentorships.menteeId, user.id)))
-        .orderBy(desc(mentorships.lastActivityAt))
-    : [];
+  const [unreadCount, rows] = await Promise.all([
+    getUnreadNotificationCount(user.id),
+    db
+      ? db
+          .select()
+          .from(mentorships)
+          .where(or(eq(mentorships.mentorId, user.id), eq(mentorships.menteeId, user.id)))
+          .orderBy(desc(mentorships.lastActivityAt))
+      : Promise.resolve([]),
+  ]);
 
   const userIds = Array.from(new Set(rows.flatMap((r) => [r.mentorId, r.menteeId])));
   const relatedUsers =

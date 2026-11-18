@@ -15,6 +15,57 @@ interface AuthShellProps {
   children: React.ReactNode;
 }
 
+export function AuthBackdrop({ compact = false }: { compact?: boolean }) {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <div
+        className={`absolute -left-24 -top-24 h-72 w-72 rounded-full bg-interlink-forest/20 blur-3xl dark:bg-interlink-forest/30 ${
+          compact ? "" : "md:h-96 md:w-96"
+        }`}
+      />
+      <div
+        className={`absolute -right-20 top-1/4 h-64 w-64 rounded-full bg-interlink-sage/20 blur-3xl dark:bg-interlink-forest-deep/35 ${
+          compact ? "" : "md:h-80 md:w-80"
+        }`}
+      />
+      <div
+        className={`absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-interlink-forest/15 blur-3xl dark:bg-interlink-forest-card/25 ${
+          compact ? "" : "md:h-96 md:w-96"
+        }`}
+      />
+      <div
+        className={`absolute -bottom-16 -right-16 h-56 w-56 rounded-full bg-interlink-gold/10 blur-3xl dark:bg-interlink-gold/10 ${
+          compact ? "" : "md:h-72 md:w-72"
+        }`}
+      />
+
+      {/* Subtle curved architectural flow lines */}
+      <svg
+        className="absolute inset-0 h-full w-full opacity-[0.14] dark:opacity-[0.22]"
+        viewBox="0 0 390 844"
+        fill="none"
+        preserveAspectRatio="none"
+      >
+        <path
+          d="M-40 160 C 90 110, 170 20, 320 -20"
+          stroke="rgb(var(--il-forest))"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M-20 195 C 120 140, 210 60, 390 15"
+          stroke="rgb(var(--il-sage))"
+          strokeWidth="1"
+        />
+        <path
+          d="M-40 760 C 120 690, 260 770, 420 695"
+          stroke="rgb(var(--il-forest))"
+          strokeWidth="1.5"
+        />
+      </svg>
+    </div>
+  );
+}
+
 export function AuthShell({
   logoHref = "/",
   topLeftSlot,
@@ -26,45 +77,13 @@ export function AuthShell({
 }: AuthShellProps) {
   return (
     <div className="relative flex min-h-screen flex-col justify-between overflow-hidden bg-interlink-canvas px-5 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-[calc(1.75rem+env(safe-area-inset-top))] text-interlink-ink md:items-center md:justify-center md:px-6 md:py-12">
-      {/* Atmospheric Forest & Sage Layered Backdrop */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-interlink-forest/20 blur-3xl dark:bg-interlink-forest/30 md:h-96 md:w-96" />
-        <div className="absolute -right-20 top-1/4 h-64 w-64 rounded-full bg-interlink-sage/20 blur-3xl dark:bg-interlink-forest-deep/35 md:h-80 md:w-80" />
-        <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-interlink-forest/15 blur-3xl dark:bg-interlink-forest-card/25 md:h-96 md:w-96" />
-        <div className="absolute -bottom-16 -right-16 h-56 w-56 rounded-full bg-interlink-gold/10 blur-3xl dark:bg-interlink-gold/10 md:h-72 md:w-72" />
-
-        {/* Subtle curved architectural flow lines */}
-        <svg
-          className="absolute inset-0 h-full w-full opacity-[0.14] dark:opacity-[0.22]"
-          viewBox="0 0 390 844"
-          fill="none"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M-40 160 C 90 110, 170 20, 320 -20"
-            stroke="rgb(var(--il-forest))"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M-20 195 C 120 140, 210 60, 390 15"
-            stroke="rgb(var(--il-sage))"
-            strokeWidth="1"
-          />
-          <path
-            d="M-40 760 C 120 690, 260 770, 420 695"
-            stroke="rgb(var(--il-forest))"
-            strokeWidth="1.5"
-          />
-        </svg>
-      </div>
+      <AuthBackdrop />
 
       {/* Main Content Container (Borderless on mobile, refined surface card on md+) */}
-      <div className={`relative z-10 mx-auto flex w-full ${maxWidthClass} flex-1 flex-col justify-center md:flex-initial`}>
-        {topLeftSlot && (
-          <div className="mb-4 flex items-center justify-start">
-            {topLeftSlot}
-          </div>
-        )}
+      <div
+        className={`relative z-10 mx-auto flex w-full ${maxWidthClass} flex-1 flex-col justify-center md:flex-initial`}
+      >
+        {topLeftSlot && <div className="mb-4 flex items-center justify-start">{topLeftSlot}</div>}
 
         <div className="md:rounded-3xl md:border md:border-interlink-border/90 md:bg-interlink-surface/85 md:p-9 md:shadow-modal md:backdrop-blur-xl dark:md:bg-interlink-surface/75">
           {/* Top Brand Lockup */}
@@ -91,6 +110,49 @@ export function AuthShell({
 
           {children}
         </div>
+      </div>
+    </div>
+  );
+}
+
+export function AuthModalCard({
+  topLeftSlot,
+  titleLeading,
+  titleHighlight,
+  subtitle,
+  children,
+}: {
+  topLeftSlot?: React.ReactNode;
+  titleLeading: string;
+  titleHighlight: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative overflow-hidden bg-interlink-canvas p-6 text-interlink-ink sm:p-8">
+      <AuthBackdrop compact />
+
+      <div className="relative z-10">
+        {topLeftSlot && <div className="mb-3 flex items-center justify-start">{topLeftSlot}</div>}
+
+        <div className="mb-5 text-center">
+          <span className="inline-flex items-center justify-center">
+            <InterlinkLogo variant="compact" />
+          </span>
+        </div>
+
+        <div className="text-center">
+          <h2 className="font-display text-[26px] font-bold leading-tight tracking-tight text-interlink-ink sm:text-[28px]">
+            {titleLeading} <span className="text-interlink-forest">{titleHighlight}</span>
+          </h2>
+          <p className="mt-1.5 text-sm text-interlink-muted">{subtitle}</p>
+          <div
+            aria-hidden="true"
+            className="mx-auto mt-3.5 h-[2px] w-20 rounded-full bg-gradient-to-r from-transparent via-interlink-forest to-transparent shadow-[0_0_12px_rgba(59,104,70,0.45)]"
+          />
+        </div>
+
+        {children}
       </div>
     </div>
   );
@@ -180,13 +242,18 @@ export function AuthBottomCard({
   description,
   ctaLabel,
   ctaHref,
+  onCtaClick,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   description: string;
   ctaLabel: string;
-  ctaHref: string;
+  ctaHref?: string;
+  onCtaClick?: () => void;
 }) {
+  const ctaClassName =
+    "inline-flex shrink-0 items-center gap-1 rounded-full border border-interlink-forest/40 bg-interlink-surface px-3.5 py-2 text-xs font-semibold text-interlink-ink shadow-sm transition-colors hover:border-interlink-forest hover:bg-interlink-forest hover:text-white focus-ring";
+
   return (
     <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-interlink-border/90 bg-interlink-surface/85 p-3.5 shadow-subtle backdrop-blur-md dark:bg-interlink-surface/75">
       <div className="flex min-w-0 items-center gap-3">
@@ -201,13 +268,17 @@ export function AuthBottomCard({
         </div>
       </div>
 
-      <Link
-        href={ctaHref}
-        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-interlink-forest/40 bg-interlink-surface px-3.5 py-2 text-xs font-semibold text-interlink-ink shadow-sm transition-colors hover:border-interlink-forest hover:bg-interlink-forest hover:text-white focus-ring"
-      >
-        <span>{ctaLabel}</span>
-        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-      </Link>
+      {onCtaClick ? (
+        <button type="button" onClick={onCtaClick} className={ctaClassName}>
+          <span>{ctaLabel}</span>
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      ) : (
+        <Link href={ctaHref ?? "/sign-in"} className={ctaClassName}>
+          <span>{ctaLabel}</span>
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
+      )}
     </div>
   );
 }

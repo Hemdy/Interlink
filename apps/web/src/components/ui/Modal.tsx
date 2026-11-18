@@ -8,6 +8,7 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   maxWidthClass?: string;
+  containerClassName?: string;
   children: React.ReactNode;
   hideCloseButton?: boolean;
 }
@@ -17,6 +18,7 @@ export function Modal({
   onClose,
   title,
   maxWidthClass = "max-w-3xl",
+  containerClassName = "border border-interlink-border/60 shadow-modal",
   children,
   hideCloseButton = false,
 }: ModalProps) {
@@ -50,7 +52,7 @@ export function Modal({
       onClick={onClose}
     >
       <div
-        className={`relative w-full ${maxWidthClass} max-h-[92vh] overflow-y-auto border border-interlink-border/60 shadow-modal`}
+        className={`relative w-full ${maxWidthClass} max-h-[92vh] overflow-y-auto ${containerClassName}`}
         onClick={(e) => e.stopPropagation()}
       >
         {!hideCloseButton && (
@@ -58,7 +60,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="absolute right-3 top-3 z-10 rounded-[2px] p-1.5 text-interlink-muted transition-colors hover:bg-black/10 hover:text-interlink-ink dark:hover:bg-white/10 focus-ring"
+            className="absolute right-3.5 top-3.5 z-10 rounded-full p-1.5 text-interlink-muted transition-colors hover:bg-black/10 hover:text-interlink-ink dark:hover:bg-white/10 focus-ring"
           >
             <X className="h-4 w-4" />
           </button>

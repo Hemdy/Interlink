@@ -42,12 +42,12 @@ export default async function DashboardPage() {
     redirect("/sign-in");
   }
 
-  const unreadCount = await getUnreadNotificationCount(user.id);
   const db = isDatabaseConfigured() ? getDb() : null;
   const isAdmin = isAdminRole(user.roles);
   const isMentor = user.roles.includes("mentor") && !isAdmin;
 
   if (!db) {
+    const unreadCount = await getUnreadNotificationCount(user.id);
     return (
       <AppShell user={user} unreadCount={unreadCount} title="Dashboard">
         <EmptyState
@@ -60,6 +60,7 @@ export default async function DashboardPage() {
 
   if (isAdmin) {
     const [
+      unreadCount,
       [totalUsers],
       [mentorsCount],
       [menteesCount],
@@ -68,6 +69,7 @@ export default async function DashboardPage() {
       [openReports],
       [completedSessions],
     ] = await Promise.all([
+      getUnreadNotificationCount(user.id),
       db.select({ total: count() }).from(users),
       db.select({ total: count() }).from(userRoles).where(eq(userRoles.roleKey, "mentor")),
       db.select({ total: count() }).from(userRoles).where(eq(userRoles.roleKey, "mentee")),
@@ -155,8 +157,17 @@ export default async function DashboardPage() {
     );
   }
 
-  // Load shared relationship & session context
-  const [userMentorships, incomingOrSentReqs, recentNotifs] = await Promise.all([
+  // Load shared relationship & role context concurrently
+  const [
+    unreadCount,
+    userMentorships,
+    incomingOrSentReqs,
+    recentNotifs,
+    mentorProfile,
+    menteeProfile,
+    recommendedMentors,
+  ] = await Promise.all([
+    getUnreadNotificationCount(user.id),
     db
       .select()
       .from(mentorships)
@@ -177,55 +188,66 @@ export default async function DashboardPage() {
       .where(eq(notifications.userId, user.id))
       .orderBy(desc(notifications.createdAt))
       .limit(5),
+    isMentor
+      ? db
+          .select()
+          .from(mentorProfiles)
+          .where(eq(mentorProfiles.userId, user.id))
+          .limit(1)
+          .then((r) => r[0] ?? null)
+      : Promise.resolve(null),
+    !isMentor
+      ? db
+          .select()
+          .from(menteeProfiles)
+          .where(eq(menteeProfiles.userId, user.id))
+          .limit(1)
+          .then((r) => r[0] ?? null)
+      : Promise.resolve(null),
+    !isMentor ? getRecommendedMentorsForUser(user.id, 3) : Promise.resolve([]),
   ]);
 
   const activeRelationships = userMentorships.filter((m) => m.status === "active");
   const mentorshipIds = activeRelationships.map((m) => m.id);
-
-  const [upcomingSessions, activeGoals] =
-    mentorshipIds.length > 0
-      ? await Promise.all([
-          db
-            .select()
-            .from(sessions)
-            .where(
-              and(
-                inArray(sessions.mentorshipId, mentorshipIds),
-                inArray(sessions.status, ["proposed", "confirmed", "rescheduled"]),
-              ),
-            )
-            .orderBy(sessions.startTime)
-            .limit(5),
-          db
-            .select()
-            .from(mentorshipGoals)
-            .where(inArray(mentorshipGoals.mentorshipId, mentorshipIds))
-            .orderBy(desc(mentorshipGoals.updatedAt))
-            .limit(5),
-        ])
-      : [[], []];
-
   const partnerIds = Array.from(
     new Set(
       activeRelationships.map((m) => (m.mentorId === user.id ? m.menteeId : m.mentorId)),
     ),
   );
-  const partners =
+
+  const [upcomingSessions, activeGoals, partners] = await Promise.all([
+    mentorshipIds.length > 0
+      ? db
+          .select()
+          .from(sessions)
+          .where(
+            and(
+              inArray(sessions.mentorshipId, mentorshipIds),
+              inArray(sessions.status, ["proposed", "confirmed", "rescheduled"]),
+            ),
+          )
+          .orderBy(sessions.startTime)
+          .limit(5)
+      : Promise.resolve([]),
+    mentorshipIds.length > 0
+      ? db
+          .select()
+          .from(mentorshipGoals)
+          .where(inArray(mentorshipGoals.mentorshipId, mentorshipIds))
+          .orderBy(desc(mentorshipGoals.updatedAt))
+          .limit(5)
+      : Promise.resolve([]),
     partnerIds.length > 0
-      ? await db
+      ? db
           .select({ id: users.id, firstName: users.firstName, lastName: users.lastName })
           .from(users)
           .where(inArray(users.id, partnerIds))
-      : [];
+      : Promise.resolve([]),
+  ]);
+
   const partnerMap = new Map(partners.map((p) => [p.id, p]));
 
   if (isMentor) {
-    const [mentorProfile] = await db
-      .select()
-      .from(mentorProfiles)
-      .where(eq(mentorProfiles.userId, user.id))
-      .limit(1);
-
     const pendingIncoming = incomingOrSentReqs.filter((r) =>
       ["pending", "info_requested"].includes(r.status),
     );
@@ -475,16 +497,6 @@ export default async function DashboardPage() {
   }
 
   // MENTEE DASHBOARD
-  const [menteeProfile, recommendedMentors] = await Promise.all([
-    db
-      .select()
-      .from(menteeProfiles)
-      .where(eq(menteeProfiles.userId, user.id))
-      .limit(1)
-      .then((r) => r[0] ?? null),
-    getRecommendedMentorsForUser(user.id, 3),
-  ]);
-
   const pendingSent = incomingOrSentReqs.filter((r) =>
     ["pending", "info_requested"].includes(r.status),
   );

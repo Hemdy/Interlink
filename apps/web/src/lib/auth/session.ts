@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
 import { and, eq, gt, isNull } from "drizzle-orm";
@@ -116,7 +117,7 @@ export async function revokeCurrentSession(): Promise<void> {
   cookieStore.delete(SESSION_COOKIE_NAME);
 }
 
-export async function getCurrentUser(): Promise<SessionUser | null> {
+export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const cookieStore = await cookies();
   if (!isDatabaseConfigured()) {
     return null;
@@ -126,9 +127,10 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   if (!rawToken) return null;
 
   try {
-
     const db = getDb();
     const now = new Date();
+
+    // Fetch session, user, roles, and onboarding status in a single database round-trip
     const rows = await db
       .select({
         sessionId: authSessions.id,
@@ -140,46 +142,42 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
         profileImage: users.profileImage,
         status: users.status,
         emailVerifiedAt: users.emailVerifiedAt,
+        roleKey: userRoles.roleKey,
+        mentorOnboarding: mentorProfiles.onboardingCompleted,
+        menteeOnboarding: menteeProfiles.onboardingCompleted,
       })
       .from(authSessions)
       .innerJoin(users, eq(authSessions.userId, users.id))
+      .leftJoin(userRoles, eq(userRoles.userId, users.id))
+      .leftJoin(mentorProfiles, eq(mentorProfiles.userId, users.id))
+      .leftJoin(menteeProfiles, eq(menteeProfiles.userId, users.id))
       .where(
         and(
           eq(authSessions.tokenHash, hashToken(rawToken)),
           isNull(authSessions.revokedAt),
           gt(authSessions.expiresAt, now),
         ),
-      )
-      .limit(1);
+      );
 
     const sessionRow = rows[0];
     if (!sessionRow || sessionRow.status !== "active") {
       return null;
     }
 
-    const roleRows = await db
-      .select({ roleKey: userRoles.roleKey })
-      .from(userRoles)
-      .where(eq(userRoles.userId, sessionRow.userId));
-
-    const roles = roleRows.map((r) => r.roleKey);
+    const roleSet = new Set<UserRole>();
+    for (const row of rows) {
+      if (row.roleKey) {
+        roleSet.add(row.roleKey);
+      }
+    }
+    const roles = Array.from(roleSet);
     const primaryRole = pickPrimaryRole(roles);
 
     let onboardingCompleted = true;
     if (primaryRole === "mentor") {
-      const [mentor] = await db
-        .select({ onboardingCompleted: mentorProfiles.onboardingCompleted })
-        .from(mentorProfiles)
-        .where(eq(mentorProfiles.userId, sessionRow.userId))
-        .limit(1);
-      onboardingCompleted = mentor?.onboardingCompleted ?? false;
+      onboardingCompleted = sessionRow.mentorOnboarding ?? false;
     } else if (primaryRole === "mentee") {
-      const [mentee] = await db
-        .select({ onboardingCompleted: menteeProfiles.onboardingCompleted })
-        .from(menteeProfiles)
-        .where(eq(menteeProfiles.userId, sessionRow.userId))
-        .limit(1);
-      onboardingCompleted = mentee?.onboardingCompleted ?? false;
+      onboardingCompleted = sessionRow.menteeOnboarding ?? false;
     }
 
     return {
@@ -199,4 +197,4 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     console.error("getCurrentUser failed:", err instanceof Error ? err.message : "unknown error");
     return null;
   }
-}
+});

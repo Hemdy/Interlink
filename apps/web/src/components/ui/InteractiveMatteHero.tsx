@@ -5,6 +5,9 @@ import React, { useEffect, useRef } from "react";
 interface InteractiveMatteHeroProps {
   children: React.ReactNode;
   className?: string;
+  paddingClassName?: string;
+  surfaceClassName?: string;
+  vignetteTone?: "surface" | "canvas";
 }
 
 interface GridNode {
@@ -17,10 +20,14 @@ interface GridNode {
 /**
  * Interactive matte hero background section with a subtle architectural dot-lattice
  * that illuminates, gently responds, and connects near the user's pointer.
+ * Pauses animation frames cleanly when idle and supports reduced motion and touch devices.
  */
 export function InteractiveMatteHero({
   children,
   className = "",
+  paddingClassName = "py-20 sm:py-24 lg:py-28",
+  surfaceClassName = "overflow-hidden border-b border-interlink-border bg-interlink-surface",
+  vignetteTone = "surface",
 }: InteractiveMatteHeroProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -30,6 +37,7 @@ export function InteractiveMatteHero({
     y: -9999,
     active: false,
   });
+  const startLoopRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -45,6 +53,7 @@ export function InteractiveMatteHero({
     let dpr = 1;
     let nodes: GridNode[] = [];
     let rafId = 0;
+    let isRunning = false;
 
     const SPACING = 36;
     const INTERACTION_RADIUS = 190;
@@ -84,9 +93,8 @@ export function InteractiveMatteHero({
       const isDark = document.documentElement.classList.contains("dark");
       const baseColor = isDark ? "118, 194, 146" : "40, 84, 56";
       const pointer = pointerRef.current;
-
-      // Update node positions & collect active nodes near pointer
       const activeNodes: { node: GridNode; strength: number }[] = [];
+      let needsAnotherFrame = pointer.active;
 
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i]!;
@@ -101,22 +109,36 @@ export function InteractiveMatteHero({
             strength = 1 - dist / INTERACTION_RADIUS;
             const eased = strength * strength;
             if (!reducedMotion && dist > 1) {
-              // Subtle magnetic pull toward cursor
               const pull = eased * 7;
               node.x += (node.baseX + (dx / dist) * pull - node.x) * 0.18;
               node.y += (node.baseY + (dy / dist) * pull - node.y) * 0.18;
             }
             activeNodes.push({ node, strength: eased });
           } else {
-            node.x += (node.baseX - node.x) * 0.12;
-            node.y += (node.baseY - node.y) * 0.12;
+            const dxBase = node.baseX - node.x;
+            const dyBase = node.baseY - node.y;
+            if (Math.abs(dxBase) > 0.05 || Math.abs(dyBase) > 0.05) {
+              node.x += dxBase * 0.12;
+              node.y += dyBase * 0.12;
+              needsAnotherFrame = true;
+            } else {
+              node.x = node.baseX;
+              node.y = node.baseY;
+            }
           }
         } else {
-          node.x += (node.baseX - node.x) * 0.12;
-          node.y += (node.baseY - node.y) * 0.12;
+          const dxBase = node.baseX - node.x;
+          const dyBase = node.baseY - node.y;
+          if (Math.abs(dxBase) > 0.05 || Math.abs(dyBase) > 0.05) {
+            node.x += dxBase * 0.12;
+            node.y += dyBase * 0.12;
+            needsAnotherFrame = true;
+          } else {
+            node.x = node.baseX;
+            node.y = node.baseY;
+          }
         }
 
-        // Draw matte dot
         const dotAlpha = (isDark ? 0.14 : 0.11) + strength * (isDark ? 0.55 : 0.5);
         const dotRadius = 1.2 + strength * 1.6;
         ctx.fillStyle = `rgba(${baseColor}, ${dotAlpha.toFixed(3)})`;
@@ -125,7 +147,6 @@ export function InteractiveMatteHero({
         ctx.fill();
       }
 
-      // Draw crisp interactive hairline connections between illuminated nodes
       if (activeNodes.length > 1) {
         const maxLinkDist = SPACING * 1.55;
         ctx.lineWidth = 1;
@@ -149,24 +170,50 @@ export function InteractiveMatteHero({
         }
       }
 
+      if (needsAnotherFrame) {
+        rafId = window.requestAnimationFrame(drawFrame);
+      } else {
+        isRunning = false;
+      }
+    }
+
+    function ensureLoop() {
+      if (isRunning) return;
+      isRunning = true;
       rafId = window.requestAnimationFrame(drawFrame);
     }
 
+    startLoopRef.current = ensureLoop;
+
     buildGrid();
-    rafId = window.requestAnimationFrame(drawFrame);
+    drawFrame();
 
     const resizeObserver = new ResizeObserver(() => {
       buildGrid();
+      drawFrame();
     });
     resizeObserver.observe(section);
 
+    // Repaint resting grid immediately if theme toggles
+    const themeObserver = new MutationObserver(() => {
+      drawFrame();
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
     return () => {
       window.cancelAnimationFrame(rafId);
+      isRunning = false;
+      startLoopRef.current = null;
       resizeObserver.disconnect();
+      themeObserver.disconnect();
     };
   }, []);
 
   function handlePointerMove(e: React.PointerEvent<HTMLElement>) {
+    if (e.pointerType === "touch") return;
     const section = sectionRef.current;
     if (!section) return;
     const rect = section.getBoundingClientRect();
@@ -174,26 +221,39 @@ export function InteractiveMatteHero({
     const y = e.clientY - rect.top;
 
     pointerRef.current = { x, y, active: true };
+    startLoopRef.current?.();
 
     if (glowRef.current) {
+      const isDark = document.documentElement.classList.contains("dark");
+      const glowColor = isDark ? "rgba(118, 194, 146, 0.12)" : "rgba(40, 84, 56, 0.09)";
       glowRef.current.style.opacity = "1";
-      glowRef.current.style.background = `radial-gradient(520px circle at ${x}px ${y}px, rgba(40, 84, 56, 0.09), transparent 70%)`;
+      glowRef.current.style.background = `radial-gradient(520px circle at ${x}px ${y}px, ${glowColor}, transparent 70%)`;
     }
   }
 
   function handlePointerLeave() {
     pointerRef.current = { ...pointerRef.current, active: false };
+    startLoopRef.current?.();
     if (glowRef.current) {
       glowRef.current.style.opacity = "0";
     }
   }
+
+  const vignetteHorizontal =
+    vignetteTone === "canvas"
+      ? "from-interlink-canvas/85 via-interlink-canvas/35"
+      : "from-interlink-surface/85 via-interlink-surface/35";
+  const vignetteVertical =
+    vignetteTone === "canvas"
+      ? "from-interlink-canvas/80 via-transparent to-interlink-canvas/30"
+      : "from-interlink-surface/80 via-transparent to-interlink-surface/30";
 
   return (
     <section
       ref={sectionRef}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
-      className={`relative overflow-hidden border-b border-interlink-border bg-interlink-surface py-20 sm:py-24 lg:py-28 ${className}`}
+      className={`relative ${surfaceClassName} ${paddingClassName} ${className}`}
     >
       {/* Interactive Matte Surface Layer */}
       <div
@@ -221,8 +281,8 @@ export function InteractiveMatteHero({
         <canvas ref={canvasRef} className="block h-full w-full" />
 
         {/* Soft edge vignette for high text legibility */}
-        <div className="absolute inset-0 bg-gradient-to-r from-interlink-surface/85 via-interlink-surface/35 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-interlink-surface/80 via-transparent to-interlink-surface/30" />
+        <div className={`absolute inset-0 bg-gradient-to-r ${vignetteHorizontal} to-transparent`} />
+        <div className={`absolute inset-0 bg-gradient-to-t ${vignetteVertical}`} />
       </div>
 
       {/* Hero Foreground Content */}

@@ -10,18 +10,20 @@ export default async function SettingsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
-  const unreadCount = await getUnreadNotificationCount(user.id);
-  const blockedUsers = isDatabaseConfigured()
-    ? await getDb()
-        .select({
-          blockedUserId: userBlocks.blockedUserId,
-          firstName: users.firstName,
-          lastName: users.lastName,
-        })
-        .from(userBlocks)
-        .innerJoin(users, eq(userBlocks.blockedUserId, users.id))
-        .where(eq(userBlocks.blockerId, user.id))
-    : [];
+  const [unreadCount, blockedUsers] = await Promise.all([
+    getUnreadNotificationCount(user.id),
+    isDatabaseConfigured()
+      ? getDb()
+          .select({
+            blockedUserId: userBlocks.blockedUserId,
+            firstName: users.firstName,
+            lastName: users.lastName,
+          })
+          .from(userBlocks)
+          .innerJoin(users, eq(userBlocks.blockedUserId, users.id))
+          .where(eq(userBlocks.blockerId, user.id))
+      : Promise.resolve([]),
+  ]);
 
   return (
     <AppShell

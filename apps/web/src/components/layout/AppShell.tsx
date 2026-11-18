@@ -99,8 +99,8 @@ function getNavItemsForUser(user: SessionUser): NavItem[] {
 export function AppShell({
   user,
   unreadCount = 0,
-  title,
-  subtitle,
+  // title,
+  // subtitle,
   actions,
   children,
 }: {
@@ -256,14 +256,14 @@ export function AppShell({
                 <Menu className="h-5 w-5" />
               </button>
             )}
-            <div className="min-w-0">
+            {/* <div className="min-w-0">
               <h1 className="truncate font-display text-lg font-semibold text-interlink-ink sm:text-xl">
                 {title}
               </h1>
               {subtitle && (
                 <p className="hidden truncate text-xs text-interlink-muted sm:block">{subtitle}</p>
               )}
-            </div>
+            </div> */}
           </div>
 
           <div className="flex shrink-0 items-center gap-2.5">

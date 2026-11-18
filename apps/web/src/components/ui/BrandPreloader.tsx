@@ -1,14 +1,39 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { isInstalledPWA } from "@/features/pwa/useNavigationMode";
 import { InterlinkMark } from "./InterlinkLogo";
 
+const PWA_SPLASH_SESSION_KEY = "il_pwa_splash_done";
+
 export function BrandPreloader() {
-  const [mounted, setMounted] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [isLightPhase, setIsLightPhase] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
+    // Only show blocking splash curtain for standalone installed PWA cold launches
+    // so regular browser page loads render their LCP hero heading immediately.
+    if (!isInstalledPWA()) {
+      return;
+    }
+
+    try {
+      if (window.sessionStorage.getItem(PWA_SPLASH_SESSION_KEY) === "1") {
+        return;
+      }
+      window.sessionStorage.setItem(PWA_SPLASH_SESSION_KEY, "1");
+    } catch {
+      // Ignore storage failures in restricted contexts
+    }
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) {
+      return;
+    }
+
+    setMounted(true);
+
     // Prevent background scrolling while preloader is active
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -16,25 +41,25 @@ export function BrandPreloader() {
     // Transition smoothly from green opening screen to light background with dark branding
     const lightPhaseTimer = setTimeout(() => {
       setIsLightPhase(true);
-    }, 2300);
+    }, 600);
 
-    // Begin graceful fade-out transition at 5.0 seconds
+    // Begin graceful fade-out transition at 1.25 seconds
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
       document.body.style.overflow = originalOverflow;
-    }, 5000);
+    }, 1250);
 
-    // Completely unmount overlay from DOM at 5.7 seconds
+    // Completely unmount overlay from DOM at 1.65 seconds
     const unmountTimer = setTimeout(() => {
       setMounted(false);
-    }, 5700);
+    }, 1650);
 
     // Allow user to press Escape to dismiss early
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsExiting(true);
         document.body.style.overflow = originalOverflow;
-        setTimeout(() => setMounted(false), 500);
+        setTimeout(() => setMounted(false), 300);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -130,23 +155,23 @@ export function BrandPreloader() {
         }
 
         .il-animate-logo {
-          animation: il-preloader-logo 5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: il-preloader-logo 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         .il-animate-name {
-          animation: il-preloader-name 5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: il-preloader-name 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         .il-animate-tagline {
-          animation: il-preloader-tagline 5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: il-preloader-tagline 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         .il-animate-progress {
-          animation: il-preloader-progress 4.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+          animation: il-preloader-progress 1.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
 
         .il-animate-glow {
-          animation: il-preloader-glow 4s ease-in-out infinite;
+          animation: il-preloader-glow 2.5s ease-in-out infinite;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -184,7 +209,7 @@ export function BrandPreloader() {
         {/* Opening Full-Screen Forest Green Layer that smoothly fades out */}
         <div
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-0 transition-opacity duration-[1400ms] ease-in-out ${
+          className={`pointer-events-none absolute inset-0 transition-opacity duration-[650ms] ease-in-out ${
             isLightPhase ? "opacity-0" : "opacity-100"
           }`}
           style={{
@@ -201,7 +226,7 @@ export function BrandPreloader() {
         {/* Soft ambient halo for light phase */}
         <div
           aria-hidden="true"
-          className={`pointer-events-none absolute h-[320px] w-[320px] rounded-full bg-emerald-700/[0.06] blur-[85px] transition-opacity duration-[1400ms] ease-in-out sm:h-[420px] sm:w-[420px] ${
+          className={`pointer-events-none absolute h-[320px] w-[320px] rounded-full bg-emerald-700/[0.06] blur-[85px] transition-opacity duration-[650ms] ease-in-out sm:h-[420px] sm:w-[420px] ${
             isLightPhase ? "opacity-100" : "opacity-0"
           }`}
         />
@@ -230,13 +255,13 @@ export function BrandPreloader() {
 
           {/* Step 2: Animated Brand Name */}
           <div className="il-animate-name mt-6 sm:mt-7">
-            <h1
-              className={`font-display text-2xl font-light transition-colors duration-[1200ms] ease-in-out sm:text-3xl md:text-4xl ${
+            <p
+              className={`font-display text-2xl font-light transition-colors duration-[600ms] ease-in-out sm:text-3xl md:text-4xl ${
                 isLightPhase ? "text-slate-950" : "text-white drop-shadow-sm"
               }`}
             >
               INTERLINK
-            </h1>
+            </p>
           </div>
 
           {/* Step 3: Animated Tagline / Motto */}

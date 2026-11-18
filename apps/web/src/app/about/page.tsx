@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CheckCircle2, Compass, ShieldCheck, Users } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Card } from "@/components/ui/Card";
+import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
 import { InterlinkLogo } from "@/components/ui/InterlinkLogo";
 import { Reveal } from "@/components/ui/Reveal";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -38,7 +39,7 @@ export default async function AboutPage() {
 
   return (
     <PublicShell user={user}>
-      <section className="border-b border-interlink-border bg-interlink-surface py-16 sm:py-20">
+      <InteractiveMatteHero paddingClassName="py-16 sm:py-20">
         <div className="mx-auto max-w-[1100px] px-6 sm:px-10">
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
             <div className="animate-hero-up lg:col-span-7">
@@ -74,7 +75,7 @@ export default async function AboutPage() {
             </div>
           </div>
         </div>
-      </section>
+      </InteractiveMatteHero>
 
       <section className="bg-interlink-app-bg py-16">
         <div className="mx-auto max-w-[1100px] px-6 sm:px-10">

@@ -10,15 +10,17 @@ export default async function NotificationsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
-  const unreadCount = await getUnreadNotificationCount(user.id);
-  const rows = isDatabaseConfigured()
-    ? await getDb()
-        .select()
-        .from(notifications)
-        .where(eq(notifications.userId, user.id))
-        .orderBy(desc(notifications.createdAt))
-        .limit(60)
-    : [];
+  const [unreadCount, rows] = await Promise.all([
+    getUnreadNotificationCount(user.id),
+    isDatabaseConfigured()
+      ? getDb()
+          .select()
+          .from(notifications)
+          .where(eq(notifications.userId, user.id))
+          .orderBy(desc(notifications.createdAt))
+          .limit(60)
+      : Promise.resolve([]),
+  ]);
 
   return (
     <AppShell

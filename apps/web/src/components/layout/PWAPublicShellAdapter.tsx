@@ -11,6 +11,7 @@ import { purgeServiceWorkerAuthCache } from "@/features/pwa/ServiceWorkerRegiste
 import {
   useNavigationMode,
   useUnreadMessagesCount,
+  useUnreadNotificationsCount,
 } from "@/features/pwa/useNavigationMode";
 import { MobilePWABottomNav, PWAContextSubNav } from "./MobilePWABottomNav";
 
@@ -22,7 +23,7 @@ export function PWAPublicShellAdapter({
   children,
 }: {
   user: SessionUser | null;
-  unreadCount: number;
+  unreadCount?: number;
   header: React.ReactNode;
   footer: React.ReactNode;
   children: React.ReactNode;
@@ -31,6 +32,10 @@ export function PWAPublicShellAdapter({
   const { useBottomNav } = useNavigationMode();
   const showPWAShell = Boolean(user && useBottomNav);
   const unreadMessages = useUnreadMessagesCount(showPWAShell);
+  const clientUnreadNotifications = useUnreadNotificationsCount(
+    showPWAShell && unreadCount === undefined,
+  );
+  const resolvedUnreadCount = unreadCount ?? clientUnreadNotifications;
 
   async function handleSignOut() {
     purgeServiceWorkerAuthCache();
@@ -64,9 +69,9 @@ export function PWAPublicShellAdapter({
             aria-label="Notifications"
           >
             <Bell className="h-4 w-4" />
-            {unreadCount > 0 && (
+            {resolvedUnreadCount > 0 && (
               <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-interlink-forest px-1 text-[10px] font-bold text-white">
-                {unreadCount}
+                {resolvedUnreadCount}
               </span>
             )}
           </Link>
@@ -76,7 +81,7 @@ export function PWAPublicShellAdapter({
       <div className="pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
         <PWAContextSubNav
           user={user}
-          unreadNotifications={unreadCount}
+          unreadNotifications={resolvedUnreadCount}
           unreadMessages={unreadMessages}
           wrapperClassName="mx-auto max-w-[1360px] px-4 pt-4 sm:px-8"
         />
@@ -85,7 +90,7 @@ export function PWAPublicShellAdapter({
 
       <MobilePWABottomNav
         user={user}
-        unreadNotifications={unreadCount}
+        unreadNotifications={resolvedUnreadCount}
         unreadMessages={unreadMessages}
         onSignOut={handleSignOut}
       />

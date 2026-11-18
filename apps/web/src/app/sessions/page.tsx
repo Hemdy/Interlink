@@ -19,15 +19,17 @@ export default async function SessionsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
-  const unreadCount = await getUnreadNotificationCount(user.id);
   const db = isDatabaseConfigured() ? getDb() : null;
 
-  const userMentorships = db
-    ? await db
-        .select()
-        .from(mentorships)
-        .where(or(eq(mentorships.mentorId, user.id), eq(mentorships.menteeId, user.id)))
-    : [];
+  const [unreadCount, userMentorships] = await Promise.all([
+    getUnreadNotificationCount(user.id),
+    db
+      ? db
+          .select()
+          .from(mentorships)
+          .where(or(eq(mentorships.mentorId, user.id), eq(mentorships.menteeId, user.id)))
+      : Promise.resolve([]),
+  ]);
 
   const sessionRows =
     db && userMentorships.length > 0

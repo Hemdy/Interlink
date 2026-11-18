@@ -1,4 +1,7 @@
+import { Suspense } from "react";
+import { unstable_cache } from "next/cache";
 import Link from "next/link";
+import type { SessionUser } from "@interlink/types";
 import { desc, eq, isNull } from "drizzle-orm";
 import { BookOpen, ExternalLink, Target } from "lucide-react";
 import { getDb, isDatabaseConfigured, resources, users } from "@interlink/database";
@@ -50,27 +53,10 @@ const careerPaths = [
   },
 ];
 
-export default async function LearnPage() {
-  const user = await getCurrentUser();
-  const [reels, events] = await Promise.all([
-    listPublishedMentorReels(),
-    listPublishedPlatformEvents(),
-  ]);
-
-  let sharedResources: Array<{
-    id: string;
-    title: string;
-    description: string;
-    resourceType: string;
-    externalUrl: string;
-    category: string | null;
-    authorFirstName: string;
-    authorLastName: string;
-  }> = [];
-
-  if (isDatabaseConfigured()) {
+const getCachedSharedResources = unstable_cache(
+  async () => {
     try {
-      sharedResources = await getDb()
+      return await getDb()
         .select({
           id: resources.id,
           title: resources.title,
@@ -87,9 +73,85 @@ export default async function LearnPage() {
         .orderBy(desc(resources.createdAt))
         .limit(12);
     } catch {
-      sharedResources = [];
+      return [];
     }
+  },
+  ["learn-shared-resources"],
+  { revalidate: 60 },
+);
+
+async function SharedResourcesSection() {
+  const sharedResources = isDatabaseConfigured() ? await getCachedSharedResources() : [];
+
+  if (sharedResources.length === 0) {
+    return (
+      <Card elevated className="mt-6">
+        <div className="flex items-start gap-3">
+          <BookOpen className="mt-0.5 h-5 w-5 text-interlink-forest" />
+          <div>
+            <h3 className="text-sm font-semibold text-interlink-ink">
+              Curated learning resources appear here
+            </h3>
+            <p className="mt-1 text-sm text-interlink-muted">
+              Verified mentors and administrators can publish career guides, templates,
+              and study links directly to the Interlink library, and share private
+              resources inside individual mentorship workspaces.
+            </p>
+          </div>
+        </div>
+      </Card>
+    );
   }
+
+  return (
+    <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-3">
+      {sharedResources.map((res) => (
+        <Card key={res.id} className="flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <Badge tone="neutral">{res.resourceType}</Badge>
+              {res.category && (
+                <span className="text-xs text-interlink-muted">{res.category}</span>
+              )}
+            </div>
+            <h3 className="mt-3 text-base font-semibold text-interlink-ink">{res.title}</h3>
+            <p className="mt-2 text-xs leading-relaxed text-interlink-muted">{res.description}</p>
+          </div>
+          <div className="mt-4 flex items-center justify-between border-t border-interlink-border/70 pt-3">
+            <span className="text-[11px] text-interlink-muted">
+              By {res.authorFirstName} {res.authorLastName}
+            </span>
+            <a
+              href={res.externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-medium text-interlink-forest hover:underline"
+            >
+              Open <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+async function LearnSpotlightAndEvents({ user }: { user: SessionUser | null }) {
+  const [reels, events] = await Promise.all([
+    listPublishedMentorReels(),
+    listPublishedPlatformEvents(),
+  ]);
+
+  return (
+    <>
+      <MentorSpotlightSection initialReels={reels} user={user} />
+      <PromotionsEventsSection initialEvents={events} user={user} />
+    </>
+  );
+}
+
+export default async function LearnPage() {
+  const user = await getCurrentUser();
 
   return (
     <PublicShell user={user}>
@@ -165,64 +227,27 @@ export default async function LearnPage() {
               )}
             </div>
 
-            {sharedResources.length > 0 ? (
-              <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-3">
-                {sharedResources.map((res) => (
-                  <Card key={res.id} className="flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <Badge tone="neutral">{res.resourceType}</Badge>
-                        {res.category && (
-                          <span className="text-xs text-interlink-muted">{res.category}</span>
-                        )}
-                      </div>
-                      <h3 className="mt-3 text-base font-semibold text-interlink-ink">
-                        {res.title}
-                      </h3>
-                      <p className="mt-2 text-xs leading-relaxed text-interlink-muted">
-                        {res.description}
-                      </p>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between border-t border-interlink-border/70 pt-3">
-                      <span className="text-[11px] text-interlink-muted">
-                        By {res.authorFirstName} {res.authorLastName}
-                      </span>
-                      <a
-                        href={res.externalUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-interlink-forest hover:underline"
-                      >
-                        Open <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card elevated className="mt-6">
-                <div className="flex items-start gap-3">
-                  <BookOpen className="mt-0.5 h-5 w-5 text-interlink-forest" />
-                  <div>
-                    <h3 className="text-sm font-semibold text-interlink-ink">
-                      Curated learning resources appear here
-                    </h3>
-                    <p className="mt-1 text-sm text-interlink-muted">
-                      Verified mentors and administrators can publish career guides, templates,
-                      and study links directly to the Interlink library, and share private
-                      resources inside individual mentorship workspaces.
-                    </p>
-                  </div>
+            <Suspense
+              fallback={
+                <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-3">
+                  {[0, 1, 2].map((idx) => (
+                    <div
+                      key={idx}
+                      className="h-44 animate-pulse rounded-[2px] border border-interlink-border bg-interlink-surface p-5 shadow-subtle"
+                    />
+                  ))}
                 </div>
-              </Card>
-            )}
+              }
+            >
+              <SharedResourcesSection />
+            </Suspense>
           </div>
         </div>
       </section>
 
-      <MentorSpotlightSection initialReels={reels} user={user} />
-
-      <PromotionsEventsSection initialEvents={events} user={user} />
+      <Suspense fallback={null}>
+        <LearnSpotlightAndEvents user={user} />
+      </Suspense>
     </PublicShell>
   );
 }

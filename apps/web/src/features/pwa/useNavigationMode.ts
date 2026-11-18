@@ -81,12 +81,67 @@ export function useNavigationMode(): NavigationModeState {
   return state;
 }
 
-export function useUnreadMessagesCount(enabled: boolean): number {
+let cachedUnreadMessages = 0;
+let lastUnreadFetchAt = 0;
+let cachedUnreadNotifications = 0;
+let lastNotifFetchAt = 0;
+const UNREAD_CACHE_TTL_MS = 15_000;
+
+export function useUnreadNotificationsCount(enabled: boolean): number {
   const pathname = usePathname();
-  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(cachedUnreadNotifications);
 
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return;
+
+    const now = Date.now();
+    if (pathname !== "/notifications" && now - lastNotifFetchAt < UNREAD_CACHE_TTL_MS) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function fetchUnread() {
+      try {
+        const res = await fetch("/api/v1/notifications", {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const json = (await res.json()) as {
+            data?: { notifications?: Array<{ isRead: boolean }> };
+          };
+          if (Array.isArray(json.data?.notifications)) {
+            cachedUnreadNotifications = json.data.notifications.filter((n) => !n.isRead).length;
+            lastNotifFetchAt = Date.now();
+            setUnreadNotifications(cachedUnreadNotifications);
+          }
+        }
+      } catch {
+        // Ignore network/abort errors cleanly
+      }
+    }
+
+    void fetchUnread();
+
+    return () => controller.abort();
+  }, [enabled, pathname]);
+
+  return unreadNotifications;
+}
+
+export function useUnreadMessagesCount(enabled: boolean): number {
+  const pathname = usePathname();
+  const [unreadMessages, setUnreadMessages] = useState(cachedUnreadMessages);
+
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") return;
+
+    const now = Date.now();
+    const isMessagesRoute = pathname === "/messages" || pathname.startsWith("/messages/");
+    if (!isMessagesRoute && now - lastUnreadFetchAt < UNREAD_CACHE_TTL_MS) {
+      return;
+    }
 
     const controller = new AbortController();
 
@@ -101,7 +156,9 @@ export function useUnreadMessagesCount(enabled: boolean): number {
             data?: { totalUnreadMessages?: number };
           };
           if (typeof json.data?.totalUnreadMessages === "number") {
-            setUnreadMessages(json.data.totalUnreadMessages);
+            cachedUnreadMessages = json.data.totalUnreadMessages;
+            lastUnreadFetchAt = Date.now();
+            setUnreadMessages(cachedUnreadMessages);
           }
         }
       } catch {

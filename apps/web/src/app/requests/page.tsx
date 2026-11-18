@@ -16,10 +16,9 @@ export default async function RequestsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
-  const unreadCount = await getUnreadNotificationCount(user.id);
   if (!isDatabaseConfigured()) {
     return (
-      <AppShell user={user} unreadCount={unreadCount} title="Mentorship Requests">
+      <AppShell user={user} unreadCount={0} title="Mentorship Requests">
         <EmptyState
           title="Database unavailable"
           description="Configure DATABASE_URL to view mentorship requests."
@@ -29,16 +28,19 @@ export default async function RequestsPage() {
   }
 
   const db = getDb();
-  const rows = await db
-    .select()
-    .from(mentorshipRequests)
-    .where(
-      or(
-        eq(mentorshipRequests.menteeId, user.id),
-        eq(mentorshipRequests.mentorId, user.id),
-      ),
-    )
-    .orderBy(desc(mentorshipRequests.createdAt));
+  const [unreadCount, rows] = await Promise.all([
+    getUnreadNotificationCount(user.id),
+    db
+      .select()
+      .from(mentorshipRequests)
+      .where(
+        or(
+          eq(mentorshipRequests.menteeId, user.id),
+          eq(mentorshipRequests.mentorId, user.id),
+        ),
+      )
+      .orderBy(desc(mentorshipRequests.createdAt)),
+  ]);
 
   const userIds = Array.from(new Set(rows.flatMap((r) => [r.menteeId, r.mentorId])));
   const relatedUsers =

@@ -1,10 +1,28 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { BrandPreloader } from "@/components/ui/BrandPreloader";
+import { NavigationProgress } from "@/components/ui/NavigationProgress";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "600"],
+  display: "swap",
+  variable: "--font-display",
+  preload: true,
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+  variable: "--font-sans",
+  preload: false,
+});
 
 export const viewport: Viewport = {
   themeColor: [
@@ -57,7 +75,11 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${plusJakartaSans.variable} ${inter.variable}`}
+    >
       <body
         suppressHydrationWarning
         className="bg-interlink-canvas font-sans text-interlink-ink antialiased"
@@ -66,6 +88,7 @@ export default function RootLayout({
           {themeInitScript}
         </Script>
         <ThemeProvider>
+          <NavigationProgress />
           <BrandPreloader />
           <ToastProvider>{children}</ToastProvider>
         </ThemeProvider>

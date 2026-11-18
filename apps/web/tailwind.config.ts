@@ -25,10 +25,17 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
+        sans: [
+          "var(--font-sans)",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif",
+        ],
         display: [
-          "Plus Jakarta Sans",
-          "Inter",
+          "var(--font-display)",
+          "var(--font-sans)",
           "system-ui",
           "-apple-system",
           "Segoe UI",

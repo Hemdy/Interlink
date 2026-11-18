@@ -2,12 +2,12 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Mail, User } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/Feedback";
-import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
 import { postJson } from "@/lib/api/client";
+import { AuthBackdrop, AuthPillInput } from "./AuthShell";
 
 function GoogleIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -148,96 +148,83 @@ export function GoogleAuthButton({
         onClose={() => setModalOpen(false)}
         title="Sign in with Google"
         maxWidthClass="max-w-[420px]"
+        containerClassName="rounded-3xl border border-interlink-border/90 bg-interlink-canvas shadow-modal"
       >
-        <div className="bg-interlink-surface p-6 text-interlink-ink">
-          <div className="flex items-center gap-3 border-b border-interlink-border/80 pb-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-interlink-border bg-white shadow-subtle dark:bg-slate-900">
-              <GoogleIcon className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="font-display text-base font-semibold text-interlink-ink">
-                Sign in with Google
-              </h3>
-              <p className="text-xs text-interlink-muted">
-                to continue to <span className="font-medium text-interlink-forest">InterLink</span>
-              </p>
-            </div>
-          </div>
+        <div className="relative overflow-hidden bg-interlink-canvas p-6 text-interlink-ink sm:p-7">
+          <AuthBackdrop compact />
 
-          {error && (
-            <div className="mt-4">
-              <ErrorAlert message={error} />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3.5 border-b border-interlink-border/70 pb-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-interlink-border bg-white shadow-subtle dark:bg-slate-900">
+                <GoogleIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-display text-lg font-bold text-interlink-ink">
+                  Sign in with <span className="text-interlink-forest">Google</span>
+                </h3>
+                <p className="text-xs text-interlink-muted">
+                  to continue to <span className="font-semibold text-interlink-forest">InterLink</span>
+                </p>
+              </div>
             </div>
-          )}
 
-          {/* Quick Select demo Google accounts for rapid one-click testing */}
-          {/* <div className="mt-4 space-y-2">
-            <p className="text-[11px] font-medium text-interlink-muted">
-              Choose an account or enter your Google email:
-            </p>
-            <div className="grid grid-cols-1 gap-2">
-              {[
-                { name: "Alex Morgan", email: "alex.morgan@gmail.com" },
-                { name: "Dr. Amara Okafor", email: "amara.okafor@gmail.com" },
-              ].map((acc) => (
+            {error && (
+              <div className="mt-4">
+                <ErrorAlert message={error} />
+              </div>
+            )}
+
+            <form onSubmit={handleGoogleSubmit} className="mt-5 space-y-3.5">
+              <div>
+                <label className="mb-1.5 block pl-2 text-xs font-medium text-interlink-muted">
+                  Google Email Address
+                </label>
+                <AuthPillInput
+                  icon={Mail}
+                  name="googleEmail"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@gmail.com"
+                  value={googleEmail}
+                  onChange={(e) => setGoogleEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block pl-2 text-xs font-medium text-interlink-muted">
+                  Full Name (as on Google profile)
+                </label>
+                <AuthPillInput
+                  icon={User}
+                  name="googleName"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="e.g. Alex Morgan"
+                  value={googleFullName}
+                  onChange={(e) => setGoogleFullName(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
                 <button
-                  key={acc.email}
                   type="button"
-                  onClick={() => handleQuickAccount(acc)}
-                  className={`flex items-center justify-between rounded-[2px] border p-2.5 text-left text-xs transition-colors ${
-                    googleEmail === acc.email
-                      ? "border-interlink-forest bg-interlink-forest/10 text-interlink-forest"
-                      : "border-interlink-border bg-interlink-app-bg/50 text-interlink-ink hover:border-interlink-forest/50"
-                  }`}
+                  onClick={() => setModalOpen(false)}
+                  className="rounded-full border border-interlink-border/90 bg-interlink-surface/80 px-4 py-2.5 text-xs font-semibold text-interlink-muted transition-colors hover:border-interlink-forest/40 hover:text-interlink-ink focus-ring"
                 >
-                  <div>
-                    <p className="font-semibold">{acc.name}</p>
-                    <p className="text-[11px] text-interlink-muted">{acc.email}</p>
-                  </div>
-                  <span className="text-[10px] text-interlink-forest font-medium">Select</span>
+                  Cancel
                 </button>
-              ))}
-            </div>
-          </div> */}
-
-          <form onSubmit={handleGoogleSubmit} className="mt-4 space-y-3.5">
-            <Input
-              label="Google Email Address"
-              name="googleEmail"
-              type="email"
-              autoComplete="email"
-              placeholder="you@gmail.com"
-              value={googleEmail}
-              onChange={(e) => setGoogleEmail(e.target.value)}
-              required
-            />
-            <Input
-              label="Full Name (as on Google profile)"
-              name="googleName"
-              type="text"
-              autoComplete="name"
-              placeholder="e.g. Alex Morgan"
-              value={googleFullName}
-              onChange={(e) => setGoogleFullName(e.target.value)}
-            />
-
-            <div className="pt-2 flex items-center justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="rounded-[2px] border border-interlink-border px-3.5 py-1.5 text-xs font-medium text-interlink-muted hover:text-interlink-ink"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading || !googleEmail.trim()}
-                className="inline-flex items-center justify-center gap-1.5 rounded-[2px] bg-interlink-forest px-4 py-1.5 text-xs font-semibold text-white shadow-subtle hover:bg-interlink-forest-hover disabled:opacity-50"
-              >
-                {loading ? "Authenticating..." : "Continue to InterLink"}
-              </button>
-            </div>
-          </form>
+                <button
+                  type="submit"
+                  disabled={loading || !googleEmail.trim()}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-interlink-forest via-interlink-forest-card to-interlink-forest-deep px-5 py-2.5 text-xs font-semibold text-white shadow-[0_6px_16px_rgba(50,93,60,0.28)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 focus-ring"
+                >
+                  <span>{loading ? "Authenticating..." : "Continue to InterLink"}</span>
+                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </Modal>
     </>
