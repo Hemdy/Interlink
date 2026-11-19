@@ -33,33 +33,40 @@ export function BrandPreloader() {
     }
 
     setMounted(true);
+    document.documentElement.dataset.ilPreloader = "active";
 
     // Prevent background scrolling while preloader is active
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    // Transition smoothly from green opening screen to light background with dark branding
+    // Transition smoothly from green opening screen to light background with dark branding (~3.7s)
     const lightPhaseTimer = setTimeout(() => {
       setIsLightPhase(true);
-    }, 600);
+    }, 3700);
 
-    // Begin graceful fade-out transition at 1.25 seconds
+    // Begin graceful fade-out transition (~5.95s) and hand off seamlessly to page/form entrance (~8s total)
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
+      document.documentElement.dataset.ilPreloader = "done";
       document.body.style.overflow = originalOverflow;
-    }, 1250);
+    }, 5950);
 
-    // Completely unmount overlay from DOM at 1.65 seconds
+    // Completely unmount overlay from DOM once 900ms fade-out finishes (~6.85s)
     const unmountTimer = setTimeout(() => {
       setMounted(false);
-    }, 1650);
+      delete document.documentElement.dataset.ilPreloader;
+    }, 6850);
 
     // Allow user to press Escape to dismiss early
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsExiting(true);
+        document.documentElement.dataset.ilPreloader = "done";
         document.body.style.overflow = originalOverflow;
-        setTimeout(() => setMounted(false), 300);
+        setTimeout(() => {
+          setMounted(false);
+          delete document.documentElement.dataset.ilPreloader;
+        }, 400);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -70,6 +77,7 @@ export function BrandPreloader() {
       clearTimeout(unmountTimer);
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = originalOverflow;
+      delete document.documentElement.dataset.ilPreloader;
     };
   }, []);
 
@@ -83,13 +91,8 @@ export function BrandPreloader() {
         @keyframes il-preloader-logo {
           0% {
             opacity: 0;
-            transform: scale(0.85) translateY(12px);
-            filter: blur(5px);
-          }
-          18% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-            filter: blur(0);
+            transform: scale(0.84) translateY(16px);
+            filter: blur(6px);
           }
           100% {
             opacity: 1;
@@ -99,15 +102,10 @@ export function BrandPreloader() {
         }
 
         @keyframes il-preloader-name {
-          0%, 18% {
+          0% {
             opacity: 0;
-            transform: translateY(14px);
+            transform: translateY(16px);
             letter-spacing: 0.14em;
-          }
-          40% {
-            opacity: 1;
-            transform: translateY(0);
-            letter-spacing: 0.24em;
           }
           100% {
             opacity: 1;
@@ -117,13 +115,9 @@ export function BrandPreloader() {
         }
 
         @keyframes il-preloader-tagline {
-          0%, 42% {
+          0% {
             opacity: 0;
-            transform: translateY(10px);
-          }
-          64% {
-            opacity: 1;
-            transform: translateY(0);
+            transform: translateY(12px);
           }
           100% {
             opacity: 1;
@@ -135,7 +129,7 @@ export function BrandPreloader() {
           0% {
             width: 0%;
           }
-          92% {
+          94% {
             width: 100%;
           }
           100% {
@@ -155,23 +149,26 @@ export function BrandPreloader() {
         }
 
         .il-animate-logo {
-          animation: il-preloader-logo 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          opacity: 0;
+          animation: il-preloader-logo 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
         }
 
         .il-animate-name {
-          animation: il-preloader-name 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          opacity: 0;
+          animation: il-preloader-name 1.4s cubic-bezier(0.16, 1, 0.3, 1) 1.25s forwards;
         }
 
         .il-animate-tagline {
-          animation: il-preloader-tagline 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          opacity: 0;
+          animation: il-preloader-tagline 1.5s cubic-bezier(0.16, 1, 0.3, 1) 2.45s forwards;
         }
 
         .il-animate-progress {
-          animation: il-preloader-progress 1.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+          animation: il-preloader-progress 5.9s cubic-bezier(0.22, 0.8, 0.25, 1) forwards;
         }
 
         .il-animate-glow {
-          animation: il-preloader-glow 2.5s ease-in-out infinite;
+          animation: il-preloader-glow 3.5s ease-in-out infinite;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -192,7 +189,7 @@ export function BrandPreloader() {
         role="status"
         aria-live="polite"
         aria-label="Loading Interlink"
-        className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none transition-all duration-700 ease-out ${
+        className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none transition-all duration-[900ms] ease-out ${
           isExiting
             ? "pointer-events-none scale-[1.015] opacity-0"
             : "pointer-events-auto scale-100 opacity-100"

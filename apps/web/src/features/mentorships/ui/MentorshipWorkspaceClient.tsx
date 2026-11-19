@@ -1160,7 +1160,7 @@ export function MentorshipWorkspaceClient({
           onSendMessage={sendMessage}
           onBack={() => setTab("overview")}
           alwaysShowBack
-          className="h-[calc(100dvh-11.5rem)] min-h-[420px] lg:h-[calc(100vh-11rem)] lg:max-h-[780px]"
+          className="h-[calc(100dvh-68px-48px-59px-env(safe-area-inset-bottom))] min-h-[380px] lg:h-[calc(100vh-11rem)] lg:max-h-[780px]"
         />
       )}
 

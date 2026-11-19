@@ -128,7 +128,7 @@ body {
 @keyframes auth-group-enter {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -136,16 +136,38 @@ body {
   }
 }
 
+html[data-il-preloader="active"] .animate-auth-header,
+html[data-il-preloader="active"] .animate-auth-subtitle,
+html[data-il-preloader="active"] .animate-auth-group,
+html[data-il-preloader="active"] .animate-auth-group-delay-1,
+html[data-il-preloader="active"] .animate-auth-group-delay-2,
+html[data-il-preloader="active"] .animate-auth-group-delay-3 {
+  opacity: 0 !important;
+  animation: none !important;
+}
+
+.animate-auth-header {
+  animation: auth-group-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+}
+
+.animate-auth-subtitle {
+  animation: auth-group-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+
 .animate-auth-group {
-  animation: auth-group-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: auth-group-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
 }
 
 .animate-auth-group-delay-1 {
-  animation: auth-group-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+  animation: auth-group-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.8s both;
 }
 
 .animate-auth-group-delay-2 {
-  animation: auth-group-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+  animation: auth-group-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) 1.05s both;
+}
+
+.animate-auth-group-delay-3 {
+  animation: auth-group-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) 1.3s both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -156,9 +178,12 @@ body {
   .animate-hero-up,
   .animate-hero-up-delay-1,
   .animate-hero-card,
+  .animate-auth-header,
+  .animate-auth-subtitle,
   .animate-auth-group,
   .animate-auth-group-delay-1,
-  .animate-auth-group-delay-2 {
+  .animate-auth-group-delay-2,
+  .animate-auth-group-delay-3 {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

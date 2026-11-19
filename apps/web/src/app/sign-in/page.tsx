@@ -77,8 +77,8 @@ function SignInContent() {
       titleHighlight="Back"
       subtitle="Sign in to continue your mentorship journey."
     >
-      {/* Form Group with 8rem top spacing & smooth entrance animations */}
-      <div className="mt-32 animate-auth-group">
+      {/* Form Group with 8rem top spacing & sequential slide-in animations (fields appear last) */}
+      <div className="mt-32">
         {error && (
           <div className="mb-5">
             <ErrorAlert message={error} />
@@ -100,7 +100,7 @@ function SignInContent() {
             />
           </div>
 
-          <div className="animate-auth-group-delay-1">
+          <div className="animate-auth-group-delay-2">
             <AuthPillInput
               icon={Lock}
               showPasswordToggle
@@ -122,12 +122,12 @@ function SignInContent() {
             </div>
           </div>
 
-          <div className="animate-auth-group-delay-2 pt-2">
+          <div className="animate-auth-group-delay-3 pt-2">
             <AuthSubmitButton loading={loading} label="Login" loadingLabel="Signing in..." />
           </div>
         </form>
 
-        <p className="animate-auth-group-delay-2 mt-7 text-center text-xs text-interlink-muted">
+        <p className="animate-auth-group-delay-3 mt-7 text-center text-xs text-interlink-muted">
           Don&apos;t have an account?{" "}
           <Link
             href="/sign-up"

@@ -246,8 +246,14 @@ export function AppShell({
       )}
 
       {/* Main content */}
-      <div className={useBottomNav ? "" : "lg:pl-64"}>
-        <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm sm:px-8">
+      <div
+        className={`flex flex-col ${
+          isMessagesRoute && useBottomNav
+            ? "h-[100dvh] overflow-hidden"
+            : "min-h-[100dvh]"
+        } ${useBottomNav ? "" : "lg:pl-64"}`}
+      >
+        <header className="sticky top-0 z-20 flex h-[68px] shrink-0 items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm sm:px-8">
           <div className="flex min-w-0 items-center gap-3">
             {useBottomNav ? (
               <Link
@@ -302,7 +308,7 @@ export function AppShell({
         </header>
 
         {!user.onboardingCompleted && (
-          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-200 sm:px-8">
+          <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-200 sm:px-8">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span>
                 Your profile setup is incomplete. Complete your profile details so{" "}
@@ -330,10 +336,12 @@ export function AppShell({
         )}
 
         <main
-          className={`mx-auto max-w-7xl ${
+          className={`mx-auto w-full max-w-7xl ${
             isMessagesRoute
-              ? `p-0 sm:px-8 sm:py-8 ${
-                  useBottomNav ? "pb-[calc(4.75rem+env(safe-area-inset-bottom))] sm:pb-8" : ""
+              ? `flex min-h-0 flex-1 flex-col p-0 sm:px-8 sm:py-8 ${
+                  useBottomNav
+                    ? "pb-[calc(59px+env(safe-area-inset-bottom))] sm:pb-[calc(59px+env(safe-area-inset-bottom))] lg:pb-8"
+                    : ""
                 }`
               : `px-4 py-6 sm:px-8 sm:py-8 ${
                   useBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))]" : ""

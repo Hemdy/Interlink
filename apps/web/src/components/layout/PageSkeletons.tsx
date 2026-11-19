@@ -138,24 +138,24 @@ export function MentorshipWorkspaceSkeleton() {
 export function MessagesListSkeleton() {
   return (
     <div
-      className="h-[calc(100dvh-4.25rem-4.75rem-env(safe-area-inset-bottom))] min-h-[460px] overflow-hidden bg-[#0c110f] sm:rounded-3xl sm:ring-1 sm:ring-white/[0.08] lg:grid lg:h-[calc(100vh-11rem)] lg:min-h-[540px] lg:max-h-[820px] lg:grid-cols-12"
+      className="min-h-[calc(100dvh-68px-59px-env(safe-area-inset-bottom))] flex-1 overflow-hidden bg-[#f6f8f7] dark:bg-[#0c110f] sm:rounded-3xl sm:ring-1 sm:ring-interlink-border/80 dark:sm:ring-white/[0.08] lg:grid lg:h-[calc(100vh-11rem)] lg:min-h-[540px] lg:max-h-[820px] lg:grid-cols-12"
       aria-busy="true"
       aria-label="Loading messages"
     >
       {/* Left inbox column */}
-      <div className="flex flex-col border-white/[0.07] p-3.5 sm:p-4 lg:col-span-4 lg:border-r">
+      <div className="flex flex-col border-interlink-border/60 p-3.5 dark:border-white/[0.07] sm:p-4 lg:col-span-4 lg:border-r">
         <div className="flex items-center justify-between pb-3">
-          <div className="h-5 w-24 animate-pulse rounded-lg bg-white/10" />
-          <div className="h-5 w-14 animate-pulse rounded-full bg-white/10" />
+          <div className="h-5 w-24 animate-pulse rounded-lg bg-interlink-border/55 dark:bg-white/10" />
+          <div className="h-5 w-14 animate-pulse rounded-full bg-interlink-border/55 dark:bg-white/10" />
         </div>
-        <div className="h-9 w-full animate-pulse rounded-xl bg-white/[0.06]" />
+        <div className="h-9 w-full animate-pulse rounded-xl bg-interlink-border/40 dark:bg-white/[0.06]" />
         <div className="mt-3 space-y-2">
           {[0, 1, 2, 3, 4].map((i) => (
             <div key={i} className="flex items-center gap-3 rounded-2xl p-2.5">
-              <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-white/10" />
+              <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-interlink-border/55 dark:bg-white/10" />
               <div className="min-w-0 flex-1 space-y-1.5">
-                <div className="h-3.5 w-28 animate-pulse rounded-full bg-white/10" />
-                <div className="h-3 w-3/4 animate-pulse rounded-full bg-white/[0.07]" />
+                <div className="h-3.5 w-28 animate-pulse rounded-full bg-interlink-border/55 dark:bg-white/10" />
+                <div className="h-3 w-3/4 animate-pulse rounded-full bg-interlink-border/35 dark:bg-white/[0.07]" />
               </div>
             </div>
           ))}
@@ -164,25 +164,25 @@ export function MessagesListSkeleton() {
 
       {/* Desktop active chat skeleton pane */}
       <div className="hidden flex-col justify-between lg:col-span-8 lg:flex">
-        <div className="flex items-center gap-3 border-b border-white/[0.07] px-5 py-3">
-          <div className="h-9 w-9 animate-pulse rounded-full bg-white/10" />
+        <div className="flex items-center gap-3 border-b border-interlink-border/60 px-5 py-3 dark:border-white/[0.07]">
+          <div className="h-9 w-9 animate-pulse rounded-full bg-interlink-border/55 dark:bg-white/10" />
           <div className="space-y-1.5">
-            <div className="h-4 w-32 animate-pulse rounded-full bg-white/10" />
-            <div className="h-2.5 w-24 animate-pulse rounded-full bg-white/[0.07]" />
+            <div className="h-4 w-32 animate-pulse rounded-full bg-interlink-border/55 dark:bg-white/10" />
+            <div className="h-2.5 w-24 animate-pulse rounded-full bg-interlink-border/35 dark:bg-white/[0.07]" />
           </div>
         </div>
         <div className="space-y-5 p-6">
           <div className="flex items-start justify-end gap-2.5">
-            <div className="h-10 w-60 animate-pulse rounded-2xl bg-white/10" />
-            <div className="h-7 w-7 animate-pulse rounded-full bg-white/10" />
+            <div className="h-10 w-60 animate-pulse rounded-2xl bg-interlink-border/55 dark:bg-white/10" />
+            <div className="h-7 w-7 animate-pulse rounded-full bg-interlink-border/55 dark:bg-white/10" />
           </div>
           <div className="flex items-start gap-2.5">
-            <div className="h-7 w-7 animate-pulse rounded-full bg-white/10" />
-            <div className="h-16 w-72 animate-pulse rounded-2xl bg-white/[0.07]" />
+            <div className="h-7 w-7 animate-pulse rounded-full bg-interlink-border/55 dark:bg-white/10" />
+            <div className="h-16 w-72 animate-pulse rounded-2xl bg-interlink-border/40 dark:bg-white/[0.07]" />
           </div>
         </div>
         <div className="px-5 pb-4">
-          <div className="h-24 w-full animate-pulse rounded-[20px] bg-white/[0.07]" />
+          <div className="h-24 w-full animate-pulse rounded-[20px] bg-interlink-border/40 dark:bg-white/[0.07]" />
         </div>
       </div>
     </div>

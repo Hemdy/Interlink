@@ -99,7 +99,7 @@ function SignUpInner() {
       maxWidthClass="max-w-[460px]"
     >
       {/* Role Selector Pill */}
-      <div className="mt-6 grid grid-cols-2 gap-1.5 rounded-full border border-interlink-border/90 bg-interlink-surface/85 p-1 shadow-subtle backdrop-blur-sm">
+      <div className="animate-auth-group mt-6 grid grid-cols-2 gap-1.5 rounded-full border border-interlink-border/90 bg-interlink-surface/85 p-1 shadow-subtle backdrop-blur-sm">
         <button
           type="button"
           onClick={() => setRole("mentee")}
@@ -130,7 +130,7 @@ function SignUpInner() {
         </div>
       )}
 
-      <div className="mt-4">
+      <div className="animate-auth-group mt-4">
         <GoogleAuthButton
           variant="pill"
           role={role}
@@ -141,10 +141,12 @@ function SignUpInner() {
         />
       </div>
 
-      <AuthDivider label="or register with email" />
+      <div className="animate-auth-group-delay-1">
+        <AuthDivider label="or register with email" />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="animate-auth-group-delay-1 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <AuthPillInput
             icon={User}
             name="firstName"
@@ -167,48 +169,52 @@ function SignUpInner() {
           />
         </div>
 
-        <AuthPillInput
-          icon={Mail}
-          name="email"
-          type="email"
-          placeholder="E-mail"
-          aria-label="E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          autoComplete="email"
-        />
+        <div className="animate-auth-group-delay-2 space-y-3">
+          <AuthPillInput
+            icon={Mail}
+            name="email"
+            type="email"
+            placeholder="E-mail"
+            aria-label="E-mail"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+          />
 
-        <AuthPillInput
-          icon={Lock}
-          showPasswordToggle
-          name="password"
-          placeholder="Create Password"
-          aria-label="Create Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          minLength={8}
-          autoComplete="new-password"
-        />
+          <AuthPillInput
+            icon={Lock}
+            showPasswordToggle
+            name="password"
+            placeholder="Create Password"
+            aria-label="Create Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            autoComplete="new-password"
+          />
 
-        <AuthPillInput
-          icon={Lock}
-          showPasswordToggle
-          name="confirmPassword"
-          placeholder="Confirm Password"
-          aria-label="Confirm Password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-          minLength={8}
-          autoComplete="new-password"
-        />
+          <AuthPillInput
+            icon={Lock}
+            showPasswordToggle
+            name="confirmPassword"
+            placeholder="Confirm Password"
+            aria-label="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={8}
+            autoComplete="new-password"
+          />
+        </div>
 
-        <AuthSubmitButton loading={loading} label="Sign Up" loadingLabel="Creating account..." />
+        <div className="animate-auth-group-delay-3 pt-1">
+          <AuthSubmitButton loading={loading} label="Sign Up" loadingLabel="Creating account..." />
+        </div>
       </form>
 
-      <p className="mt-5 text-center text-[11px] leading-relaxed text-interlink-muted">
+      <p className="animate-auth-group-delay-3 mt-5 text-center text-[11px] leading-relaxed text-interlink-muted">
         By clicking Sign Up, you agree to our{" "}
         <Link href="/legal/terms" className="font-medium text-interlink-forest hover:underline">
           Terms and Condition

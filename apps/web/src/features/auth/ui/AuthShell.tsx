@@ -88,7 +88,7 @@ export function AuthShell({
 
           <div className="md:rounded-3xl md:border md:border-interlink-border/90 md:bg-interlink-surface/75 md:p-9 md:shadow-modal md:backdrop-blur-xl">
             {/* Top Brand Lockup */}
-            <div className="mb-7 text-center">
+            <div className="animate-auth-header mb-7 text-center">
               <Link
                 href={logoHref}
                 className="inline-flex items-center justify-center rounded-[4px] px-2 py-1 focus-ring"
@@ -99,14 +99,16 @@ export function AuthShell({
 
             {/* Two-Tone Greeting */}
             <div className="text-center">
-              <h1 className="font-display text-[30px] font-bold leading-tight tracking-tight text-interlink-ink">
+              <h1 className="animate-auth-header font-display text-[30px] font-bold leading-tight tracking-tight text-interlink-ink">
                 {titleLeading} <span className="text-interlink-forest">{titleHighlight}</span>
               </h1>
-              <p className="mt-2.5 text-sm text-interlink-muted">{subtitle}</p>
-              <div
-                aria-hidden="true"
-                className="mx-auto mt-4 h-[2px] w-20 rounded-full bg-gradient-to-r from-transparent via-interlink-forest to-transparent shadow-[0_0_12px_rgba(59,104,70,0.45)]"
-              />
+              <div className="animate-auth-subtitle">
+                <p className="mt-2.5 text-sm text-interlink-muted">{subtitle}</p>
+                <div
+                  aria-hidden="true"
+                  className="mx-auto mt-4 h-[2px] w-20 rounded-full bg-gradient-to-r from-transparent via-interlink-forest to-transparent shadow-[0_0_12px_rgba(59,104,70,0.45)]"
+                />
+              </div>
             </div>
 
             {children}

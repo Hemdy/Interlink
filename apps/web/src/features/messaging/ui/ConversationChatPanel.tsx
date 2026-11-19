@@ -55,6 +55,7 @@ export function ConversationChatPanel({
   onBack,
   alwaysShowBack = false,
   showWorkspaceLink = false,
+  transparentCanvas = false,
   className = "",
 }: {
   conversationId: string | null;
@@ -69,6 +70,7 @@ export function ConversationChatPanel({
   onBack?: () => void;
   alwaysShowBack?: boolean;
   showWorkspaceLink?: boolean;
+  transparentCanvas?: boolean;
   className?: string;
 }) {
   const [messageText, setMessageText] = useState("");
@@ -160,23 +162,29 @@ export function ConversationChatPanel({
 
   return (
     <div
-      className={`relative flex flex-col overflow-hidden rounded-3xl bg-[#0c110f] text-white shadow-elevated ring-1 ring-white/[0.08] ${className}`}
+      className={`relative flex min-h-0 flex-col overflow-hidden ${
+        transparentCanvas
+          ? ""
+          : "rounded-3xl bg-[#f6f8f7] shadow-elevated ring-1 ring-interlink-border/75 dark:bg-[#0e1011] dark:ring-white/[0.08]"
+      } text-interlink-ink dark:text-white ${className}`}
     >
-      {/* Atmospheric Radial Glow Backdrop (Reference Aesthetic + Interlink Gold/Forest Tokens) */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.23),transparent_44%),radial-gradient(circle_at_88%_76%,rgba(59,104,70,0.24),transparent_52%)]"
-      />
+      {/* Theme-Adaptive Subtle Warm Ambient Radial Backdrop (No Green Clash) */}
+      {!transparentCanvas && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.14),transparent_48%),radial-gradient(circle_at_88%_78%,rgba(32,43,60,0.04),transparent_52%)] dark:bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.18),transparent_44%),radial-gradient(circle_at_85%_80%,rgba(255,255,255,0.02),transparent_50%)]"
+        />
+      )}
 
       {/* Compact Frosted Header */}
-      <header className="relative z-10 flex items-center justify-between gap-3 border-b border-white/[0.07] bg-white/[0.02] px-4 py-3 backdrop-blur-md sm:px-5">
+      <header className="relative z-10 flex shrink-0 items-center justify-between gap-3 border-b border-interlink-border/60 bg-interlink-surface/75 px-4 py-3 backdrop-blur-md dark:border-white/[0.07] dark:bg-white/[0.02] sm:px-5">
         <div className="flex min-w-0 items-center gap-3">
           {onBack && (
             <button
               type="button"
               onClick={onBack}
               aria-label="Back to conversations"
-              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-white/90 transition-colors hover:bg-white/[0.15] ${
+              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-ink transition-colors hover:bg-interlink-ink/[0.12] dark:bg-white/[0.08] dark:text-white/90 dark:hover:bg-white/[0.15] ${
                 alwaysShowBack ? "" : "lg:hidden"
               }`}
             >
@@ -190,28 +198,28 @@ export function ConversationChatPanel({
               firstName={partner?.firstName ?? "P"}
               lastName={partner?.lastName ?? ""}
               size="sm"
-              className="border-white/15"
+              className="border-interlink-border dark:border-white/15"
             />
             {mentorshipStatus === "active" && (
               <span
-                className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#0c110f] bg-emerald-400"
+                className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-interlink-surface bg-emerald-500 dark:border-[#0e1011] dark:bg-emerald-400"
                 aria-hidden="true"
               />
             )}
           </div>
 
           <div className="min-w-0">
-            <h2 className="truncate font-display text-sm font-semibold text-white sm:text-base">
+            <h2 className="truncate font-display text-sm font-semibold text-interlink-ink dark:text-white sm:text-base">
               {partnerFullName}
             </h2>
-            <p className="flex items-center gap-1.5 text-[11px] text-white/60">
+            <p className="flex items-center gap-1.5 text-[11px] text-interlink-muted dark:text-white/60">
               <span
                 className={`h-1.5 w-1.5 rounded-full ${
                   mentorshipStatus === "active"
-                    ? "bg-emerald-400"
+                    ? "bg-emerald-500 dark:bg-emerald-400"
                     : mentorshipStatus === "completed"
-                      ? "bg-sky-400"
-                      : "bg-amber-400"
+                      ? "bg-sky-500 dark:bg-sky-400"
+                      : "bg-amber-500 dark:bg-amber-400"
                 }`}
                 aria-hidden="true"
               />
@@ -223,7 +231,7 @@ export function ConversationChatPanel({
         {showWorkspaceLink && (
           <Link
             href={`/mentorships/${mentorshipId}`}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/85 transition-colors hover:bg-white/[0.14] hover:text-white"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-interlink-border/80 bg-interlink-surface px-3 py-1.5 text-xs font-medium text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest dark:border-white/12 dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.14] dark:hover:text-white"
           >
             <span>Workspace</span>
             <ExternalLink className="h-3 w-3" aria-hidden="true" />
@@ -234,25 +242,25 @@ export function ConversationChatPanel({
       {/* Scrollable Message Stream */}
       <div
         ref={listRef}
-        className="relative z-10 flex-1 space-y-5 overflow-y-auto px-3.5 py-5 sm:px-6"
+        className="relative z-10 min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-3.5 py-5 sm:px-6"
       >
         {loadingMessages ? (
           <div className="space-y-4">
             <div className="flex items-start justify-end gap-2.5">
-              <div className="h-10 w-56 animate-pulse rounded-2xl bg-white/[0.08]" />
-              <div className="h-7 w-7 animate-pulse rounded-full bg-white/[0.12]" />
+              <div className="h-10 w-56 animate-pulse rounded-2xl bg-interlink-border/45 dark:bg-white/[0.08]" />
+              <div className="h-7 w-7 animate-pulse rounded-full bg-interlink-border/55 dark:bg-white/[0.12]" />
             </div>
             <div className="flex items-start gap-2.5">
-              <div className="h-7 w-7 animate-pulse rounded-full bg-white/[0.12]" />
-              <div className="h-16 w-64 animate-pulse rounded-2xl bg-white/[0.06]" />
+              <div className="h-7 w-7 animate-pulse rounded-full bg-interlink-border/55 dark:bg-white/[0.12]" />
+              <div className="h-16 w-64 animate-pulse rounded-2xl bg-interlink-border/35 dark:bg-white/[0.06]" />
             </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex min-h-[180px] flex-col items-center justify-center px-4 text-center">
-            <p className="text-sm font-medium text-white/80">
+            <p className="text-sm font-medium text-interlink-ink dark:text-white/85">
               Start a conversation with {partner?.firstName ?? "your partner"}
             </p>
-            <p className="mt-1 max-w-sm text-xs text-white/50">
+            <p className="mt-1 max-w-sm text-xs text-interlink-muted dark:text-white/50">
               Coordinate sessions, share milestone progress, and exchange helpful resources.
             </p>
           </div>
@@ -268,12 +276,12 @@ export function ConversationChatPanel({
                   className="group/msg flex items-start justify-end gap-2.5 sm:gap-3"
                 >
                   <div className="flex max-w-[78%] flex-col items-end sm:max-w-[68%]">
-                    <div className="rounded-2xl border border-white/[0.09] bg-white/[0.11] px-4 py-2.5 text-[14px] leading-relaxed text-white/95 shadow-subtle backdrop-blur-md">
+                    <div className="rounded-2xl border border-interlink-border/75 bg-white px-4 py-2.5 text-[14px] leading-relaxed text-interlink-ink shadow-subtle backdrop-blur-md dark:border-white/[0.09] dark:bg-white/[0.11] dark:text-white/95">
                       <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                     </div>
 
                     {msg.attachmentUrl && (
-                      <div className="mt-2 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
+                      <div className="mt-2 overflow-hidden rounded-2xl border border-interlink-border bg-white dark:border-white/10 dark:bg-black/30">
                         {isImageUrl(msg.attachmentUrl) ? (
                           <a
                             href={msg.attachmentUrl}
@@ -293,7 +301,7 @@ export function ConversationChatPanel({
                             href={msg.attachmentUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-emerald-200 hover:underline"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-interlink-forest hover:underline dark:text-emerald-200"
                           >
                             <Paperclip className="h-3 w-3" aria-hidden="true" />
                             <span>Open attachment</span>
@@ -302,7 +310,7 @@ export function ConversationChatPanel({
                       </div>
                     )}
 
-                    <span className="mt-1 px-1 text-[10px] text-white/40">
+                    <span className="mt-1 px-1 text-[10px] text-interlink-muted dark:text-white/40">
                       {isTemp ? "Sending..." : formatDateTime(msg.createdAt)}
                     </span>
                   </div>
@@ -312,7 +320,7 @@ export function ConversationChatPanel({
                     firstName={currentUser.firstName}
                     lastName={currentUser.lastName}
                     size="xs"
-                    className="mt-0.5 shrink-0 border-white/20"
+                    className="mt-0.5 shrink-0 border-interlink-border dark:border-white/20"
                   />
                 </div>
               );
@@ -328,12 +336,12 @@ export function ConversationChatPanel({
                   firstName={partner?.firstName ?? "P"}
                   lastName={partner?.lastName ?? ""}
                   size="xs"
-                  className="mt-0.5 shrink-0 border-white/20 bg-black/60"
+                  className="mt-0.5 shrink-0 border-interlink-border dark:border-white/20 dark:bg-black/60"
                 />
 
                 <div className="flex max-w-[78%] flex-col items-start sm:max-w-[68%]">
                   <div className="flex items-start gap-2">
-                    <div className="rounded-2xl border border-white/[0.08] bg-[#080d0b]/90 px-4 py-2.5 text-[14px] leading-relaxed text-white/95 shadow-subtle backdrop-blur-md">
+                    <div className="rounded-2xl border border-interlink-border/80 bg-[#edf1ee] px-4 py-2.5 text-[14px] leading-relaxed text-interlink-ink shadow-subtle backdrop-blur-md dark:border-white/[0.08] dark:bg-[#141719]/90 dark:text-white/95">
                       <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                     </div>
 
@@ -344,10 +352,10 @@ export function ConversationChatPanel({
                         onClick={() => void handleCopy(msg)}
                         aria-label="Copy message"
                         title="Copy message"
-                        className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.08] text-white/80 transition-colors hover:bg-white/[0.16] hover:text-white"
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-muted transition-colors hover:bg-interlink-ink/[0.12] hover:text-interlink-ink dark:bg-white/[0.08] dark:text-white/80 dark:hover:bg-white/[0.16] dark:hover:text-white"
                       >
                         {copiedId === msg.id ? (
-                          <Check className="h-3 w-3 text-emerald-400" aria-hidden="true" />
+                          <Check className="h-3 w-3 text-emerald-500 dark:text-emerald-400" aria-hidden="true" />
                         ) : (
                           <Copy className="h-3 w-3" aria-hidden="true" />
                         )}
@@ -357,7 +365,7 @@ export function ConversationChatPanel({
                         onClick={() => handleQuote(msg)}
                         aria-label="Reply to message"
                         title="Reply to message"
-                        className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.08] text-white/80 transition-colors hover:bg-white/[0.16] hover:text-white"
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-muted transition-colors hover:bg-interlink-ink/[0.12] hover:text-interlink-ink dark:bg-white/[0.08] dark:text-white/80 dark:hover:bg-white/[0.16] dark:hover:text-white"
                       >
                         <CornerUpLeft className="h-3 w-3" aria-hidden="true" />
                       </button>
@@ -365,7 +373,7 @@ export function ConversationChatPanel({
                   </div>
 
                   {msg.attachmentUrl && (
-                    <div className="mt-2 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
+                    <div className="mt-2 overflow-hidden rounded-2xl border border-interlink-border bg-white dark:border-white/10 dark:bg-black/30">
                       {isImageUrl(msg.attachmentUrl) ? (
                         <a
                           href={msg.attachmentUrl}
@@ -385,7 +393,7 @@ export function ConversationChatPanel({
                           href={msg.attachmentUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-emerald-200 hover:underline"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-interlink-forest hover:underline dark:text-emerald-200"
                         >
                           <Paperclip className="h-3 w-3" aria-hidden="true" />
                           <span>Open attachment</span>
@@ -394,7 +402,7 @@ export function ConversationChatPanel({
                     </div>
                   )}
 
-                  <span className="mt-1 px-1 text-[10px] text-white/40">
+                  <span className="mt-1 px-1 text-[10px] text-interlink-muted dark:text-white/40">
                     {formatDateTime(msg.createdAt)}
                   </span>
                 </div>
@@ -404,29 +412,29 @@ export function ConversationChatPanel({
         )}
 
         {hasOptimistic && (
-          <div className="flex items-center gap-2.5 text-xs text-white/60">
-            <Loader2 className="h-4 w-4 animate-spin text-emerald-400" aria-hidden="true" />
+          <div className="flex items-center gap-2.5 text-xs text-interlink-muted dark:text-white/60">
+            <Loader2 className="h-4 w-4 animate-spin text-interlink-forest dark:text-emerald-400" aria-hidden="true" />
             <span>Delivering message...</span>
           </div>
         )}
       </div>
 
-      {/* Floating Glass Multi-Row Composer */}
-      <div className="relative z-10 px-3 pb-3 pt-1 sm:px-5 sm:pb-4">
+      {/* Floating Glass Multi-Row Composer (Anchored cleanly at bottom) */}
+      <div className="relative z-10 shrink-0 px-3 pb-3 pt-1 sm:px-5 sm:pb-4">
         <form
           onSubmit={handleFormSubmit}
-          className="rounded-[20px] border border-white/[0.10] bg-white/[0.06] p-3 backdrop-blur-xl shadow-[0_12px_36px_rgba(0,0,0,0.38)] sm:p-3.5"
+          className="rounded-[20px] border border-interlink-border/90 bg-interlink-surface/95 p-3 shadow-[0_8px_28px_rgba(32,43,60,0.08)] backdrop-blur-xl dark:border-white/[0.10] dark:bg-white/[0.06] dark:shadow-[0_12px_36px_rgba(0,0,0,0.38)] sm:p-3.5"
         >
           {showAttachmentInput && (
-            <div className="mb-2.5 flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-1.5">
-              <Paperclip className="h-3.5 w-3.5 shrink-0 text-white/60" aria-hidden="true" />
+            <div className="mb-2.5 flex items-center gap-2 rounded-xl border border-interlink-border bg-interlink-app-bg px-3 py-1.5 dark:border-white/10 dark:bg-black/30">
+              <Paperclip className="h-3.5 w-3.5 shrink-0 text-interlink-muted dark:text-white/60" aria-hidden="true" />
               <input
                 type="url"
                 value={attachmentUrl}
                 onChange={(e) => setAttachmentUrl(e.target.value)}
                 placeholder="Paste link or image URL (optional)..."
                 aria-label="Attachment URL"
-                className="w-full bg-transparent text-[16px] text-white placeholder:text-white/40 focus:outline-none sm:text-xs"
+                className="w-full bg-transparent text-[16px] text-interlink-ink placeholder:text-interlink-muted focus:outline-none dark:text-white dark:placeholder:text-white/40 sm:text-xs"
               />
               <button
                 type="button"
@@ -435,7 +443,7 @@ export function ConversationChatPanel({
                   setShowAttachmentInput(false);
                 }}
                 aria-label="Close attachment input"
-                className="text-white/50 hover:text-white"
+                className="text-interlink-muted hover:text-interlink-ink dark:text-white/50 dark:hover:text-white"
               >
                 <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
@@ -455,7 +463,7 @@ export function ConversationChatPanel({
                 : `Write a message to ${partner?.firstName ?? "your partner"}...`
             }
             aria-label="Message text"
-            className="max-h-28 w-full resize-none bg-transparent text-[16px] leading-relaxed text-white placeholder:text-white/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+            className="max-h-28 w-full resize-none bg-transparent text-[16px] leading-relaxed text-interlink-ink placeholder:text-interlink-muted focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:text-white dark:placeholder:text-white/40 sm:text-sm"
           />
 
           <div className="mt-2.5 flex items-center justify-between gap-2">
@@ -468,8 +476,8 @@ export function ConversationChatPanel({
                 title="Attach link or image URL"
                 className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
                   showAttachmentInput || attachmentUrl
-                    ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-200"
-                    : "border-white/10 bg-white/[0.06] text-white/75 hover:bg-white/[0.14] hover:text-white"
+                    ? "border-interlink-forest/50 bg-interlink-forest/15 text-interlink-forest dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-200"
+                    : "border-interlink-border bg-interlink-app-bg text-interlink-muted hover:bg-interlink-border/30 hover:text-interlink-ink dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.14] dark:hover:text-white"
                 }`}
               >
                 <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
@@ -482,8 +490,8 @@ export function ConversationChatPanel({
                 title="Quick prompts"
                 className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
                   showPromptChips
-                    ? "border-white/20 bg-white/[0.12] text-white"
-                    : "border-white/10 bg-white/[0.06] text-white/75 hover:bg-white/[0.14] hover:text-white"
+                    ? "border-interlink-forest/40 bg-interlink-forest/10 text-interlink-forest dark:border-white/20 dark:bg-white/[0.12] dark:text-white"
+                    : "border-interlink-border bg-interlink-app-bg text-interlink-muted hover:bg-interlink-border/30 hover:text-interlink-ink dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.14] dark:hover:text-white"
                 }`}
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
@@ -493,7 +501,7 @@ export function ConversationChatPanel({
                 visibleChips.map((chip) => (
                   <span
                     key={chip.id}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-[11px] font-medium text-white/80 transition-colors hover:bg-white/[0.14] hover:text-white"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-full border border-interlink-border/80 bg-interlink-app-bg px-2.5 py-1 text-[11px] font-medium text-interlink-ink/85 transition-colors hover:border-interlink-forest/50 hover:text-interlink-ink dark:border-white/10 dark:bg-white/[0.07] dark:text-white/80 dark:hover:bg-white/[0.14] dark:hover:text-white"
                   >
                     <button
                       type="button"
@@ -509,7 +517,7 @@ export function ConversationChatPanel({
                       type="button"
                       onClick={() => setDismissedChips((prev) => [...prev, chip.id])}
                       aria-label={`Dismiss ${chip.label}`}
-                      className="text-white/45 hover:text-white"
+                      className="text-interlink-muted hover:text-interlink-ink dark:text-white/45 dark:hover:text-white"
                     >
                       <X className="h-2.5 w-2.5" aria-hidden="true" />
                     </button>
@@ -524,7 +532,7 @@ export function ConversationChatPanel({
               className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 focus-ring ${
                 canSend
                   ? "bg-interlink-forest text-white shadow-[0_4px_14px_rgba(59,104,70,0.48)] hover:bg-interlink-forest-hover"
-                  : "bg-white/[0.10] text-white/40 cursor-not-allowed"
+                  : "cursor-not-allowed bg-interlink-border/60 text-interlink-muted dark:bg-white/[0.10] dark:text-white/40"
               }`}
             >
               {sending ? (
@@ -536,7 +544,7 @@ export function ConversationChatPanel({
           </div>
         </form>
 
-        <p className="mt-2 text-center text-[11px] text-white/40">
+        <p className="mt-2 text-center text-[11px] text-interlink-muted dark:text-white/40">
           Never share passwords, banking PINs, or sensitive identity documents in messages.
         </p>
       </div>

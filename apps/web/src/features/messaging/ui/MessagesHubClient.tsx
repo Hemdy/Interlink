@@ -188,10 +188,10 @@ export function MessagesHubClient({
 
   if (threads.length === 0) {
     return (
-      <div className="relative flex h-[calc(100dvh-4.25rem-4.75rem-env(safe-area-inset-bottom))] min-h-[460px] items-center justify-center overflow-hidden bg-[#0c110f] p-6 text-white sm:rounded-3xl sm:ring-1 sm:ring-white/[0.08] lg:h-[calc(100vh-11rem)] lg:min-h-[540px] lg:max-h-[820px]">
+      <div className="relative flex min-h-[calc(100dvh-68px-59px-env(safe-area-inset-bottom))] flex-1 items-center justify-center overflow-hidden bg-[#f6f8f7] p-6 text-interlink-ink dark:bg-[#0e1011] dark:text-white sm:rounded-3xl sm:ring-1 sm:ring-interlink-border/80 dark:sm:ring-white/[0.08] lg:h-[calc(100vh-11rem)] lg:min-h-[540px] lg:max-h-[820px]">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.23),transparent_44%),radial-gradient(circle_at_88%_76%,rgba(59,104,70,0.24),transparent_52%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.14),transparent_48%),radial-gradient(circle_at_88%_78%,rgba(32,43,60,0.04),transparent_52%)] dark:bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.18),transparent_44%),radial-gradient(circle_at_85%_80%,rgba(255,255,255,0.02),transparent_50%)]"
         />
         <div className="relative z-10 max-w-md text-center">
           <EmptyState
@@ -212,30 +212,32 @@ export function MessagesHubClient({
   }
 
   return (
-    <div className="relative h-[calc(100dvh-4.25rem-4.75rem-env(safe-area-inset-bottom))] min-h-[460px] overflow-hidden bg-[#0c110f] text-white sm:rounded-3xl sm:shadow-elevated sm:ring-1 sm:ring-white/[0.08] lg:grid lg:h-[calc(100vh-11rem)] lg:min-h-[540px] lg:max-h-[820px] lg:grid-cols-12">
-      {/* Ambient Radial Glow Canvas matching the Chat Box Interface */}
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f6f8f7] text-interlink-ink dark:bg-[#0e1011] dark:text-white sm:rounded-3xl sm:shadow-elevated sm:ring-1 sm:ring-interlink-border/80 dark:sm:ring-white/[0.08] lg:grid lg:h-[calc(100vh-11rem)] lg:min-h-[540px] lg:max-h-[820px] lg:flex-none lg:grid-cols-12">
+      {/* Theme-Adaptive Subtle Warm Ambient Radial Canvas (No Green Clash) */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.23),transparent_44%),radial-gradient(circle_at_88%_76%,rgba(59,104,70,0.24),transparent_52%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.14),transparent_48%),radial-gradient(circle_at_88%_78%,rgba(32,43,60,0.04),transparent_52%)] dark:bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.18),transparent_44%),radial-gradient(circle_at_85%_80%,rgba(255,255,255,0.02),transparent_50%)]"
       />
 
-      {/* Thread Sidebar (Full background & height on Mobile Inbox, 4-col sidebar on Desktop) */}
+      {/* Thread Sidebar (Full height & matching background on Mobile Inbox, 4-col sidebar on Desktop) */}
       <aside
-        className={`relative z-10 h-full flex-col border-white/[0.07] bg-transparent backdrop-blur-md lg:col-span-4 lg:border-r lg:bg-[#0d1310]/45 ${
+        className={`relative z-10 h-full min-h-0 flex-col border-interlink-border/60 bg-transparent backdrop-blur-md dark:border-white/[0.07] lg:col-span-4 lg:border-r lg:bg-interlink-surface/55 dark:lg:bg-white/[0.02] ${
           focusedView ? "hidden" : mobileChatOpen ? "hidden lg:flex" : "flex"
         }`}
       >
-        <div className="border-b border-white/[0.07] p-3.5 sm:p-4">
+        <div className="border-b border-interlink-border/60 p-3.5 dark:border-white/[0.07] sm:p-4">
           <div className="flex items-center justify-between gap-2 pb-3">
-            <h1 className="font-display text-base font-semibold text-white">Messages</h1>
-            <span className="rounded-full bg-white/[0.08] px-2.5 py-0.5 text-[11px] font-medium text-white/75">
+            <h1 className="font-display text-base font-semibold text-interlink-ink dark:text-white">
+              Messages
+            </h1>
+            <span className="rounded-full bg-interlink-ink/[0.07] px-2.5 py-0.5 text-[11px] font-medium text-interlink-muted dark:bg-white/[0.08] dark:text-white/75">
               {threads.length} {threads.length === 1 ? "chat" : "chats"}
             </span>
           </div>
 
           <div className="relative">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-interlink-muted dark:text-white/40"
               aria-hidden="true"
             />
             <input
@@ -244,14 +246,14 @@ export function MessagesHubClient({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search conversations..."
               aria-label="Search conversations"
-              className="w-full rounded-xl border border-white/[0.09] bg-white/[0.05] py-2 pl-9 pr-3 text-[16px] text-white placeholder:text-white/40 focus:border-interlink-forest focus:outline-none sm:text-xs"
+              className="w-full rounded-xl border border-interlink-border/90 bg-interlink-surface/85 py-2 pl-9 pr-3 text-[16px] text-interlink-ink placeholder:text-interlink-muted focus:border-interlink-forest focus:outline-none dark:border-white/[0.09] dark:bg-white/[0.05] dark:text-white dark:placeholder:text-white/40 sm:text-xs"
             />
           </div>
         </div>
 
         <div className="flex-1 space-y-1 overflow-y-auto p-2.5">
           {filteredThreads.length === 0 ? (
-            <p className="px-3 py-8 text-center text-xs text-white/50">
+            <p className="px-3 py-8 text-center text-xs text-interlink-muted dark:text-white/50">
               No conversations match &ldquo;{searchQuery.trim()}&rdquo;.
             </p>
           ) : (
@@ -267,8 +269,8 @@ export function MessagesHubClient({
                   onClick={() => void selectThread(item.conversationId)}
                   className={`flex w-full items-center justify-between gap-3 rounded-2xl p-3 text-left transition-all ${
                     isSelected
-                      ? "bg-white/[0.10] ring-1 ring-white/[0.12]"
-                      : "hover:bg-white/[0.05]"
+                      ? "bg-interlink-surface shadow-subtle ring-1 ring-interlink-border/80 dark:bg-white/[0.10] dark:shadow-none dark:ring-white/[0.12]"
+                      : "hover:bg-interlink-surface/65 dark:hover:bg-white/[0.05]"
                   }`}
                 >
                   <div className="flex min-w-0 items-center gap-3">
@@ -278,11 +280,11 @@ export function MessagesHubClient({
                         firstName={item.partner?.firstName ?? "P"}
                         lastName={item.partner?.lastName ?? ""}
                         size="sm"
-                        className="border-white/15"
+                        className="border-interlink-border dark:border-white/15"
                       />
                       {item.mentorshipStatus === "active" && (
                         <span
-                          className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#0d1310] bg-emerald-400"
+                          className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#f6f8f7] bg-emerald-500 dark:border-[#0e1011] dark:bg-emerald-400"
                           aria-hidden="true"
                         />
                       )}
@@ -290,11 +292,11 @@ export function MessagesHubClient({
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-semibold text-white">
+                        <span className="truncate text-sm font-semibold text-interlink-ink dark:text-white">
                           {partnerName}
                         </span>
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-white/55">
+                      <p className="mt-0.5 truncate text-xs text-interlink-muted dark:text-white/55">
                         {item.lastMessage
                           ? item.lastMessage.content
                           : "Tap to start the conversation"}
@@ -303,10 +305,10 @@ export function MessagesHubClient({
                   </div>
 
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="text-[10px] text-white/40">
+                    <span className="text-[10px] text-interlink-muted dark:text-white/40">
                       {formatDate(item.lastMessage?.createdAt ?? item.updatedAt)}
                     </span>
-                    <ChevronRight className="h-3.5 w-3.5 text-white/35 lg:hidden" aria-hidden="true" />
+                    <ChevronRight className="h-3.5 w-3.5 text-interlink-muted dark:text-white/35 lg:hidden" aria-hidden="true" />
                   </div>
                 </button>
               );
@@ -348,7 +350,8 @@ export function MessagesHubClient({
             }}
             alwaysShowBack={focusedView}
             showWorkspaceLink
-            className="h-full rounded-none bg-transparent shadow-none ring-0"
+            transparentCanvas
+            className="h-full"
           />
         )}
       </section>
