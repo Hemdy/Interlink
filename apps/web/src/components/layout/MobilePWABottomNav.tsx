@@ -148,10 +148,8 @@ function getMoreSections(
   ];
 }
 
-export function PWAContextSubNav({
+export const PWAContextSubNav = React.memo(function PWAContextSubNav({
   user,
-  unreadNotifications = 0,
-  unreadMessages = 0,
   wrapperClassName = "",
 }: {
   user: SessionUser;
@@ -166,12 +164,9 @@ export function PWAContextSubNav({
   const isDiscoverContext =
     pathname === "/mentors" || pathname.startsWith("/mentors/") || pathname === "/saved";
   const isMentorsContext =
-    pathname === "/mentorships" ||
-    pathname.startsWith("/mentorships/") ||
-    pathname === "/requests";
-  const isMessagesContext = pathname === "/messages" || pathname === "/notifications";
+    pathname === "/mentorships" || pathname === "/requests";
 
-  if (!isDiscoverContext && !isMentorsContext && !isMessagesContext) {
+  if (!isDiscoverContext && !isMentorsContext) {
     return null;
   }
 
@@ -201,7 +196,7 @@ export function PWAContextSubNav({
       {
         label: isAdmin ? "Workspaces" : isMentor ? "My Mentees" : "My Mentors",
         href: "/mentorships",
-        active: pathname === "/mentorships" || pathname.startsWith("/mentorships/"),
+        active: pathname === "/mentorships",
         icon: FolderKanban,
       },
       {
@@ -211,37 +206,20 @@ export function PWAContextSubNav({
         icon: Inbox,
       },
     ];
-  } else if (isMessagesContext) {
-    tabs = [
-      {
-        label: "Messages",
-        href: "/messages",
-        active: pathname === "/messages" || pathname.startsWith("/messages/"),
-        badge: unreadMessages,
-        icon: MessageSquare,
-      },
-      {
-        label: "Notifications",
-        href: "/notifications",
-        active: pathname === "/notifications",
-        badge: unreadNotifications,
-        icon: Bell,
-      },
-    ];
   }
 
   if (tabs.length <= 1) return null;
 
   return (
     <div className={wrapperClassName}>
-      <div className="mb-4 flex items-center gap-1.5 rounded-[4px] border border-interlink-border bg-interlink-surface p-1 shadow-subtle">
+      <div className="mb-4 flex items-center gap-1.5 rounded-full border border-interlink-border bg-interlink-surface p-1 shadow-subtle">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-[2px] px-2.5 py-2 text-xs font-medium transition-colors ${
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
                 tab.active
                   ? "bg-interlink-forest text-white shadow-sm"
                   : "text-interlink-muted hover:bg-interlink-app-bg hover:text-interlink-ink"
@@ -266,9 +244,9 @@ export function PWAContextSubNav({
       </div>
     </div>
   );
-}
+});
 
-export function MobilePWABottomNav({
+export const MobilePWABottomNav = React.memo(function MobilePWABottomNav({
   user,
   unreadNotifications = 0,
   unreadMessages = 0,
@@ -580,4 +558,4 @@ export function MobilePWABottomNav({
       </nav>
     </>
   );
-}
+});

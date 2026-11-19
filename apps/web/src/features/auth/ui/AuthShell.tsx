@@ -19,29 +19,29 @@ export function AuthBackdrop({ compact = false }: { compact?: boolean }) {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
       <div
-        className={`absolute -left-24 -top-24 h-72 w-72 rounded-full bg-interlink-forest/20 blur-3xl dark:bg-interlink-forest/30 ${
+        className={`absolute -left-24 -top-24 h-72 w-72 rounded-full bg-interlink-forest/30 blur-3xl ${
           compact ? "" : "md:h-96 md:w-96"
         }`}
       />
       <div
-        className={`absolute -right-20 top-1/4 h-64 w-64 rounded-full bg-interlink-sage/20 blur-3xl dark:bg-interlink-forest-deep/35 ${
+        className={`absolute -right-20 top-1/4 h-64 w-64 rounded-full bg-interlink-forest-deep/35 blur-3xl ${
           compact ? "" : "md:h-80 md:w-80"
         }`}
       />
       <div
-        className={`absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-interlink-forest/15 blur-3xl dark:bg-interlink-forest-card/25 ${
+        className={`absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-interlink-forest-card/25 blur-3xl ${
           compact ? "" : "md:h-96 md:w-96"
         }`}
       />
       <div
-        className={`absolute -bottom-16 -right-16 h-56 w-56 rounded-full bg-interlink-gold/10 blur-3xl dark:bg-interlink-gold/10 ${
+        className={`absolute -bottom-16 -right-16 h-56 w-56 rounded-full bg-interlink-gold/10 blur-3xl ${
           compact ? "" : "md:h-72 md:w-72"
         }`}
       />
 
       {/* Subtle curved architectural flow lines */}
       <svg
-        className="absolute inset-0 h-full w-full opacity-[0.14] dark:opacity-[0.22]"
+        className="absolute inset-0 h-full w-full opacity-[0.22]"
         viewBox="0 0 390 844"
         fill="none"
         preserveAspectRatio="none"
@@ -76,39 +76,41 @@ export function AuthShell({
   children,
 }: AuthShellProps) {
   return (
-    <div className="relative flex min-h-screen flex-col justify-between overflow-hidden bg-interlink-canvas px-5 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-[calc(1.75rem+env(safe-area-inset-top))] text-interlink-ink md:items-center md:justify-center md:px-6 md:py-12">
-      <AuthBackdrop />
+    <div className="dark [color-scheme:dark]">
+      <div className="relative flex min-h-screen flex-col justify-between overflow-hidden bg-interlink-canvas px-5 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-[calc(1.75rem+env(safe-area-inset-top))] text-interlink-ink md:items-center md:justify-center md:px-6 md:py-12">
+        <AuthBackdrop />
 
-      {/* Main Content Container (Borderless on mobile, refined surface card on md+) */}
-      <div
-        className={`relative z-10 mx-auto flex w-full ${maxWidthClass} flex-1 flex-col justify-center md:flex-initial`}
-      >
-        {topLeftSlot && <div className="mb-4 flex items-center justify-start">{topLeftSlot}</div>}
+        {/* Main Content Container (Borderless on mobile, refined surface card on md+) */}
+        <div
+          className={`relative z-10 mx-auto flex w-full ${maxWidthClass} flex-1 flex-col justify-center md:flex-initial`}
+        >
+          {topLeftSlot && <div className="mb-4 flex items-center justify-start">{topLeftSlot}</div>}
 
-        <div className="md:rounded-3xl md:border md:border-interlink-border/90 md:bg-interlink-surface/85 md:p-9 md:shadow-modal md:backdrop-blur-xl dark:md:bg-interlink-surface/75">
-          {/* Top Brand Lockup */}
-          <div className="mb-6 text-center">
-            <Link
-              href={logoHref}
-              className="inline-flex items-center justify-center rounded-[4px] px-2 py-1 focus-ring"
-            >
-              <InterlinkLogo variant="compact" />
-            </Link>
+          <div className="md:rounded-3xl md:border md:border-interlink-border/90 md:bg-interlink-surface/75 md:p-9 md:shadow-modal md:backdrop-blur-xl">
+            {/* Top Brand Lockup */}
+            <div className="mb-7 text-center">
+              <Link
+                href={logoHref}
+                className="inline-flex items-center justify-center rounded-[4px] px-2 py-1 focus-ring"
+              >
+                <InterlinkLogo variant="compact" />
+              </Link>
+            </div>
+
+            {/* Two-Tone Greeting */}
+            <div className="text-center">
+              <h1 className="font-display text-[30px] font-bold leading-tight tracking-tight text-interlink-ink">
+                {titleLeading} <span className="text-interlink-forest">{titleHighlight}</span>
+              </h1>
+              <p className="mt-2.5 text-sm text-interlink-muted">{subtitle}</p>
+              <div
+                aria-hidden="true"
+                className="mx-auto mt-4 h-[2px] w-20 rounded-full bg-gradient-to-r from-transparent via-interlink-forest to-transparent shadow-[0_0_12px_rgba(59,104,70,0.45)]"
+              />
+            </div>
+
+            {children}
           </div>
-
-          {/* Two-Tone Greeting */}
-          <div className="text-center">
-            <h1 className="font-display text-[30px] font-bold leading-tight tracking-tight text-interlink-ink">
-              {titleLeading} <span className="text-interlink-forest">{titleHighlight}</span>
-            </h1>
-            <p className="mt-2 text-sm text-interlink-muted">{subtitle}</p>
-            <div
-              aria-hidden="true"
-              className="mx-auto mt-4 h-[2px] w-20 rounded-full bg-gradient-to-r from-transparent via-interlink-forest to-transparent shadow-[0_0_12px_rgba(59,104,70,0.45)]"
-            />
-          </div>
-
-          {children}
         </div>
       </div>
     </div>
@@ -129,30 +131,32 @@ export function AuthModalCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden bg-interlink-canvas p-6 text-interlink-ink sm:p-8">
-      <AuthBackdrop compact />
+    <div className="dark [color-scheme:dark]">
+      <div className="relative overflow-hidden bg-interlink-canvas p-6 text-interlink-ink sm:p-8">
+        <AuthBackdrop compact />
 
-      <div className="relative z-10">
-        {topLeftSlot && <div className="mb-3 flex items-center justify-start">{topLeftSlot}</div>}
+        <div className="relative z-10">
+          {topLeftSlot && <div className="mb-3 flex items-center justify-start">{topLeftSlot}</div>}
 
-        <div className="mb-5 text-center">
-          <span className="inline-flex items-center justify-center">
-            <InterlinkLogo variant="compact" />
-          </span>
+          <div className="mb-5 text-center">
+            <span className="inline-flex items-center justify-center">
+              <InterlinkLogo variant="compact" />
+            </span>
+          </div>
+
+          <div className="text-center">
+            <h2 className="font-display text-[26px] font-bold leading-tight tracking-tight text-interlink-ink sm:text-[28px]">
+              {titleLeading} <span className="text-interlink-forest">{titleHighlight}</span>
+            </h2>
+            <p className="mt-1.5 text-sm text-interlink-muted">{subtitle}</p>
+            <div
+              aria-hidden="true"
+              className="mx-auto mt-3.5 h-[2px] w-20 rounded-full bg-gradient-to-r from-transparent via-interlink-forest to-transparent shadow-[0_0_12px_rgba(59,104,70,0.45)]"
+            />
+          </div>
+
+          {children}
         </div>
-
-        <div className="text-center">
-          <h2 className="font-display text-[26px] font-bold leading-tight tracking-tight text-interlink-ink sm:text-[28px]">
-            {titleLeading} <span className="text-interlink-forest">{titleHighlight}</span>
-          </h2>
-          <p className="mt-1.5 text-sm text-interlink-muted">{subtitle}</p>
-          <div
-            aria-hidden="true"
-            className="mx-auto mt-3.5 h-[2px] w-20 rounded-full bg-gradient-to-r from-transparent via-interlink-forest to-transparent shadow-[0_0_12px_rgba(59,104,70,0.45)]"
-          />
-        </div>
-
-        {children}
       </div>
     </div>
   );
@@ -193,7 +197,7 @@ export function AuthPillInput({
       <input
         type={resolvedType}
         {...rest}
-        className="w-full min-w-0 bg-transparent text-sm text-interlink-ink placeholder:text-interlink-muted focus:outline-none"
+        className="w-full min-w-0 bg-transparent text-base text-interlink-ink placeholder:text-interlink-muted focus:outline-none sm:text-sm"
       />
       {showPasswordToggle && (
         <button
@@ -255,7 +259,7 @@ export function AuthBottomCard({
     "inline-flex shrink-0 items-center gap-1 rounded-full border border-interlink-forest/40 bg-interlink-surface px-3.5 py-2 text-xs font-semibold text-interlink-ink shadow-sm transition-colors hover:border-interlink-forest hover:bg-interlink-forest hover:text-white focus-ring";
 
   return (
-    <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-interlink-border/90 bg-interlink-surface/85 p-3.5 shadow-subtle backdrop-blur-md dark:bg-interlink-surface/75">
+    <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-interlink-border/90 bg-interlink-surface/75 p-3.5 shadow-subtle backdrop-blur-md">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-interlink-forest/20 bg-gradient-to-br from-interlink-forest/15 to-interlink-sage/20 text-interlink-forest shadow-sm">
           <Icon className="h-5 w-5" aria-hidden="true" />

@@ -101,53 +101,56 @@ export function RequestsClient({
   }
 
   async function handleCancel(requestId: string) {
-    setBusyId(requestId);
+    const previous = requests;
+    setRequests((prev) =>
+      prev.map((r) => (r.id === requestId ? { ...r, status: "cancelled" } : r)),
+    );
+    pushToast({ kind: "info", title: "Mentorship request withdrawn" });
+
     try {
       const res = await fetch(`/api/v1/mentorship-requests/${requestId}/cancel`, {
         method: "PATCH",
       });
-      if (res.ok) {
-        setRequests((prev) =>
-          prev.map((r) => (r.id === requestId ? { ...r, status: "cancelled" } : r)),
-        );
-        pushToast({ kind: "info", title: "Mentorship request withdrawn" });
-      }
-    } finally {
-      setBusyId(null);
+      if (!res.ok) throw new Error("Failed");
+    } catch {
+      setRequests(previous);
+      pushToast({ kind: "error", title: "Unable to withdraw request. Please retry." });
     }
   }
 
   async function handleActionSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!actionModal) return;
-    setBusyId(actionModal.requestId);
-    try {
-      const endpoint =
-        actionModal.action === "reject"
-          ? `/api/v1/mentorship-requests/${actionModal.requestId}/reject`
-          : `/api/v1/mentorship-requests/${actionModal.requestId}/request-info`;
 
+    const targetId = actionModal.requestId;
+    const nextStatus = actionModal.action === "reject" ? "rejected" : "info_requested";
+    const endpoint =
+      actionModal.action === "reject"
+        ? `/api/v1/mentorship-requests/${targetId}/reject`
+        : `/api/v1/mentorship-requests/${targetId}/request-info`;
+    const submittedNotes = notes;
+    const previous = requests;
+
+    // Optimistic UI update before waiting on server response
+    setRequests((prev) =>
+      prev.map((r) =>
+        r.id === targetId ? { ...r, status: nextStatus, mentorNotes: submittedNotes } : r,
+      ),
+    );
+    setActionModal(null);
+    setNotes("");
+    pushToast({ kind: "success", title: "Request updated" });
+
+    try {
       const res = await fetch(endpoint, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes }),
+        body: JSON.stringify({ notes: submittedNotes }),
       });
-
-      if (res.ok) {
-        const nextStatus = actionModal.action === "reject" ? "rejected" : "info_requested";
-        setRequests((prev) =>
-          prev.map((r) =>
-            r.id === actionModal.requestId
-              ? { ...r, status: nextStatus, mentorNotes: notes }
-              : r,
-          ),
-        );
-        pushToast({ kind: "success", title: "Request updated" });
-        setActionModal(null);
-        setNotes("");
-      }
-    } finally {
-      setBusyId(null);
+      if (!res.ok) throw new Error("Failed");
+    } catch {
+      setRequests(previous);
+      pushToast({ kind: "error", title: "Unable to update request. Restored previous state." });
     }
   }
 

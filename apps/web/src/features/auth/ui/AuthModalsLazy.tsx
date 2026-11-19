@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Lock, LogIn, Mail, User, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Lock, LogIn, Mail, User } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -20,7 +20,7 @@ import { resetClientSessionAndNavigate } from "./SessionSyncGuard";
 export type AuthModalView = "sign-in" | "sign-up" | "forgot-password" | null;
 
 const MODAL_CONTAINER_CLASS =
-  "rounded-3xl border border-interlink-border/90 bg-interlink-canvas shadow-modal";
+  "dark rounded-3xl border border-interlink-border/90 bg-interlink-canvas shadow-modal";
 
 export default function AuthModalsLazy({
   view,
@@ -167,99 +167,73 @@ export default function AuthModalsLazy({
       >
         <AuthModalCard
           titleLeading="Welcome"
-          titleHighlight="Back!"
-          subtitle="Sign in to continue your journey with Interlink."
+          titleHighlight="Back"
+          subtitle="Sign in to continue your mentorship journey."
         >
-          {error && (
-            <div className="mt-5">
-              <ErrorAlert message={error} />
-            </div>
-          )}
+          <div className="mt-10">
+            {error && (
+              <div className="mb-5">
+                <ErrorAlert message={error} />
+              </div>
+            )}
 
-          <div className="mt-6">
-            <GoogleAuthButton
-              variant="pill"
-              label="Continue with Google"
-              onSuccess={() => {
-                closeAuthModal();
-                resetClientSessionAndNavigate("/dashboard");
-              }}
-            />
-          </div>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <AuthPillInput
+                icon={Mail}
+                name="identifier"
+                type="text"
+                placeholder="E-mail or Username"
+                aria-label="E-mail or Username"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                required
+                autoComplete="username"
+              />
+              <div>
+                <AuthPillInput
+                  icon={Lock}
+                  showPasswordToggle
+                  name="password"
+                  placeholder="Password"
+                  aria-label="Password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+                <div className="mt-2.5 flex justify-end pr-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetMessages();
+                      setView("forgot-password");
+                    }}
+                    className="text-xs font-semibold text-interlink-forest hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              </div>
 
-          <AuthDivider label="or continue with email" />
+              <div className="pt-2">
+                <AuthSubmitButton loading={loading} label="Login" loadingLabel="Signing in..." />
+              </div>
+            </form>
 
-          <form onSubmit={handleLogin} className="space-y-3.5">
-            <AuthPillInput
-              icon={Mail}
-              name="identifier"
-              type="text"
-              placeholder="E-mail or Username"
-              aria-label="E-mail or Username"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              required
-              autoComplete="username"
-            />
-            <AuthPillInput
-              icon={Lock}
-              showPasswordToggle
-              name="password"
-              placeholder="Password"
-              aria-label="Password"
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-
-            <AuthSubmitButton loading={loading} label="Login" loadingLabel="Signing in..." />
-          </form>
-
-          <div className="mt-5 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                resetMessages();
-                setView("forgot-password");
-              }}
-              className="text-xs font-semibold text-interlink-forest hover:underline"
-            >
-              Forgot Password?
-            </button>
-
-            <div className="mx-auto my-3.5 h-px w-48 bg-gradient-to-r from-transparent via-interlink-border to-transparent" />
-
-            <p className="text-xs text-interlink-muted">
-              View{" "}
-              <Link
-                href="/legal/terms"
-                onClick={closeAuthModal}
-                className="font-medium text-interlink-forest hover:underline"
+            <p className="mt-7 text-center text-xs text-interlink-muted">
+              Don&apos;t have an account?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  resetMessages();
+                  setView("sign-up");
+                }}
+                className="font-semibold text-interlink-forest hover:underline"
               >
-                Terms
-              </Link>{" "}
-              and{" "}
-              <Link
-                href="/legal/terms"
-                onClick={closeAuthModal}
-                className="font-medium text-interlink-forest hover:underline"
-              >
-                Condition
-              </Link>
+                Sign up
+              </button>
             </p>
           </div>
-
-          <AuthBottomCard
-            icon={Users}
-            title="New here?"
-            description="Sign Up and get linked with mentors world wide"
-            ctaLabel="Sign Up"
-            onCtaClick={() => {
-              resetMessages();
-              setView("sign-up");
-            }}
-          />
         </AuthModalCard>
       </Modal>
 
@@ -401,7 +375,7 @@ export default function AuthModalsLazy({
             >
               Terms and Condition
             </Link>
-            . Learn how to process your data in our{" "}
+            . Learn how we process your data in our{" "}
             <Link
               href="/legal/privacy"
               onClick={closeAuthModal}
@@ -466,7 +440,7 @@ export default function AuthModalsLazy({
           )}
 
           {infoMessage && (
-            <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-3.5 text-xs leading-relaxed text-emerald-900 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-200">
+            <div className="mt-5 rounded-2xl border border-emerald-800/60 bg-emerald-950/40 p-3.5 text-xs leading-relaxed text-emerald-200">
               <p>{infoMessage}</p>
               {devLink && (
                 <Link

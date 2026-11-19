@@ -36,10 +36,7 @@ export function PWAPublicShellAdapter({
   const { useBottomNav } = useNavigationMode();
   const showPWAShell = Boolean(user && useBottomNav);
   const unreadMessages = useUnreadMessagesCount(showPWAShell);
-  const clientUnreadNotifications = useUnreadNotificationsCount(
-    showPWAShell && unreadCount === undefined,
-  );
-  const resolvedUnreadCount = unreadCount ?? clientUnreadNotifications;
+  const resolvedUnreadCount = useUnreadNotificationsCount(showPWAShell, unreadCount);
 
   async function handleSignOut() {
     await fetch("/api/v1/auth/logout", {
@@ -90,7 +87,7 @@ export function PWAPublicShellAdapter({
             <ThemeToggle />
             <Link
               href="/notifications"
-              className="relative inline-flex h-9 w-9 items-center justify-center rounded-[2px] border border-interlink-border bg-interlink-surface text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+              className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-interlink-border bg-interlink-surface text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
               aria-label="Notifications"
             >
               <Bell className="h-4 w-4" />
@@ -141,7 +138,7 @@ export function PWAPublicShellAdapter({
           <ThemeToggle />
           <Link
             href="/notifications"
-            className="relative inline-flex h-9 w-9 items-center justify-center rounded-[2px] border border-interlink-border bg-interlink-surface text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+            className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-interlink-border bg-interlink-surface text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
             aria-label="Notifications"
           >
             <Bell className="h-4 w-4" />

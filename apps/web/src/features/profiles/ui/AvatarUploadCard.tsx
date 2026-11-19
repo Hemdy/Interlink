@@ -135,9 +135,9 @@ export function AvatarUploadCard({
           previewSubtitle="Profile photograph"
         />
         <div>
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-[2px] border border-interlink-hairline bg-interlink-surface px-3.5 py-2 text-xs font-medium text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-interlink-border bg-interlink-surface px-4 py-2 text-xs font-semibold text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest">
             <Camera className="h-3.5 w-3.5 text-interlink-forest" aria-hidden="true" />
-            <span>{uploading ? "Uploading..." : avatarUrl ? "Change Profile Photo" : "Upload Profile Photo"}</span>
+            <span>{uploading ? "Uploading..." : avatarUrl ? "Change Photo" : "Upload Photo"}</span>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"

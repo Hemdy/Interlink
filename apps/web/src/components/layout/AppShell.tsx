@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -37,11 +37,13 @@ import {
   isInstalledPWA,
   useNavigationMode,
   useUnreadMessagesCount,
+  useUnreadNotificationsCount,
 } from "@/features/pwa/useNavigationMode";
 import {
   MobilePWABottomNav,
   PWAContextSubNav,
 } from "@/components/layout/MobilePWABottomNav";
+import { WorkspaceHeaderProvider } from "@/components/layout/WorkspaceHeaderContext";
 
 interface NavItem {
   label: string;
@@ -114,19 +116,23 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [headerActions, setHeaderActions] = useState<React.ReactNode | null>(null);
   const { isStandalone, useBottomNav } = useNavigationMode();
   const unreadMessages = useUnreadMessagesCount(useBottomNav);
+  const liveUnreadCount = useUnreadNotificationsCount(true, unreadCount);
 
-  const navItems = getNavItemsForUser(user);
+  const isMessagesRoute = pathname === "/messages";
 
-  async function handleSignOut() {
+  const navItems = useMemo(() => getNavItemsForUser(user), [user]);
+
+  const handleSignOut = useCallback(async () => {
     await fetch("/api/v1/auth/logout", {
       method: "POST",
       credentials: "same-origin",
       cache: "no-store",
     }).catch(() => undefined);
     resetClientSessionAndNavigate(isStandalone || isInstalledPWA() ? "/sign-in" : "/");
-  }
+  }, [isStandalone]);
 
   const SidebarContent = (
     <div className="flex h-full flex-col justify-between bg-interlink-surface text-interlink-ink">
@@ -185,7 +191,7 @@ export function AppShell({
                   <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                   <span>{item.label}</span>
                 </span>
-                {item.href === "/notifications" && unreadCount > 0 && (
+                {item.href === "/notifications" && liveUnreadCount > 0 && (
                   <span
                     className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
                       active
@@ -193,7 +199,7 @@ export function AppShell({
                         : "bg-interlink-forest text-white"
                     }`}
                   >
-                    {unreadCount}
+                    {liveUnreadCount}
                   </span>
                 )}
               </Link>
@@ -278,7 +284,7 @@ export function AppShell({
           </div>
 
           <div className="flex shrink-0 items-center gap-2.5">
-            {actions}
+            {actions ?? headerActions}
             <ThemeToggle />
             <Link
               href="/notifications"
@@ -286,9 +292,9 @@ export function AppShell({
               aria-label="Notifications"
             >
               <Bell className="h-4 w-4" />
-              {unreadCount > 0 && (
+              {liveUnreadCount > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-interlink-forest px-1 text-[10px] font-bold text-white">
-                  {unreadCount}
+                  {liveUnreadCount}
                 </span>
               )}
             </Link>
@@ -324,8 +330,14 @@ export function AppShell({
         )}
 
         <main
-          className={`mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8 ${
-            useBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))]" : ""
+          className={`mx-auto max-w-7xl ${
+            isMessagesRoute
+              ? `p-0 sm:px-8 sm:py-8 ${
+                  useBottomNav ? "pb-[calc(4.75rem+env(safe-area-inset-bottom))] sm:pb-8" : ""
+                }`
+              : `px-4 py-6 sm:px-8 sm:py-8 ${
+                  useBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))]" : ""
+                }`
           }`}
         >
           <ServiceWorkerRegister />
@@ -334,11 +346,13 @@ export function AppShell({
           {useBottomNav && (
             <PWAContextSubNav
               user={user}
-              unreadNotifications={unreadCount}
+              unreadNotifications={liveUnreadCount}
               unreadMessages={unreadMessages}
             />
           )}
-          {children}
+          <WorkspaceHeaderProvider setHeaderActions={setHeaderActions}>
+            {children}
+          </WorkspaceHeaderProvider>
         </main>
       </div>
 
@@ -346,7 +360,7 @@ export function AppShell({
       {useBottomNav && (
         <MobilePWABottomNav
           user={user}
-          unreadNotifications={unreadCount}
+          unreadNotifications={liveUnreadCount}
           unreadMessages={unreadMessages}
           onSignOut={handleSignOut}
         />

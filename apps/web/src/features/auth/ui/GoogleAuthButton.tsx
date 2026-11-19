@@ -103,11 +103,6 @@ export function GoogleAuthButton({
     }
   }
 
-  // function handleQuickAccount(account: { email: string; name: string }) {
-  //   setGoogleEmail(account.email);
-  //   setGoogleFullName(account.name);
-  // }
-
   return (
     <>
       {variant === "pill" ? (
@@ -146,82 +141,84 @@ export function GoogleAuthButton({
         onClose={() => setModalOpen(false)}
         title="Sign in with Google"
         maxWidthClass="max-w-[420px]"
-        containerClassName="rounded-3xl border border-interlink-border/90 bg-interlink-canvas shadow-modal"
+        containerClassName="dark rounded-3xl border border-interlink-border/90 bg-interlink-canvas shadow-modal"
       >
-        <div className="relative overflow-hidden bg-interlink-canvas p-6 text-interlink-ink sm:p-7">
-          <AuthBackdrop compact />
+        <div className="dark [color-scheme:dark]">
+          <div className="relative overflow-hidden bg-interlink-canvas p-6 text-interlink-ink sm:p-7">
+            <AuthBackdrop compact />
 
-          <div className="relative z-10">
-            <div className="flex items-center gap-3.5 border-b border-interlink-border/70 pb-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-interlink-border bg-white shadow-subtle dark:bg-slate-900">
-                <GoogleIcon className="h-5 w-5" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3.5 border-b border-interlink-border/70 pb-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-interlink-border bg-slate-900 shadow-subtle">
+                  <GoogleIcon className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-interlink-ink">
+                    Sign in with <span className="text-interlink-forest">Google</span>
+                  </h3>
+                  <p className="text-xs text-interlink-muted">
+                    to continue to <span className="font-semibold text-interlink-forest">InterLink</span>
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-display text-lg font-bold text-interlink-ink">
-                  Sign in with <span className="text-interlink-forest">Google</span>
-                </h3>
-                <p className="text-xs text-interlink-muted">
-                  to continue to <span className="font-semibold text-interlink-forest">InterLink</span>
-                </p>
-              </div>
+
+              {error && (
+                <div className="mt-4">
+                  <ErrorAlert message={error} />
+                </div>
+              )}
+
+              <form onSubmit={handleGoogleSubmit} className="mt-5 space-y-3.5">
+                <div>
+                  <label className="mb-1.5 block pl-2 text-xs font-medium text-interlink-muted">
+                    Google Email Address
+                  </label>
+                  <AuthPillInput
+                    icon={Mail}
+                    name="googleEmail"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@gmail.com"
+                    value={googleEmail}
+                    onChange={(e) => setGoogleEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block pl-2 text-xs font-medium text-interlink-muted">
+                    Full Name (as on Google profile)
+                  </label>
+                  <AuthPillInput
+                    icon={User}
+                    name="googleName"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="e.g. Alex Morgan"
+                    value={googleFullName}
+                    onChange={(e) => setGoogleFullName(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    className="rounded-full border border-interlink-border/90 bg-interlink-surface/80 px-4 py-2.5 text-xs font-semibold text-interlink-muted transition-colors hover:border-interlink-forest/40 hover:text-interlink-ink focus-ring"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || !googleEmail.trim()}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-interlink-forest via-interlink-forest-card to-interlink-forest-deep px-5 py-2.5 text-xs font-semibold text-white shadow-[0_6px_16px_rgba(50,93,60,0.28)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 focus-ring"
+                  >
+                    <span>{loading ? "Authenticating..." : "Continue to InterLink"}</span>
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+              </form>
             </div>
-
-            {error && (
-              <div className="mt-4">
-                <ErrorAlert message={error} />
-              </div>
-            )}
-
-            <form onSubmit={handleGoogleSubmit} className="mt-5 space-y-3.5">
-              <div>
-                <label className="mb-1.5 block pl-2 text-xs font-medium text-interlink-muted">
-                  Google Email Address
-                </label>
-                <AuthPillInput
-                  icon={Mail}
-                  name="googleEmail"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@gmail.com"
-                  value={googleEmail}
-                  onChange={(e) => setGoogleEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block pl-2 text-xs font-medium text-interlink-muted">
-                  Full Name (as on Google profile)
-                </label>
-                <AuthPillInput
-                  icon={User}
-                  name="googleName"
-                  type="text"
-                  autoComplete="name"
-                  placeholder="e.g. Alex Morgan"
-                  value={googleFullName}
-                  onChange={(e) => setGoogleFullName(e.target.value)}
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="rounded-full border border-interlink-border/90 bg-interlink-surface/80 px-4 py-2.5 text-xs font-semibold text-interlink-muted transition-colors hover:border-interlink-forest/40 hover:text-interlink-ink focus-ring"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || !googleEmail.trim()}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-interlink-forest via-interlink-forest-card to-interlink-forest-deep px-5 py-2.5 text-xs font-semibold text-white shadow-[0_6px_16px_rgba(50,93,60,0.28)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 focus-ring"
-                >
-                  <span>{loading ? "Authenticating..." : "Continue to InterLink"}</span>
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       </Modal>

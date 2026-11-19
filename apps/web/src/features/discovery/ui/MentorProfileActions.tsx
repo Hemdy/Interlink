@@ -53,15 +53,22 @@ export function MentorProfileActions({
       openSignIn();
       return;
     }
-    const res = await fetch(`/api/v1/mentors/${mentorId}/save`, {
-      method: saved ? "DELETE" : "POST",
+    const previous = saved;
+    const nextSaved = !saved;
+    setSaved(nextSaved);
+    pushToast({
+      kind: "success",
+      title: nextSaved ? "Mentor saved" : "Removed from saved mentors",
     });
-    if (res.ok) {
-      setSaved((prev) => !prev);
-      pushToast({
-        kind: "success",
-        title: saved ? "Removed from saved mentors" : "Mentor saved",
+
+    try {
+      const res = await fetch(`/api/v1/mentors/${mentorId}/save`, {
+        method: previous ? "DELETE" : "POST",
       });
+      if (!res.ok) throw new Error("Failed");
+    } catch {
+      setSaved(previous);
+      pushToast({ kind: "error", title: "Could not update saved status" });
     }
   }
 

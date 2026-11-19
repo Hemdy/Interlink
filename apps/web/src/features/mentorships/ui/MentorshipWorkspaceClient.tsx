@@ -1,17 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { formatDate, formatDateTime, formatTime } from "@interlink/utils";
 import {
-  AlertTriangle,
   BookOpen,
   Calendar,
   CheckCircle2,
   ExternalLink,
   MessageSquare,
   Plus,
-  Send,
   Star,
   Target,
 } from "lucide-react";
@@ -22,12 +20,14 @@ import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input, Select, Textarea } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
+import { ConversationChatPanel } from "@/features/messaging/ui/ConversationChatPanel";
 
 interface Participant {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
+  profileImage?: string | null;
 }
 
 interface Milestone {
@@ -127,7 +127,6 @@ export function MentorshipWorkspaceClient({
   initialResources: ResourceItem[];
   hasSubmittedReview: boolean;
 }) {
-  const router = useRouter();
   const { pushToast } = useToast();
   const isMentor = mentorship.mentorId === currentUserId;
   const partner = isMentor ? mentee : mentor;
@@ -158,7 +157,14 @@ export function MentorshipWorkspaceClient({
   }, [requestedTab]);
   const [busy, setBusy] = useState(false);
 
-  // Goals state
+  // Local reactive workspace state for optimistic updates without full-page reloads
+  const [relationshipStatus, setRelationshipStatus] = useState(mentorship.status);
+  const [summaryNote, setSummaryNote] = useState(mentorship.completionSummary);
+  const [goals, setGoals] = useState<Goal[]>(initialGoals);
+  const [sessionsList, setSessionsList] = useState<SessionItem[]>(initialSessions);
+  const [resourcesList, setResourcesList] = useState<ResourceItem[]>(initialResources);
+
+  // Goals UI state
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [goalTitle, setGoalTitle] = useState("");
   const [goalDesc, setGoalDesc] = useState("");
@@ -184,7 +190,6 @@ export function MentorshipWorkspaceClient({
 
   // Messages state
   const [messages, setMessages] = useState(initialMessages);
-  const [messageText, setMessageText] = useState("");
 
   // Resources state
   const [resTitle, setResTitle] = useState("");
@@ -199,64 +204,141 @@ export function MentorshipWorkspaceClient({
   const [reviewComment, setReviewComment] = useState("");
   const [reviewed, setReviewed] = useState(hasSubmittedReview);
 
+  function computeGoalProgress(milestones: Milestone[], status: string): number {
+    if (milestones.length === 0) return status === "completed" ? 100 : 0;
+    const completedCount = milestones.filter((m) => m.status === "completed").length;
+    return Math.round((completedCount / milestones.length) * 100);
+  }
+
   async function createGoal(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
+    const tempId = `temp-goal-${Date.now()}`;
+    const targetIso = goalTargetDate ? new Date(goalTargetDate).toISOString() : null;
+    const optimisticGoal: Goal = {
+      id: tempId,
+      title: goalTitle,
+      description: goalDesc,
+      expectedOutcome: goalOutcome || null,
+      targetDate: targetIso,
+      status: "not_started",
+      mentorFeedback: null,
+      milestones: [],
+      updates: [],
+      progressPercent: 0,
+    };
+
+    const previousGoals = goals;
+    setGoals((prev) => [optimisticGoal, ...prev]);
+    setGoalModalOpen(false);
+    setGoalTitle("");
+    setGoalDesc("");
+    setGoalOutcome("");
+    setGoalTargetDate("");
+    pushToast({ kind: "success", title: "Development goal created" });
+
     try {
       const res = await fetch(`/api/v1/mentorships/${mentorship.id}/goals`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: goalTitle,
-          description: goalDesc,
-          expectedOutcome: goalOutcome || null,
-          targetDate: goalTargetDate ? new Date(goalTargetDate).toISOString() : null,
+          title: optimisticGoal.title,
+          description: optimisticGoal.description,
+          expectedOutcome: optimisticGoal.expectedOutcome,
+          targetDate: targetIso,
         }),
       });
-      if (res.ok) {
-        pushToast({ kind: "success", title: "Development goal created" });
-        setGoalModalOpen(false);
-        setGoalTitle("");
-        setGoalDesc("");
-        setGoalOutcome("");
-        setGoalTargetDate("");
-        router.refresh();
+      if (!res.ok) throw new Error("Failed");
+      const json = (await res.json()) as { data?: { goal?: { id: string } } };
+      if (json.data?.goal?.id) {
+        setGoals((prev) =>
+          prev.map((g) => (g.id === tempId ? { ...g, id: json.data!.goal!.id } : g)),
+        );
       }
-    } finally {
-      setBusy(false);
+    } catch {
+      setGoals(previousGoals);
+      pushToast({ kind: "error", title: "Could not save goal. Changes reverted." });
     }
   }
 
   async function addMilestone(goalId: string) {
     const title = milestoneInputs[goalId]?.trim();
     if (!title) return;
-    setBusy(true);
+
+    const tempId = `temp-ms-${Date.now()}`;
+    const previousGoals = goals;
+    setMilestoneInputs((prev) => ({ ...prev, [goalId]: "" }));
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.id !== goalId) return g;
+        const nextMilestones = [
+          ...g.milestones,
+          { id: tempId, title, description: null, dueDate: null, status: "pending", evidenceUrl: null },
+        ];
+        return {
+          ...g,
+          milestones: nextMilestones,
+          progressPercent: computeGoalProgress(nextMilestones, g.status),
+        };
+      }),
+    );
+    pushToast({ kind: "success", title: "Milestone added" });
+
     try {
       const res = await fetch(`/api/v1/goals/${goalId}/milestones`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title }),
       });
-      if (res.ok) {
-        setMilestoneInputs((prev) => ({ ...prev, [goalId]: "" }));
-        pushToast({ kind: "success", title: "Milestone added" });
-        router.refresh();
+      if (!res.ok) throw new Error("Failed");
+      const json = (await res.json()) as { data?: { milestone?: { id: string } } };
+      if (json.data?.milestone?.id) {
+        setGoals((prev) =>
+          prev.map((g) =>
+            g.id !== goalId
+              ? g
+              : {
+                  ...g,
+                  milestones: g.milestones.map((m) =>
+                    m.id === tempId ? { ...m, id: json.data!.milestone!.id } : m,
+                  ),
+                },
+          ),
+        );
       }
-    } finally {
-      setBusy(false);
+    } catch {
+      setGoals(previousGoals);
+      pushToast({ kind: "error", title: "Could not save milestone. Reverted." });
     }
   }
 
-  async function toggleMilestone(milestone: Milestone) {
+  async function toggleMilestone(goalId: string, milestone: Milestone) {
     const nextStatus = milestone.status === "completed" ? "pending" : "completed";
-    const res = await fetch(`/api/v1/milestones/${milestone.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: nextStatus }),
-    });
-    if (res.ok) {
-      pushToast({ kind: "success", title: `Milestone marked ${nextStatus}` });
-      router.refresh();
+    const previousGoals = goals;
+
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.id !== goalId) return g;
+        const nextMilestones = g.milestones.map((m) =>
+          m.id === milestone.id ? { ...m, status: nextStatus } : m,
+        );
+        return {
+          ...g,
+          milestones: nextMilestones,
+          progressPercent: computeGoalProgress(nextMilestones, g.status),
+        };
+      }),
+    );
+
+    try {
+      const res = await fetch(`/api/v1/milestones/${milestone.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (!res.ok) throw new Error("Failed");
+    } catch {
+      setGoals(previousGoals);
+      pushToast({ kind: "error", title: "Unable to update milestone" });
     }
   }
 
@@ -266,41 +348,83 @@ export function MentorshipWorkspaceClient({
       pushToast({ kind: "error", title: "Please write at least 5 characters for your update." });
       return;
     }
-    const res = await fetch(`/api/v1/goals/${goalId}/progress`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description }),
-    });
-    if (res.ok) {
-      setProgressInputs((prev) => ({ ...prev, [goalId]: "" }));
-      pushToast({ kind: "success", title: "Progress update submitted" });
-      router.refresh();
+
+    const tempId = `temp-upd-${Date.now()}`;
+    const previousGoals = goals;
+    setProgressInputs((prev) => ({ ...prev, [goalId]: "" }));
+    setGoals((prev) =>
+      prev.map((g) =>
+        g.id !== goalId
+          ? g
+          : {
+              ...g,
+              updates: [
+                { id: tempId, description, evidenceUrl: null, createdAt: new Date().toISOString() },
+                ...g.updates,
+              ],
+            },
+      ),
+    );
+    pushToast({ kind: "success", title: "Progress update submitted" });
+
+    try {
+      const res = await fetch(`/api/v1/goals/${goalId}/progress`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description }),
+      });
+      if (!res.ok) throw new Error("Failed");
+    } catch {
+      setGoals(previousGoals);
+      pushToast({ kind: "error", title: "Unable to save progress update" });
     }
   }
 
   async function submitMentorFeedback(goalId: string) {
     const mentorFeedback = feedbackInputs[goalId]?.trim();
     if (!mentorFeedback) return;
-    const res = await fetch(`/api/v1/goals/${goalId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mentorFeedback, status: "under_review" }),
-    });
-    if (res.ok) {
-      pushToast({ kind: "success", title: "Mentor feedback saved" });
-      router.refresh();
+
+    const previousGoals = goals;
+    setFeedbackInputs((prev) => ({ ...prev, [goalId]: "" }));
+    setGoals((prev) =>
+      prev.map((g) =>
+        g.id === goalId ? { ...g, mentorFeedback, status: "under_review" } : g,
+      ),
+    );
+    pushToast({ kind: "success", title: "Mentor feedback saved" });
+
+    try {
+      const res = await fetch(`/api/v1/goals/${goalId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mentorFeedback, status: "under_review" }),
+      });
+      if (!res.ok) throw new Error("Failed");
+    } catch {
+      setGoals(previousGoals);
+      pushToast({ kind: "error", title: "Unable to save mentor feedback" });
     }
   }
 
   async function markGoalCompleted(goalId: string) {
-    const res = await fetch(`/api/v1/goals/${goalId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "completed" }),
-    });
-    if (res.ok) {
-      pushToast({ kind: "success", title: "Goal marked completed" });
-      router.refresh();
+    const previousGoals = goals;
+    setGoals((prev) =>
+      prev.map((g) =>
+        g.id === goalId ? { ...g, status: "completed", progressPercent: 100 } : g,
+      ),
+    );
+    pushToast({ kind: "success", title: "Goal marked completed" });
+
+    try {
+      const res = await fetch(`/api/v1/goals/${goalId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "completed" }),
+      });
+      if (!res.ok) throw new Error("Failed");
+    } catch {
+      setGoals(previousGoals);
+      pushToast({ kind: "error", title: "Unable to complete goal" });
     }
   }
 
@@ -313,33 +437,61 @@ export function MentorshipWorkspaceClient({
       return;
     }
     const end = new Date(start.getTime() + Number(sessionDurationMin) * 60_000);
+    const tempId = `temp-session-${Date.now()}`;
+    const optimisticSession: SessionItem = {
+      id: tempId,
+      title: sessionTitle,
+      description: null,
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      meetingLink: meetingLink || null,
+      sessionType,
+      status: "proposed",
+      attendanceStatus: "pending",
+      summary: null,
+    };
 
-    setBusy(true);
+    const previousSessions = sessionsList;
+    setSessionsList((prev) => [optimisticSession, ...prev]);
+    setSessionModalOpen(false);
+    setSessionTitle("");
+    setMeetingLink("");
+    pushToast({ kind: "success", title: "Mentorship session scheduled" });
+
     try {
       const res = await fetch("/api/v1/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mentorshipId: mentorship.id,
-          title: sessionTitle,
-          startTime: start.toISOString(),
-          endTime: end.toISOString(),
-          sessionType,
-          meetingLink: meetingLink || null,
+          title: optimisticSession.title,
+          startTime: optimisticSession.startTime,
+          endTime: optimisticSession.endTime,
+          sessionType: optimisticSession.sessionType,
+          meetingLink: optimisticSession.meetingLink,
         }),
       });
-      const json = (await res.json()) as { error?: { message: string } };
+      const json = (await res.json()) as {
+        data?: { session?: { id: string } };
+        error?: { message: string };
+      };
       if (!res.ok) {
-        setSessionError(json.error?.message ?? "Unable to schedule session.");
+        setSessionsList(previousSessions);
+        pushToast({
+          kind: "error",
+          title: json.error?.message ?? "Unable to schedule session.",
+        });
         return;
       }
-      pushToast({ kind: "success", title: "Mentorship session scheduled" });
-      setSessionModalOpen(false);
-      setSessionTitle("");
-      setMeetingLink("");
-      router.refresh();
-    } finally {
-      setBusy(false);
+      if (json.data?.session?.id) {
+        setSessionsList((prev) =>
+          prev.map((s) => (s.id === tempId ? { ...s, id: json.data!.session!.id } : s)),
+        );
+      }
+    } catch {
+      setSessionsList(previousSessions);
+      pushToast({ kind: "error", title: "Network error scheduling session." });
     }
   }
 
@@ -347,71 +499,121 @@ export function MentorshipWorkspaceClient({
     sessionId: string,
     payload: Record<string, unknown>,
   ) {
-    const res = await fetch(`/api/v1/sessions/${sessionId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      pushToast({ kind: "success", title: "Session updated" });
-      setCompleteSessionId(null);
-      setSessionSummary("");
-      router.refresh();
-    } else {
-      const json = (await res.json()) as { error?: { message: string } };
-      pushToast({ kind: "error", title: json.error?.message ?? "Failed to update session" });
+    const previousSessions = sessionsList;
+    const nextStatus = typeof payload.status === "string" ? payload.status : undefined;
+    const nextSummary = typeof payload.summary === "string" ? payload.summary : undefined;
+
+    setSessionsList((prev) =>
+      prev.map((s) =>
+        s.id === sessionId
+          ? {
+              ...s,
+              status: nextStatus ?? s.status,
+              summary: nextSummary ?? s.summary,
+            }
+          : s,
+      ),
+    );
+    setCompleteSessionId(null);
+    setSessionSummary("");
+    pushToast({ kind: "success", title: "Session updated" });
+
+    try {
+      const res = await fetch(`/api/v1/sessions/${sessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const json = (await res.json()) as { error?: { message: string } };
+        setSessionsList(previousSessions);
+        pushToast({ kind: "error", title: json.error?.message ?? "Failed to update session" });
+      }
+    } catch {
+      setSessionsList(previousSessions);
+      pushToast({ kind: "error", title: "Failed to update session" });
     }
   }
 
-  async function sendMessage(e: React.FormEvent) {
-    e.preventDefault();
-    if (!conversationId || !messageText.trim()) return;
-    setBusy(true);
+  async function sendMessage(content: string, attachmentUrl?: string | null): Promise<boolean> {
+    const trimmed = content.trim();
+    if (!conversationId || !trimmed) return false;
+
+    const tempId = `temp-msg-${Date.now()}`;
+    const optimisticMsg: MessageItem = {
+      id: tempId,
+      senderId: currentUserId,
+      content: trimmed,
+      attachmentUrl: attachmentUrl ?? null,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, optimisticMsg]);
+
     try {
       const res = await fetch(`/api/v1/conversations/${conversationId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: messageText.trim() }),
+        body: JSON.stringify({
+          content: trimmed,
+          ...(attachmentUrl ? { attachmentUrl } : {}),
+        }),
       });
       const json = (await res.json()) as {
         data?: { message: MessageItem };
         error?: { message: string };
       };
       if (res.ok && json.data?.message) {
-        setMessages((prev) => [...prev, json.data!.message]);
-        setMessageText("");
-      } else {
-        pushToast({ kind: "error", title: json.error?.message ?? "Unable to send message" });
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? json.data!.message : m)),
+        );
+        return true;
       }
-    } finally {
-      setBusy(false);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      pushToast({ kind: "error", title: json.error?.message ?? "Unable to send message" });
+      return false;
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      pushToast({ kind: "error", title: "Network error sending message" });
+      return false;
     }
   }
 
   async function addResource(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
+    const tempId = `temp-res-${Date.now()}`;
+    const optimisticResource: ResourceItem = {
+      id: tempId,
+      title: resTitle,
+      description: resDesc,
+      resourceType: "link",
+      externalUrl: resUrl,
+      createdAt: new Date().toISOString(),
+    };
+
+    const previousResources = resourcesList;
+    setResourcesList((prev) => [optimisticResource, ...prev]);
+    setResTitle("");
+    setResDesc("");
+    setResUrl("");
+    pushToast({ kind: "success", title: "Resource shared in workspace" });
+
     try {
       const res = await fetch("/api/v1/resources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mentorshipId: mentorship.id,
-          title: resTitle,
-          description: resDesc,
-          externalUrl: resUrl,
+          title: optimisticResource.title,
+          description: optimisticResource.description,
+          externalUrl: optimisticResource.externalUrl,
           resourceType: "link",
         }),
       });
-      if (res.ok) {
-        pushToast({ kind: "success", title: "Resource shared in workspace" });
-        setResTitle("");
-        setResDesc("");
-        setResUrl("");
-        router.refresh();
-      }
-    } finally {
-      setBusy(false);
+      if (!res.ok) throw new Error("Failed");
+    } catch {
+      setResourcesList(previousResources);
+      pushToast({ kind: "error", title: "Unable to share resource" });
     }
   }
 
@@ -419,21 +621,26 @@ export function MentorshipWorkspaceClient({
     status: "active" | "paused" | "completed",
     summary?: string,
   ) {
-    setBusy(true);
+    const prevStatus = relationshipStatus;
+    const prevSummary = summaryNote;
+
+    setRelationshipStatus(status);
+    if (summary !== undefined) setSummaryNote(summary);
+    setCompleteModalOpen(false);
+    setPauseConfirmOpen(false);
+    pushToast({ kind: "success", title: `Mentorship marked as ${status}` });
+
     try {
       const res = await fetch(`/api/v1/mentorships/${mentorship.id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, completionSummary: summary ?? null }),
       });
-      if (res.ok) {
-        pushToast({ kind: "success", title: `Mentorship marked as ${status}` });
-        setCompleteModalOpen(false);
-        setPauseConfirmOpen(false);
-        router.refresh();
-      }
-    } finally {
-      setBusy(false);
+      if (!res.ok) throw new Error("Failed");
+    } catch {
+      setRelationshipStatus(prevStatus);
+      setSummaryNote(prevSummary);
+      pushToast({ kind: "error", title: "Unable to update mentorship status" });
     }
   }
 
@@ -453,7 +660,6 @@ export function MentorshipWorkspaceClient({
       if (res.ok) {
         setReviewed(true);
         pushToast({ kind: "success", title: "Thank you for your mentorship feedback!" });
-        router.refresh();
       }
     } finally {
       setBusy(false);
@@ -462,16 +668,17 @@ export function MentorshipWorkspaceClient({
 
   const tabs = [
     { id: "overview", label: "Overview", icon: CheckCircle2 },
-    { id: "goals", label: `Goals (${initialGoals.length})`, icon: Target },
-    { id: "sessions", label: `Sessions (${initialSessions.length})`, icon: Calendar },
+    { id: "goals", label: `Goals (${goals.length})`, icon: Target },
+    { id: "sessions", label: `Sessions (${sessionsList.length})`, icon: Calendar },
     { id: "messages", label: `Messages (${messages.length})`, icon: MessageSquare },
-    { id: "resources", label: `Resources (${initialResources.length})`, icon: BookOpen },
+    { id: "resources", label: `Resources (${resourcesList.length})`, icon: BookOpen },
   ] as const;
 
   return (
     <div className="space-y-6">
-      {/* Workspace Header Card */}
-      <Card>
+      {/* Workspace Header Card (hidden in focused chat view) */}
+      {tab !== "messages" && (
+        <Card>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
@@ -480,14 +687,14 @@ export function MentorshipWorkspaceClient({
               </h2>
               <Badge
                 tone={
-                  mentorship.status === "active"
+                  relationshipStatus === "active"
                     ? "forest"
-                    : mentorship.status === "completed"
+                    : relationshipStatus === "completed"
                       ? "info"
                       : "warning"
                 }
               >
-                {mentorship.status}
+                {relationshipStatus}
               </Badge>
             </div>
             <p className="mt-1 text-xs text-interlink-muted">
@@ -497,7 +704,7 @@ export function MentorshipWorkspaceClient({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {mentorship.status === "active" && (
+            {relationshipStatus === "active" && (
               <>
                 <Button size="sm" variant="outline" onClick={() => setPauseConfirmOpen(true)}>
                   Pause Relationship
@@ -507,7 +714,7 @@ export function MentorshipWorkspaceClient({
                 </Button>
               </>
             )}
-            {mentorship.status === "paused" && (
+            {relationshipStatus === "paused" && (
               <Button size="sm" onClick={() => updateRelationshipStatus("active")}>
                 Resume Mentorship
               </Button>
@@ -538,6 +745,7 @@ export function MentorshipWorkspaceClient({
           })}
         </div>
       </Card>
+      )}
 
       {/* OVERVIEW TAB */}
       {tab === "overview" && (
@@ -574,15 +782,15 @@ export function MentorshipWorkspaceClient({
                 </p>
               )}
 
-              {mentorship.completionSummary && (
-                <div className="mt-5 rounded-[2px] border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+              {summaryNote && (
+                <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-800/40 dark:bg-blue-950/30 dark:text-blue-200">
                   <p className="font-semibold">Completion Summary</p>
-                  <p className="mt-1">{mentorship.completionSummary}</p>
+                  <p className="mt-1">{summaryNote}</p>
                 </div>
               )}
             </Card>
 
-            {(mentorship.status === "completed" || initialSessions.some((s) => s.status === "completed")) &&
+            {(relationshipStatus === "completed" || sessionsList.some((s) => s.status === "completed")) &&
               !reviewed && (
                 <Card>
                   <h3 className="font-display text-base font-semibold text-interlink-ink">
@@ -656,14 +864,14 @@ export function MentorshipWorkspaceClient({
             <h3 className="font-display text-lg font-semibold text-interlink-ink">
               Mentorship Goals &amp; Milestones
             </h3>
-            {mentorship.status === "active" && (
+            {relationshipStatus === "active" && (
               <Button size="sm" onClick={() => setGoalModalOpen(true)}>
                 <Plus className="h-4 w-4" /> Add Goal
               </Button>
             )}
           </div>
 
-          {initialGoals.length === 0 ? (
+          {goals.length === 0 ? (
             <Card>
               <p className="text-sm text-interlink-muted">
                 No development goals established yet. Create your first goal and break it down
@@ -671,7 +879,7 @@ export function MentorshipWorkspaceClient({
               </p>
             </Card>
           ) : (
-            initialGoals.map((goal) => (
+            goals.map((goal) => (
               <Card key={goal.id}>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
@@ -717,7 +925,7 @@ export function MentorshipWorkspaceClient({
                           <input
                             type="checkbox"
                             checked={m.status === "completed"}
-                            onChange={() => toggleMilestone(m)}
+                            onChange={() => toggleMilestone(goal.id, m)}
                             className="accent-interlink-forest"
                           />
                           <span
@@ -735,7 +943,7 @@ export function MentorshipWorkspaceClient({
                     ))}
                   </ul>
 
-                  {mentorship.status === "active" && (
+                  {relationshipStatus === "active" && (
                     <div className="mt-3 flex gap-2">
                       <Input
                         placeholder="Add a milestone..."
@@ -770,7 +978,7 @@ export function MentorshipWorkspaceClient({
                         </div>
                       ))}
                     </div>
-                    {mentorship.status === "active" && (
+                    {relationshipStatus === "active" && (
                       <div className="mt-2 flex gap-2">
                         <Input
                           placeholder="Submit a progress update..."
@@ -798,7 +1006,7 @@ export function MentorshipWorkspaceClient({
                         {goal.mentorFeedback}
                       </div>
                     )}
-                    {isMentor && mentorship.status === "active" && (
+                    {isMentor && relationshipStatus === "active" && (
                       <div className="mt-2 space-y-2">
                         <Input
                           placeholder="Write review feedback..."
@@ -841,14 +1049,14 @@ export function MentorshipWorkspaceClient({
             <h3 className="font-display text-lg font-semibold text-interlink-ink">
               Scheduled Sessions
             </h3>
-            {mentorship.status === "active" && (
+            {relationshipStatus === "active" && (
               <Button size="sm" onClick={() => setSessionModalOpen(true)}>
                 <Plus className="h-4 w-4" /> Propose / Schedule Session
               </Button>
             )}
           </div>
 
-          {initialSessions.length === 0 ? (
+          {sessionsList.length === 0 ? (
             <Card>
               <p className="text-sm text-interlink-muted">
                 No sessions scheduled yet. Propose your first session to align on goals.
@@ -856,7 +1064,7 @@ export function MentorshipWorkspaceClient({
             </Card>
           ) : (
             <div className="space-y-4">
-              {initialSessions.map((s) => (
+              {sessionsList.map((s) => (
                 <Card key={s.id}>
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
@@ -934,74 +1142,40 @@ export function MentorshipWorkspaceClient({
         </div>
       )}
 
-      {/* MESSAGES TAB */}
+      {/* MESSAGES TAB: Focused full chat view */}
       {tab === "messages" && (
-        <Card>
-          <div className="mb-4 flex items-start gap-2.5 rounded-[2px] border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <span>
-              <strong>Privacy Reminder:</strong> Never share passwords, banking PINs, or sensitive
-              identity documents in messages.
-            </span>
-          </div>
-
-          <div className="max-h-[420px] space-y-3 overflow-y-auto border border-interlink-border bg-interlink-app-bg p-4">
-            {messages.length === 0 ? (
-              <p className="text-center text-xs text-interlink-muted">
-                No messages yet. Start your mentorship conversation below.
-              </p>
-            ) : (
-              messages.map((msg) => {
-                const mine = msg.senderId === currentUserId;
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
-                  >
-                    <div
-                      className={`max-w-[78%] rounded-[2px] px-3.5 py-2.5 text-sm ${
-                        mine
-                          ? "bg-interlink-forest text-white"
-                          : "border border-interlink-border bg-interlink-surface text-interlink-ink"
-                      }`}
-                    >
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                    <span className="mt-1 text-[10px] text-slate-400">
-                      {formatDateTime(msg.createdAt)}
-                    </span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <form onSubmit={sendMessage} className="mt-4 flex gap-2">
-            <Input
-              placeholder="Write a message..."
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              disabled={mentorship.status === "terminated"}
-            />
-            <Button type="submit" loading={busy} disabled={mentorship.status === "terminated"}>
-              <Send className="h-4 w-4" /> Send
-            </Button>
-          </form>
-        </Card>
+        <ConversationChatPanel
+          conversationId={conversationId}
+          currentUser={
+            (currentUserId === mentorship.mentorId ? mentor : mentee) ?? {
+              id: currentUserId,
+              firstName: "You",
+              lastName: "",
+            }
+          }
+          partner={currentUserId === mentorship.mentorId ? mentee : mentor}
+          mentorshipId={mentorship.id}
+          mentorshipStatus={relationshipStatus}
+          messages={messages}
+          onSendMessage={sendMessage}
+          onBack={() => setTab("overview")}
+          alwaysShowBack
+          className="h-[calc(100dvh-11.5rem)] min-h-[420px] lg:h-[calc(100vh-11rem)] lg:max-h-[780px]"
+        />
       )}
 
       {/* RESOURCES TAB */}
       {tab === "resources" && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="space-y-3 lg:col-span-7">
-            {initialResources.length === 0 ? (
+            {resourcesList.length === 0 ? (
               <Card>
                 <p className="text-sm text-interlink-muted">
                   No workspace resources shared yet.
                 </p>
               </Card>
             ) : (
-              initialResources.map((r) => (
+              resourcesList.map((r) => (
                 <Card key={r.id}>
                   <div className="flex items-start justify-between gap-4">
                     <div>

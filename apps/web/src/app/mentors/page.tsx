@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { MentorDirectoryContentSkeleton } from "@/components/layout/PageSkeletons";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
 import {
@@ -8,19 +9,6 @@ import {
 } from "@/features/discovery/infrastructure/mentorQueries";
 import { MentorDirectoryClient } from "@/features/discovery/ui/MentorDirectoryClient";
 import { getCurrentUser } from "@/lib/auth/session";
-
-function DirectorySkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-      {[0, 1, 2, 3, 4, 5].map((idx) => (
-        <div
-          key={idx}
-          className="h-60 animate-pulse rounded-[2px] border border-interlink-border bg-interlink-surface p-6 shadow-subtle"
-        />
-      ))}
-    </div>
-  );
-}
 
 async function MentorDirectorySection() {
   const user = await getCurrentUser();
@@ -62,7 +50,7 @@ export default function MentorsDirectoryPage() {
 
       <section className="bg-interlink-app-bg py-10">
         <div className="mx-auto max-w-[1360px] px-6 sm:px-10">
-          <Suspense fallback={<DirectorySkeleton />}>
+          <Suspense fallback={<MentorDirectoryContentSkeleton />}>
             <MentorDirectorySection />
           </Suspense>
         </div>

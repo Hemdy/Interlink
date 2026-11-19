@@ -61,7 +61,7 @@ function VerifyEmailInner() {
 
       {status === "success" && (
         <div className="mt-7 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-interlink-forest/12 text-interlink-forest">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-interlink-forest/15 text-interlink-forest">
             <CheckCircle2 className="h-7 w-7" aria-hidden="true" />
           </div>
           <p className="mt-4 text-sm leading-relaxed text-interlink-ink">
@@ -115,8 +115,10 @@ export default function VerifyEmailPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-interlink-canvas">
-          <LoadingSpinner />
+        <div className="dark [color-scheme:dark]">
+          <div className="flex min-h-screen items-center justify-center bg-interlink-canvas">
+            <LoadingSpinner />
+          </div>
         </div>
       }
     >

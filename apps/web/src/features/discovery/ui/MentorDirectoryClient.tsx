@@ -3,27 +3,30 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  Award,
+  BadgeCheck,
   Bookmark,
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
   GitCompareArrows,
-  MapPin,
+  Plus,
   RotateCcw,
   Search,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  Users,
   X,
 } from "lucide-react";
 import type { PublicMentorSummary, SessionUser } from "@interlink/types";
+import { MentorCardGridSkeleton } from "@/components/layout/PageSkeletons";
 import { Badge, Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/Feedback";
 import { Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
-import { UserAvatar } from "@/components/ui/UserAvatar";
+import { resolveAvatarSrc, UserAvatar } from "@/components/ui/UserAvatar";
 import { useAuthModal } from "@/features/auth/ui/AuthModalProvider";
 
 interface IndustryOption {
@@ -57,6 +60,7 @@ export function MentorDirectoryClient({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -182,19 +186,25 @@ export function MentorDirectoryClient({
       return;
     }
 
+    const nextSaved = !mentor.isSaved;
     const method = mentor.isSaved ? "DELETE" : "POST";
-    const res = await fetch(`/api/v1/mentors/${mentor.userId}/save`, { method });
-    if (res.ok) {
+
+    // Optimistically update bookmark state immediately
+    setMentors((prev) =>
+      prev.map((m) => (m.userId === mentor.userId ? { ...m, isSaved: nextSaved } : m)),
+    );
+    pushToast({
+      kind: "success",
+      title: nextSaved ? "Mentor saved" : "Removed from saved mentors",
+    });
+
+    try {
+      const res = await fetch(`/api/v1/mentors/${mentor.userId}/save`, { method });
+      if (!res.ok) throw new Error("Failed");
+    } catch {
       setMentors((prev) =>
-        prev.map((m) =>
-          m.userId === mentor.userId ? { ...m, isSaved: !mentor.isSaved } : m,
-        ),
+        prev.map((m) => (m.userId === mentor.userId ? { ...m, isSaved: !nextSaved } : m)),
       );
-      pushToast({
-        kind: "success",
-        title: mentor.isSaved ? "Removed from saved mentors" : "Mentor saved",
-      });
-    } else {
       pushToast({ kind: "error", title: "Unable to update saved mentor" });
     }
   }
@@ -626,7 +636,9 @@ export function MentorDirectoryClient({
       </Card>
 
       {/* Results grid */}
-      {mentors.length === 0 ? (
+      {loading ? (
+        <MentorCardGridSkeleton count={mentors.length > 0 ? Math.min(mentors.length, 6) : 6} />
+      ) : mentors.length === 0 ? (
         <EmptyState
           title="No mentors match your current criteria"
           description="Try broadening your search filters, or invite experienced professionals in your network to join Interlink."
@@ -642,154 +654,192 @@ export function MentorDirectoryClient({
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
           {mentors.map((mentor) => {
             const isFull =
               mentor.availabilityStatus !== "accepting" ||
               mentor.activeMenteeCount >= mentor.maximumMentees;
+            const resolvedPhoto = resolveAvatarSrc(mentor.profileImage);
+            const showPhoto = Boolean(resolvedPhoto && !failedImages[mentor.userId]);
+            const initials =
+              `${mentor.firstName[0] ?? ""}${mentor.lastName[0] ?? ""}`.toUpperCase() || "M";
 
             return (
-              <Card
+              <article
                 key={mentor.userId}
-                elevated
-                className="flex flex-col justify-between hover:-translate-y-0.5 hover:border-interlink-forest/50"
+                className="group relative flex min-h-[345px] flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br from-[#1b3324] via-[#112118] to-[#0a120d] shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated sm:min-h-[370px]"
               >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-3">
-                      <div className="relative shrink-0">
-                        <UserAvatar
-                          src={mentor.profileImage}
-                          firstName={mentor.firstName}
-                          lastName={mentor.lastName}
-                          size="md"
-                          previewable
-                          previewSubtitle={
-                            mentor.currentPosition
-                              ? `${mentor.currentPosition}${mentor.organisation ? ` · ${mentor.organisation}` : ""}`
-                              : undefined
-                          }
-                        />
-                        {!isFull && (
-                          <span
-                            className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-interlink-surface bg-emerald-500"
-                            title="Accepting mentees"
-                          />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-base font-semibold text-interlink-ink">
-                          {mentor.firstName} {mentor.lastName}
-                        </h3>
-                        <p className="text-xs text-interlink-muted">
-                          {mentor.currentPosition}
-                          {mentor.organisation ? ` · ${mentor.organisation}` : ""}
-                        </p>
+                {/* Portrait / Monogram Backdrop */}
+                <Link
+                  href={`/mentors/${mentor.userId}`}
+                  aria-label={`View ${mentor.firstName} ${mentor.lastName}'s profile`}
+                  className="absolute inset-0 block focus-ring"
+                >
+                  {showPhoto && resolvedPhoto ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={resolvedPhoto}
+                      alt={`${mentor.firstName} ${mentor.lastName}`}
+                      loading="eager"
+                      decoding="async"
+                      onError={() =>
+                        setFailedImages((prev) => ({ ...prev, [mentor.userId]: true }))
+                      }
+                      className="h-full w-full object-cover object-[50%_20%] transition-transform duration-500 group-hover:scale-[1.03]"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-start justify-center bg-[radial-gradient(circle_at_50%_26%,rgba(108,150,126,0.38),rgba(17,33,24,0.95)_64%)] pt-14">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/10 font-display text-2xl font-semibold tracking-tight text-white shadow-lg backdrop-blur-md">
+                        {initials}
                       </div>
                     </div>
-                    <Badge
-                      tone={
-                        mentor.verificationStatus === "verified"
-                          ? "forest"
-                          : mentor.verificationStatus === "reviewed"
-                            ? "info"
-                            : "neutral"
-                      }
-                    >
-                      {mentor.verificationStatus === "verified" && (
-                        <ShieldCheck className="h-3 w-3" />
-                      )}
-                      {mentor.verificationStatus === "verified"
-                        ? "Verified"
-                        : mentor.verificationStatus === "reviewed"
-                          ? "Reviewed"
-                          : "Registered"}
-                    </Badge>
-                  </div>
+                  )}
 
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-interlink-muted">
-                    {mentor.industryName && <span>{mentor.industryName}</span>}
-                    <span>&middot; {mentor.yearsOfExperience} yrs exp</span>
-                    {mentor.location && (
-                      <span className="inline-flex items-center gap-0.5">
-                        &middot; <MapPin className="h-3 w-3" /> {mentor.location}
+                  {/* Smooth frosted dissolve confined to lower half */}
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-[52%] backdrop-blur-md [mask-image:linear-gradient(to_top,black_45%,transparent_100%)]"
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#08110c]/[0.95] via-[#0d1b13]/75 via-38% to-transparent"
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/25 to-transparent"
+                  />
+                </Link>
+
+                {/* Minimal Top Controls */}
+                <div className="relative z-10 flex items-center justify-between gap-2 p-3.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-black/35 px-2.5 py-1 text-[11px] font-semibold text-white/95 backdrop-blur-md">
+                      <Award className="h-3.5 w-3.5 shrink-0 text-[#e5b869]" aria-hidden="true" />
+                      <span>{mentor.yearsOfExperience}+ yrs</span>
+                    </span>
+
+                    {typeof mentor.matchScore === "number" && mentor.matchScore > 0 && (
+                      <span className="rounded-full bg-emerald-500/90 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md">
+                        {mentor.matchScore}% Match
                       </span>
                     )}
                   </div>
 
-                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-interlink-muted">
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleCompare(mentor.userId)}
+                      aria-label={
+                        compareIds.includes(mentor.userId)
+                          ? "Remove from comparison"
+                          : "Compare mentor"
+                      }
+                      title={
+                        compareIds.includes(mentor.userId) ? "Comparing" : "Compare mentor"
+                      }
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition-colors ${
+                        compareIds.includes(mentor.userId)
+                          ? "bg-interlink-forest text-white shadow-sm"
+                          : "bg-black/35 text-white/90 hover:bg-black/55"
+                      }`}
+                    >
+                      <GitCompareArrows className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleSave(mentor)}
+                      aria-label={mentor.isSaved ? "Unsave mentor" : "Save mentor"}
+                      title={mentor.isSaved ? "Saved" : "Save mentor"}
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition-colors ${
+                        mentor.isSaved
+                          ? "bg-interlink-forest text-white shadow-sm"
+                          : "bg-black/35 text-white/90 hover:bg-black/55"
+                      }`}
+                    >
+                      <Bookmark className={`h-3.5 w-3.5 ${mentor.isSaved ? "fill-current" : ""}`} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Essential Frosted Overlay Summary */}
+                <div className="relative z-10 flex flex-col gap-1.5 px-4 pb-4 pt-24 sm:pt-28">
+                  <div className="flex items-center gap-1.5">
+                    <Link
+                      href={`/mentors/${mentor.userId}`}
+                      className="truncate font-display text-lg font-semibold leading-tight text-white transition-colors hover:text-emerald-200 focus-ring"
+                    >
+                      {mentor.firstName} {mentor.lastName}
+                    </Link>
+                    {mentor.verificationStatus === "verified" ? (
+                      <BadgeCheck
+                        className="h-5 w-5 shrink-0 fill-emerald-400 text-[#08120c]"
+                        aria-label="Verified Mentor"
+                      />
+                    ) : mentor.verificationStatus === "reviewed" ? (
+                      <BadgeCheck
+                        className="h-5 w-5 shrink-0 fill-sky-400 text-[#08120c]"
+                        aria-label="Reviewed Profile"
+                      />
+                    ) : null}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <p className="min-w-0 truncate font-medium text-emerald-100/85">
+                      {mentor.currentPosition}
+                      {mentor.organisation ? ` · ${mentor.organisation}` : ""}
+                    </p>
+                    <span
+                      className={`inline-flex shrink-0 items-center gap-1.5 font-semibold ${
+                        isFull ? "text-amber-200" : "text-emerald-200"
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          isFull ? "bg-amber-400" : "bg-emerald-400"
+                        }`}
+                        aria-hidden="true"
+                      />
+                      <span>{isFull ? "Waitlist" : "Accepting"}</span>
+                    </span>
+                  </div>
+
+                  <p className="line-clamp-2 text-xs leading-relaxed text-white/75">
                     {mentor.biography}
                   </p>
 
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {mentor.expertiseTags.slice(0, 4).map((tag) => (
-                      <Badge key={tag} tone="neutral">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-6 space-y-3 border-t border-interlink-border/60 pt-4">
-                  <div className="flex items-center justify-between text-xs">
-                    <span
-                      className={`inline-flex items-center gap-1 font-semibold ${
-                        isFull ? "text-amber-600 dark:text-amber-400" : "text-interlink-forest"
-                      }`}
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      {isFull
-                        ? "Waitlist / Full"
-                        : `Open (${mentor.activeMenteeCount}/${mentor.maximumMentees} slots)`}
-                    </span>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleCompare(mentor.userId)}
-                        className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
-                          compareIds.includes(mentor.userId)
-                            ? "border-interlink-forest bg-interlink-forest/10 text-interlink-forest"
-                            : "border-interlink-border text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
-                        }`}
+                  {/* Clean Action Separation: View Profile vs Connect CTA */}
+                  <div className="mt-1.5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5">
+                      <span
+                        className="inline-flex items-center gap-1 text-xs font-medium text-white/75"
+                        title="Active mentees"
                       >
-                        {compareIds.includes(mentor.userId) ? "Comparing" : "Compare"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => toggleSave(mentor)}
-                        aria-label={mentor.isSaved ? "Unsave mentor" : "Save mentor"}
-                        className={`rounded-full border p-2 transition-colors ${
-                          mentor.isSaved
-                            ? "border-interlink-forest bg-interlink-forest/10 text-interlink-forest"
-                            : "border-interlink-border text-interlink-muted hover:border-interlink-forest hover:text-interlink-forest"
-                        }`}
+                        <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>{mentor.activeMenteeCount}</span>
+                      </span>
+                      <Link
+                        href={`/mentors/${mentor.userId}`}
+                        className="text-xs font-semibold text-white/95 underline-offset-4 transition-colors hover:text-emerald-200 hover:underline focus-ring"
                       >
-                        <Bookmark className={`h-3.5 w-3.5 ${mentor.isSaved ? "fill-current" : ""}`} />
-                      </button>
+                        View Profile
+                      </Link>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <Link
-                      href={`/mentors/${mentor.userId}`}
-                      className="rounded-full border border-interlink-border py-2 text-center text-xs font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
-                    >
-                      View Profile
-                    </Link>
                     <Link
                       href={`/mentors/${mentor.userId}#request`}
-                      className={`rounded-full py-2 text-center text-xs font-semibold transition-all active:scale-[0.98] ${
+                      className={`inline-flex items-center gap-1 rounded-full px-4 py-2 text-xs font-semibold transition-all active:scale-[0.97] focus-ring ${
                         isFull
-                          ? "bg-interlink-app-bg text-interlink-muted hover:text-interlink-ink"
-                          : "bg-interlink-forest text-white hover:bg-interlink-forest-hover"
+                          ? "bg-white/15 text-white hover:bg-white/25"
+                          : "bg-white text-[#0e1e15] shadow-[0_6px_18px_rgba(0,0,0,0.28)] hover:bg-emerald-50"
                       }`}
                     >
-                      {isFull ? "View Details" : "Connect"}
+                      <span>{isFull ? "Details" : "Connect"}</span>
+                      {!isFull && <Plus className="h-3.5 w-3.5 stroke-[2.5]" aria-hidden="true" />}
                     </Link>
                   </div>
                 </div>
-              </Card>
+              </article>
             );
           })}
         </div>

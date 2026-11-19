@@ -239,8 +239,10 @@ export default function SignUpPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-interlink-canvas">
-          <LoadingSpinner />
+        <div className="dark [color-scheme:dark]">
+          <div className="flex min-h-screen items-center justify-center bg-interlink-canvas">
+            <LoadingSpinner />
+          </div>
         </div>
       }
     >

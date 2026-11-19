@@ -30,6 +30,7 @@ export function SettingsClient({
   const [firstName, setFirstName] = useState(user.firstName);
   const [lastName, setLastName] = useState(user.lastName);
   const [username, setUsername] = useState(user.username ?? "");
+  const [blockedList, setBlockedList] = useState(blockedUsers);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devVerifyUrl, setDevVerifyUrl] = useState<string | null>(null);
@@ -82,12 +83,18 @@ export function SettingsClient({
   }
 
   async function unblock(blockedUserId: string) {
-    const res = await fetch(`/api/v1/blocks?blockedUserId=${blockedUserId}`, {
-      method: "DELETE",
-    });
-    if (res.ok) {
-      pushToast({ kind: "info", title: "User unblocked" });
-      router.refresh();
+    const previous = blockedList;
+    setBlockedList((prev) => prev.filter((b) => b.blockedUserId !== blockedUserId));
+    pushToast({ kind: "info", title: "User unblocked" });
+
+    try {
+      const res = await fetch(`/api/v1/blocks?blockedUserId=${blockedUserId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed");
+    } catch {
+      setBlockedList(previous);
+      pushToast({ kind: "error", title: "Unable to unblock user" });
     }
   }
 
@@ -198,11 +205,11 @@ export function SettingsClient({
               Choose Light or Dark theme. Your preference is saved across sessions.
             </p>
           </div>
-          <div className="inline-flex rounded-[2px] border border-interlink-border bg-interlink-app-bg p-1">
+          <div className="inline-flex rounded-full border border-interlink-border bg-interlink-app-bg p-1">
             <button
               type="button"
               onClick={() => setTheme("light")}
-              className={`rounded-[2px] px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
                 theme === "light"
                   ? "bg-interlink-forest text-white"
                   : "text-interlink-muted hover:text-interlink-ink"
@@ -213,7 +220,7 @@ export function SettingsClient({
             <button
               type="button"
               onClick={() => setTheme("dark")}
-              className={`rounded-[2px] px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
                 theme === "dark"
                   ? "bg-interlink-forest text-white"
                   : "text-interlink-muted hover:text-interlink-ink"
@@ -227,18 +234,18 @@ export function SettingsClient({
 
       <Card>
         <h2 className="font-display text-base font-semibold text-interlink-ink">
-          Blocked Users ({blockedUsers.length})
+          Blocked Users ({blockedList.length})
         </h2>
-        {blockedUsers.length === 0 ? (
+        {blockedList.length === 0 ? (
           <p className="mt-2 text-xs text-interlink-muted">You have not blocked any users.</p>
         ) : (
           <ul className="mt-3 space-y-2">
-            {blockedUsers.map((b) => (
+            {blockedList.map((b) => (
               <li
                 key={b.blockedUserId}
-                className="flex items-center justify-between rounded-[2px] border border-slate-200 px-3 py-2 text-xs"
+                className="flex items-center justify-between rounded-2xl border border-interlink-border bg-interlink-app-bg/40 px-4 py-2.5 text-xs"
               >
-                <span>
+                <span className="font-medium text-interlink-ink">
                   {b.firstName} {b.lastName}
                 </span>
                 <Button size="sm" variant="outline" onClick={() => unblock(b.blockedUserId)}>

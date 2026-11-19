@@ -297,45 +297,81 @@ export function ProfileEditorClient({
   }
 
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const completionPct =
+    role === "mentor"
+      ? (initialMentor?.profileCompletion ?? 0)
+      : (initialMentee?.profileCompletion ?? 0);
 
   return (
-    <div className="space-y-8">
-      <Card>
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
-          <div>
-            <h2 className="font-display text-lg font-semibold text-interlink-ink">
-              {role === "mentor" ? "Mentor Professional Profile" : "Mentee Career Profile"}
-            </h2>
-            <p className="text-xs text-interlink-muted">
-              Profile completion:{" "}
-              <span className="font-semibold text-interlink-forest">
-                {role === "mentor"
-                  ? initialMentor?.profileCompletion ?? 0
-                  : initialMentee?.profileCompletion ?? 0}
-                %
-              </span>
-            </p>
-          </div>
-        </div>
-
-        {error && (
-          <div className="mb-5">
-            <ErrorAlert message={error} />
-          </div>
-        )}
-
-        <div className="mb-6">
+    <div className="mx-auto max-w-4xl space-y-6">
+      {/* Header Overview Card */}
+      <Card className="bg-gradient-to-br from-interlink-forest/[0.06] via-interlink-surface to-interlink-surface">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <AvatarUploadCard
             firstName={userFirstName}
             lastName={userLastName}
             initialProfileImage={initialProfileImage}
             compact
           />
+
+          <div className="w-full sm:max-w-[240px]">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-interlink-muted">Profile strength</span>
+              <span className="font-semibold text-interlink-forest">{completionPct}%</span>
+            </div>
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-interlink-app-bg">
+              <div
+                className="h-full rounded-full bg-interlink-forest transition-all duration-300"
+                style={{ width: `${Math.min(100, Math.max(8, completionPct))}%` }}
+              />
+            </div>
+            <p className="mt-1.5 text-[11px] capitalize text-interlink-muted">
+              {role} profile &middot;{" "}
+              {visibility === "public"
+                ? "Public"
+                : visibility === "members_only"
+                  ? "Members only"
+                  : "Private"}
+            </p>
+          </div>
         </div>
 
-        <form onSubmit={(e) => saveProfile(e, true)} className="space-y-5">
+        {/* Category Jump Pills */}
+        <div className="no-scrollbar mt-5 flex items-center gap-2 overflow-x-auto border-t border-interlink-border/60 pt-4">
+          {[
+            { label: "Identity", href: "#profile-identity" },
+            { label: role === "mentor" ? "Story & Approach" : "Goals & Story", href: "#profile-story" },
+            { label: "Skills & Languages", href: "#profile-skills" },
+            { label: role === "mentor" ? "Privacy & Verification" : "Preferences & Privacy", href: "#profile-visibility" },
+            ...(role === "mentor" ? [{ label: "Availability", href: "#availability" }] : []),
+          ].map((tab) => (
+            <a
+              key={tab.href}
+              href={tab.href}
+              className="shrink-0 rounded-full border border-interlink-border bg-interlink-surface px-3.5 py-1.5 text-xs font-medium text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+            >
+              {tab.label}
+            </a>
+          ))}
+        </div>
+      </Card>
+
+      {error && <ErrorAlert message={error} />}
+
+      <form onSubmit={(e) => saveProfile(e, true)} className="space-y-5">
+        {/* Section 1: Identity & Background */}
+        <Card id="profile-identity">
+          <div className="mb-5">
+            <h2 className="font-display text-base font-semibold text-interlink-ink">
+              Identity &amp; Background
+            </h2>
+            <p className="mt-0.5 text-xs text-interlink-muted">
+              Your headline role, industry focus, and location.
+            </p>
+          </div>
+
           {role === "mentor" ? (
-            <>
+            <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Input
                   label="Current Position"
@@ -381,7 +417,64 @@ export function ProfileEditorClient({
                   onChange={(e) => setLocation(e.target.value)}
                 />
               </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Input
+                  label="Current Occupation or Study Status"
+                  placeholder="e.g., Final-year Computer Science Student"
+                  value={currentOccupation}
+                  onChange={(e) => setCurrentOccupation(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Educational Background"
+                  placeholder="e.g., B.Sc. Economics, University of Lagos"
+                  value={education}
+                  onChange={(e) => setEducation(e.target.value)}
+                />
+              </div>
 
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Select
+                  label="Target Industry"
+                  value={industryId}
+                  onChange={(e) => setIndustryId(e.target.value)}
+                >
+                  <option value="">Select Industry</option>
+                  {industries.map((ind) => (
+                    <option key={ind.id} value={ind.id}>
+                      {ind.name}
+                    </option>
+                  ))}
+                </Select>
+                <Input
+                  label="Location"
+                  placeholder="e.g., Abuja, Nigeria"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Section 2: Story & Mentorship Style (Subtle Background Variation) */}
+        <Card id="profile-story" className="bg-interlink-app-bg/55">
+          <div className="mb-5">
+            <h2 className="font-display text-base font-semibold text-interlink-ink">
+              {role === "mentor" ? "Story & Mentorship Approach" : "Goals & Story"}
+            </h2>
+            <p className="mt-0.5 text-xs text-interlink-muted">
+              {role === "mentor"
+                ? "Help mentees understand your journey and how you work together."
+                : "Share what you're aiming for so mentors can guide you effectively."}
+            </p>
+          </div>
+
+          {role === "mentor" ? (
+            <div className="space-y-4">
               <Textarea
                 label="Professional Biography"
                 placeholder="Share your career journey, key achievements, and how you support emerging talent..."
@@ -390,7 +483,6 @@ export function ProfileEditorClient({
                 required
                 rows={4}
               />
-
               <Textarea
                 label="Mentorship Approach"
                 placeholder="Describe your mentoring style, expectations, and cadence..."
@@ -398,7 +490,50 @@ export function ProfileEditorClient({
                 onChange={(e) => setMentorshipApproach(e.target.value)}
                 rows={3}
               />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Textarea
+                label="Career Aspirations"
+                placeholder="Where do you want to be in the next 1–3 years?"
+                value={careerAspirations}
+                onChange={(e) => setCareerAspirations(e.target.value)}
+                required
+                rows={3}
+              />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Textarea
+                  label="Current Challenges"
+                  placeholder="What obstacles or skill gaps are you facing?"
+                  value={currentChallenges}
+                  onChange={(e) => setCurrentChallenges(e.target.value)}
+                  rows={3}
+                />
+                <Textarea
+                  label="Mentorship Expectations"
+                  placeholder="What kind of guidance and accountability works best for you?"
+                  value={mentorshipExpectations}
+                  onChange={(e) => setMentorshipExpectations(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+        </Card>
 
+        {/* Section 3: Skills, Interests & Languages */}
+        <Card id="profile-skills">
+          <div className="mb-5">
+            <h2 className="font-display text-base font-semibold text-interlink-ink">
+              Skills &amp; Languages
+            </h2>
+            <p className="mt-0.5 text-xs text-interlink-muted">
+              Used to improve compatibility matching across the feed and directory.
+            </p>
+          </div>
+
+          {role === "mentor" ? (
+            <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Input
                   label="Areas of Expertise (comma-separated)"
@@ -414,139 +549,15 @@ export function ProfileEditorClient({
                   onChange={(e) => setMentorSkillsText(e.target.value)}
                 />
               </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Input
-                  label="Spoken Languages (comma-separated)"
-                  value={languagesText}
-                  onChange={(e) => setLanguagesText(e.target.value)}
-                  required
-                />
-                <Select
-                  label="Session Preference"
-                  value={sessionPreference}
-                  onChange={(e) =>
-                    setSessionPreference(e.target.value as "online" | "in_person" | "hybrid")
-                  }
-                >
-                  <option value="online">Online</option>
-                  <option value="in_person">In-Person</option>
-                  <option value="hybrid">Hybrid</option>
-                </Select>
-                <Select
-                  label="Profile Visibility"
-                  value={visibility}
-                  onChange={(e) =>
-                    setVisibility(e.target.value as "public" | "members_only" | "private")
-                  }
-                >
-                  <option value="public">Public (Directory)</option>
-                  <option value="members_only">Signed-in Members Only</option>
-                  <option value="private">Private (Hidden)</option>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <Input
-                  label="LinkedIn URL (for verification review)"
-                  placeholder="https://linkedin.com/in/..."
-                  value={linkedinUrl}
-                  onChange={(e) => setLinkedinUrl(e.target.value)}
-                />
-                <Input
-                  label="Portfolio / Website URL"
-                  placeholder="https://..."
-                  value={portfolioUrl}
-                  onChange={(e) => setPortfolioUrl(e.target.value)}
-                />
-              </div>
-
               <Input
-                label="Qualifications & Verification Notes"
-                placeholder="Degrees, certifications, or supporting references for verification"
-                value={qualifications}
-                onChange={(e) => setQualifications(e.target.value)}
+                label="Spoken Languages (comma-separated)"
+                value={languagesText}
+                onChange={(e) => setLanguagesText(e.target.value)}
+                required
               />
-              <div className="rounded-[2px] border border-interlink-border bg-interlink-app-bg p-4">
-                <p className="text-xs font-medium text-interlink-ink">
-                  Supporting Verification Credential (Optional)
-                </p>
-                <p className="mt-0.5 text-[11px] text-interlink-muted">
-                  Upload a PDF certificate or supporting document to Neon Object Storage (private
-                  access for administrators only).
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <label className="inline-block cursor-pointer rounded-[2px] border border-interlink-hairline bg-interlink-surface px-3.5 py-1.5 text-xs font-medium text-interlink-ink hover:border-interlink-forest">
-                    {uploadingDoc ? "Uploading..." : "Upload Verification Document"}
-                    <input
-                      type="file"
-                      accept="application/pdf,image/jpeg,image/png,image/webp"
-                      onChange={handleVerificationDocUpload}
-                      disabled={uploadingDoc}
-                      className="sr-only"
-                    />
-                  </label>
-                  {uploadedDocKey && (
-                    <span className="text-xs text-interlink-forest">
-                      Uploaded: {uploadedDocKey}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {isOnboarding && (
-                <Input
-                  label="Verification Submission Summary (Optional)"
-                  placeholder="Any additional context for administrators reviewing your mentor verification"
-                  value={verificationNotes}
-                  onChange={(e) => setVerificationNotes(e.target.value)}
-                />
-              )}
-            </>
+            </div>
           ) : (
-            <>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <Input
-                  label="Current Occupation or Study Status"
-                  placeholder="e.g., Final-year Computer Science Student / Junior Analyst"
-                  value={currentOccupation}
-                  onChange={(e) => setCurrentOccupation(e.target.value)}
-                  required
-                />
-                <Input
-                  label="Educational Background"
-                  placeholder="e.g., B.Sc. Economics, University of Lagos"
-                  value={education}
-                  onChange={(e) => setEducation(e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Select
-                  label="Target Industry"
-                  value={industryId}
-                  onChange={(e) => setIndustryId(e.target.value)}
-                >
-                  <option value="">Select Industry</option>
-                  {industries.map((ind) => (
-                    <option key={ind.id} value={ind.id}>
-                      {ind.name}
-                    </option>
-                  ))}
-                </Select>
-                <Input
-                  label="Preferred Language"
-                  value={preferredLanguage}
-                  onChange={(e) => setPreferredLanguage(e.target.value)}
-                  required
-                />
-                <Input
-                  label="Location"
-                  placeholder="e.g., Abuja, Nigeria"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
-
+            <div className="space-y-4">
               <Input
                 label="Career Interests (comma-separated)"
                 placeholder="Frontend Development, Product Management, Data Analytics"
@@ -554,101 +565,160 @@ export function ProfileEditorClient({
                 onChange={(e) => setCareerInterestsText(e.target.value)}
                 required
               />
-
-              <Textarea
-                label="Career Aspirations"
-                placeholder="Where do you want to be in the next 1–3 years?"
-                value={careerAspirations}
-                onChange={(e) => setCareerAspirations(e.target.value)}
-                required
-                rows={3}
-              />
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <Input
-                  label="Existing Skills (comma-separated)"
+                  label="Existing Skills"
                   placeholder="HTML, CSS, Communication"
                   value={existingSkillsText}
                   onChange={(e) => setExistingSkillsText(e.target.value)}
                 />
                 <Input
-                  label="Skills to Develop (comma-separated)"
-                  placeholder="React, System Design, Technical Interviewing"
+                  label="Skills to Develop"
+                  placeholder="React, System Design"
                   value={skillsToDevelopText}
                   onChange={(e) => setSkillsToDevelopText(e.target.value)}
                 />
+                <Input
+                  label="Preferred Language"
+                  value={preferredLanguage}
+                  onChange={(e) => setPreferredLanguage(e.target.value)}
+                  required
+                />
               </div>
-
-              <Textarea
-                label="Current Challenges"
-                placeholder="What obstacles or skill gaps are you facing?"
-                value={currentChallenges}
-                onChange={(e) => setCurrentChallenges(e.target.value)}
-                rows={2}
-              />
-
-              <Textarea
-                label="Mentorship Expectations"
-                placeholder="What kind of guidance and accountability works best for you?"
-                value={mentorshipExpectations}
-                onChange={(e) => setMentorshipExpectations(e.target.value)}
-                rows={2}
-              />
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <Select
-                  label="Preferred Session Format"
-                  value={sessionPreference}
-                  onChange={(e) =>
-                    setSessionPreference(e.target.value as "online" | "in_person" | "hybrid")
-                  }
-                >
-                  <option value="online">Online</option>
-                  <option value="in_person">In-Person</option>
-                  <option value="hybrid">Hybrid</option>
-                </Select>
-                <Select
-                  label="Profile Visibility"
-                  value={visibility}
-                  onChange={(e) =>
-                    setVisibility(e.target.value as "public" | "members_only" | "private")
-                  }
-                >
-                  <option value="members_only">Mentors &amp; Members Only</option>
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
-                </Select>
-              </div>
-            </>
+            </div>
           )}
+        </Card>
 
-          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-5">
-            {isOnboarding && (
-              <Button
-                type="button"
-                variant="outline"
-                loading={saving}
-                onClick={(e) => saveProfile(e, false)}
-              >
-                Save Progress &amp; Continue Later
-              </Button>
-            )}
-            <Button type="submit" loading={saving}>
-              {isOnboarding ? "Complete Onboarding" : "Save Profile"}
-            </Button>
+        {/* Section 4: Preferences, Links & Verification (Subtle Background Variation) */}
+        <Card id="profile-visibility" className="bg-interlink-app-bg/55">
+          <div className="mb-5">
+            <h2 className="font-display text-base font-semibold text-interlink-ink">
+              {role === "mentor" ? "Preferences, Links & Verification" : "Session & Privacy Preferences"}
+            </h2>
+            <p className="mt-0.5 text-xs text-interlink-muted">
+              Manage how you meet and who can discover your profile.
+            </p>
           </div>
-        </form>
-      </Card>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Select
+                label={role === "mentor" ? "Session Preference" : "Preferred Session Format"}
+                value={sessionPreference}
+                onChange={(e) =>
+                  setSessionPreference(e.target.value as "online" | "in_person" | "hybrid")
+                }
+              >
+                <option value="online">Online</option>
+                <option value="in_person">In-Person</option>
+                <option value="hybrid">Hybrid</option>
+              </Select>
+              <Select
+                label="Profile Visibility"
+                value={visibility}
+                onChange={(e) =>
+                  setVisibility(e.target.value as "public" | "members_only" | "private")
+                }
+              >
+                <option value="public">
+                  {role === "mentor" ? "Public (Directory)" : "Public"}
+                </option>
+                <option value="members_only">
+                  {role === "mentor" ? "Signed-in Members Only" : "Mentors & Members Only"}
+                </option>
+                <option value="private">Private (Hidden)</option>
+              </Select>
+            </div>
+
+            {role === "mentor" && (
+              <>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <Input
+                    label="LinkedIn URL"
+                    placeholder="https://linkedin.com/in/..."
+                    value={linkedinUrl}
+                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                  />
+                  <Input
+                    label="Portfolio / Website URL"
+                    placeholder="https://..."
+                    value={portfolioUrl}
+                    onChange={(e) => setPortfolioUrl(e.target.value)}
+                  />
+                </div>
+
+                <Input
+                  label="Qualifications & Verification Notes"
+                  placeholder="Degrees, certifications, or supporting references"
+                  value={qualifications}
+                  onChange={(e) => setQualifications(e.target.value)}
+                />
+
+                <div className="rounded-2xl border border-interlink-border bg-interlink-surface p-4">
+                  <p className="text-xs font-semibold text-interlink-ink">
+                    Verification Credential (Optional)
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-interlink-muted">
+                    Upload a supporting certificate or ID for private administrator review.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <label className="inline-block cursor-pointer rounded-full border border-interlink-border bg-interlink-app-bg px-4 py-2 text-xs font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest">
+                      {uploadingDoc ? "Uploading..." : "Upload Document"}
+                      <input
+                        type="file"
+                        accept="application/pdf,image/jpeg,image/png,image/webp"
+                        onChange={handleVerificationDocUpload}
+                        disabled={uploadingDoc}
+                        className="sr-only"
+                      />
+                    </label>
+                    {uploadedDocKey && (
+                      <span className="text-xs font-medium text-interlink-forest">
+                        Uploaded: {uploadedDocKey}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {isOnboarding && (
+                  <Input
+                    label="Verification Submission Summary (Optional)"
+                    placeholder="Additional context for administrators reviewing your verification"
+                    value={verificationNotes}
+                    onChange={(e) => setVerificationNotes(e.target.value)}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </Card>
+
+        {/* Action Row */}
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-1">
+          {isOnboarding && (
+            <Button
+              type="button"
+              variant="outline"
+              loading={saving}
+              onClick={(e) => saveProfile(e, false)}
+            >
+              Save &amp; Continue Later
+            </Button>
+          )}
+          <Button type="submit" loading={saving}>
+            {isOnboarding ? "Complete Onboarding" : "Save Changes"}
+          </Button>
+        </div>
+      </form>
 
       {/* Mentor Availability & Capacity Section */}
       {role === "mentor" && (
         <Card id="availability">
-          <h2 className="font-display text-lg font-semibold text-interlink-ink">
-            Availability &amp; Mentee Capacity
+          <h2 className="font-display text-base font-semibold text-interlink-ink">
+            Availability &amp; Capacity
           </h2>
-          <p className="mt-1 text-xs text-interlink-muted">
-            Control whether you are accepting new requests, set maximum active mentees, and publish
-            weekly session windows.
+          <p className="mt-0.5 text-xs text-interlink-muted">
+            Control incoming mentorship requests and weekly session slots.
           </p>
 
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -677,7 +747,7 @@ export function ProfileEditorClient({
             {slots.map((slot, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-1 items-end gap-3 rounded-[2px] border border-slate-200 p-3 sm:grid-cols-5"
+                className="grid grid-cols-1 items-end gap-3 rounded-2xl border border-interlink-border bg-interlink-app-bg/50 p-3.5 sm:grid-cols-5"
               >
                 <Select
                   label="Day"
@@ -735,7 +805,7 @@ export function ProfileEditorClient({
             ))}
           </div>
 
-          <div className="mt-4 flex flex-wrap justify-between gap-3">
+          <div className="mt-5 flex flex-wrap justify-between gap-3">
             <Button
               variant="outline"
               onClick={() =>
@@ -751,10 +821,10 @@ export function ProfileEditorClient({
                 ])
               }
             >
-              + Add Availability Slot
+              + Add Slot
             </Button>
             <Button onClick={saveAvailabilitySlots} loading={saving}>
-              Save Availability Schedule
+              Save Schedule
             </Button>
           </div>
         </Card>

@@ -19,12 +19,10 @@ function ResetPasswordInner() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
 
-  // Forgot-password request state
   const [forgotEmail, setForgotEmail] = useState("");
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [devResetUrl, setDevResetUrl] = useState<string | null>(null);
 
-  // Reset-password form state
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -133,7 +131,7 @@ function ResetPasswordInner() {
       {isResetMode ? (
         done ? (
           <div className="mt-6 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-interlink-forest/12 text-interlink-forest">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-interlink-forest/15 text-interlink-forest">
               <CheckCircle2 className="h-7 w-7" aria-hidden="true" />
             </div>
             <p className="mt-4 text-sm leading-relaxed text-interlink-ink">
@@ -183,7 +181,7 @@ function ResetPasswordInner() {
       ) : (
         <>
           {infoMessage && (
-            <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-3.5 text-xs leading-relaxed text-emerald-900 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-200">
+            <div className="mt-5 rounded-2xl border border-emerald-800/60 bg-emerald-950/40 p-3.5 text-xs leading-relaxed text-emerald-200">
               <p>{infoMessage}</p>
               {devResetUrl && (
                 <Link
@@ -235,8 +233,10 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-interlink-canvas">
-          <LoadingSpinner />
+        <div className="dark [color-scheme:dark]">
+          <div className="flex min-h-screen items-center justify-center bg-interlink-canvas">
+            <LoadingSpinner />
+          </div>
         </div>
       }
     >

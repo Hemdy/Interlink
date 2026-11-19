@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 
 export interface NavigationModeState {
   isStandalone: boolean;
@@ -47,7 +46,11 @@ export function useNavigationMode(): NavigationModeState {
         document.referrer.startsWith("android-app://");
 
       if (!isStandalone) {
-        setState({ isStandalone: false, useBottomNav: false });
+        setState((prev) =>
+          !prev.isStandalone && !prev.useBottomNav
+            ? prev
+            : { isStandalone: false, useBottomNav: false },
+        );
         return;
       }
 
@@ -62,7 +65,11 @@ export function useNavigationMode(): NavigationModeState {
       // Desktop PWA with wider viewport (>= 1024px non-touch) retains desktop sidebar.
       const useBottomNav = width < 1024 || isTouchTablet;
 
-      setState({ isStandalone: true, useBottomNav });
+      setState((prev) =>
+        prev.isStandalone === true && prev.useBottomNav === useBottomNav
+          ? prev
+          : { isStandalone: true, useBottomNav },
+      );
     };
 
     evaluate();
@@ -81,34 +88,93 @@ export function useNavigationMode(): NavigationModeState {
   return state;
 }
 
+const UNREAD_SYNC_EVENT = "interlink:unread-sync";
+const UNREAD_CACHE_TTL_MS = 60_000;
+
 let cachedUnreadMessages = 0;
 let lastUnreadFetchAt = 0;
-let cachedUnreadNotifications = 0;
+let cachedUnreadNotifications: number | null = null;
 let lastNotifFetchAt = 0;
-const UNREAD_CACHE_TTL_MS = 15_000;
+
+function emitUnreadSync() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(UNREAD_SYNC_EVENT));
+}
 
 export function resetNavigationUnreadCaches() {
   cachedUnreadMessages = 0;
   lastUnreadFetchAt = 0;
-  cachedUnreadNotifications = 0;
+  cachedUnreadNotifications = null;
   lastNotifFetchAt = 0;
+  emitUnreadSync();
 }
 
-export function useUnreadNotificationsCount(enabled: boolean): number {
-  const pathname = usePathname();
-  const [unreadNotifications, setUnreadNotifications] = useState(cachedUnreadNotifications);
+export function setOptimisticUnreadNotifications(
+  nextOrUpdater: number | ((prev: number) => number),
+) {
+  const prev = cachedUnreadNotifications ?? 0;
+  cachedUnreadNotifications = Math.max(
+    0,
+    typeof nextOrUpdater === "function" ? nextOrUpdater(prev) : nextOrUpdater,
+  );
+  lastNotifFetchAt = Date.now();
+  emitUnreadSync();
+}
+
+export function setOptimisticUnreadMessages(
+  nextOrUpdater: number | ((prev: number) => number),
+) {
+  cachedUnreadMessages = Math.max(
+    0,
+    typeof nextOrUpdater === "function"
+      ? nextOrUpdater(cachedUnreadMessages)
+      : nextOrUpdater,
+  );
+  lastUnreadFetchAt = Date.now();
+  emitUnreadSync();
+}
+
+export function useUnreadNotificationsCount(
+  enabled: boolean,
+  initialServerCount?: number,
+): number {
+  const [unreadNotifications, setUnreadNotifications] = useState(() => {
+    if (cachedUnreadNotifications === null && typeof initialServerCount === "number") {
+      cachedUnreadNotifications = initialServerCount;
+      lastNotifFetchAt = Date.now();
+    }
+    return cachedUnreadNotifications ?? initialServerCount ?? 0;
+  });
+
+  useEffect(() => {
+    if (cachedUnreadNotifications === null && typeof initialServerCount === "number") {
+      cachedUnreadNotifications = initialServerCount;
+      lastNotifFetchAt = Date.now();
+      setUnreadNotifications(initialServerCount);
+    }
+  }, [initialServerCount]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleSync = () => {
+      if (cachedUnreadNotifications !== null) {
+        setUnreadNotifications(cachedUnreadNotifications);
+      }
+    };
+    window.addEventListener(UNREAD_SYNC_EVENT, handleSync);
+    return () => window.removeEventListener(UNREAD_SYNC_EVENT, handleSync);
+  }, []);
 
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return;
 
-    const now = Date.now();
-    if (pathname !== "/notifications" && now - lastNotifFetchAt < UNREAD_CACHE_TTL_MS) {
-      return;
-    }
-
     const controller = new AbortController();
 
-    async function fetchUnread() {
+    async function fetchUnreadIfStale() {
+      if (Date.now() - lastNotifFetchAt < UNREAD_CACHE_TTL_MS) {
+        return;
+      }
       try {
         const res = await fetch("/api/v1/notifications", {
           signal: controller.signal,
@@ -129,30 +195,43 @@ export function useUnreadNotificationsCount(enabled: boolean): number {
       }
     }
 
-    void fetchUnread();
+    void fetchUnreadIfStale();
 
-    return () => controller.abort();
-  }, [enabled, pathname]);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void fetchUnreadIfStale();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      controller.abort();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [enabled]);
 
   return unreadNotifications;
 }
 
 export function useUnreadMessagesCount(enabled: boolean): number {
-  const pathname = usePathname();
   const [unreadMessages, setUnreadMessages] = useState(cachedUnreadMessages);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleSync = () => setUnreadMessages(cachedUnreadMessages);
+    window.addEventListener(UNREAD_SYNC_EVENT, handleSync);
+    return () => window.removeEventListener(UNREAD_SYNC_EVENT, handleSync);
+  }, []);
 
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return;
 
-    const now = Date.now();
-    const isMessagesRoute = pathname === "/messages" || pathname.startsWith("/messages/");
-    if (!isMessagesRoute && now - lastUnreadFetchAt < UNREAD_CACHE_TTL_MS) {
-      return;
-    }
-
     const controller = new AbortController();
 
-    async function fetchUnread() {
+    async function fetchUnreadIfStale() {
+      if (Date.now() - lastUnreadFetchAt < UNREAD_CACHE_TTL_MS) {
+        return;
+      }
       try {
         const res = await fetch("/api/v1/conversations", {
           signal: controller.signal,
@@ -173,10 +252,20 @@ export function useUnreadMessagesCount(enabled: boolean): number {
       }
     }
 
-    void fetchUnread();
+    void fetchUnreadIfStale();
 
-    return () => controller.abort();
-  }, [enabled, pathname]);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void fetchUnreadIfStale();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      controller.abort();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [enabled]);
 
   return unreadMessages;
 }
