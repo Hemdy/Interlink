@@ -52,8 +52,8 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
       icon: <UserCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
     },
     {
-      label: "Account Settings",
-      href: "/settings",
+      label: "Account & Settings",
+      href: "/account",
       icon: <Settings className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
     },
     {

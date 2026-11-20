@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Bookmark,
   Calendar,
+  Check,
   CheckCircle2,
   Compass,
   ExternalLink,
@@ -14,6 +15,7 @@ import {
   Heart,
   MapPin,
   MessageCircle,
+  Pencil,
   Play,
   Plus,
   Route,
@@ -22,8 +24,11 @@ import {
   ShieldCheck,
   Sparkles,
   Target,
+  Trash2,
   Users,
   Video,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import { formatDateTime } from "@interlink/utils";
@@ -42,6 +47,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import type { CommunityPostItem } from "@/features/content/infrastructure/postQueries";
 import { CreatePostModal } from "@/features/dashboard/ui/CreatePostModal";
+import { useFeedVideoAutoplay } from "@/features/dashboard/ui/useFeedVideoAutoplay";
 import { postJson } from "@/lib/api/client";
 
 export interface FeedSessionItem {
@@ -94,6 +100,7 @@ type FeedEntry =
 
 interface FeedComment {
   id: string;
+  authorId?: string;
   author: string;
   text: string;
   timeLabel: string;
@@ -188,8 +195,7 @@ export function PWAHomeFeedClient({
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [userComments, setUserComments] = useState<Record<string, FeedComment[]>>({});
 
-  // Video reel modal & inline playing state
-  const [playingReelId, setPlayingReelId] = useState<string | null>(null);
+  // Video reel modal state
   const [activeReel, setActiveReel] = useState<MentorReelItem | null>(null);
   const [videoError, setVideoError] = useState(false);
 
@@ -432,6 +438,23 @@ export function PWAHomeFeedClient({
     [feedItems, visibleCount],
   );
 
+  const videoControllerSignature = useMemo(
+    () => displayedItems.map((item) => item.instanceKey).join("|"),
+    [displayedItems],
+  );
+
+  const {
+    autoplayEnabled,
+    activeVideoKey,
+    feedMuted,
+    registerContainer,
+    registerVideo,
+    handleVideoPlay,
+    handleVideoPause,
+    triggerManualPlay,
+    toggleMute,
+  } = useFeedVideoAutoplay(videoControllerSignature);
+
   // Reset pagination slice cleanly on filter switch
   const handleSelectFilter = useCallback((next: FeedFilter) => {
     setFilter(next);
@@ -628,6 +651,96 @@ export function PWAHomeFeedClient({
     } catch {
       setCommentDrafts((prev) => ({ ...prev, [feedKey]: content }));
       pushToast({ kind: "error", title: "Network error publishing comment" });
+    }
+  }
+
+  async function editCommunityPostComment(
+    postId: string,
+    commentId: string,
+    newContent: string,
+  ): Promise<boolean> {
+    const trimmed = newContent.trim();
+    if (!trimmed) return false;
+
+    try {
+      const res = await fetch(`/api/v1/posts/${postId}/comments/${commentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: trimmed }),
+      });
+      const json = (await res.json()) as {
+        data?: { comment?: { content: string } };
+        error?: { message?: string };
+      };
+      if (!res.ok) {
+        pushToast({
+          kind: "error",
+          title: json.error?.message || "Could not edit comment",
+        });
+        return false;
+      }
+
+      setLivePosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                comments: p.comments.map((c) =>
+                  c.id === commentId
+                    ? { ...c, content: json.data?.comment?.content ?? trimmed }
+                    : c,
+                ),
+              }
+            : p,
+        ),
+      );
+      pushToast({ kind: "success", title: "Comment updated" });
+      return true;
+    } catch {
+      pushToast({ kind: "error", title: "Network error editing comment" });
+      return false;
+    }
+  }
+
+  async function deleteCommunityPostComment(
+    postId: string,
+    commentId: string,
+  ): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/v1/posts/${postId}/comments/${commentId}`, {
+        method: "DELETE",
+      });
+      const json = (await res.json()) as {
+        data?: { commentsCount?: number };
+        error?: { message?: string };
+      };
+      if (!res.ok) {
+        pushToast({
+          kind: "error",
+          title: json.error?.message || "Could not delete comment",
+        });
+        return false;
+      }
+
+      setLivePosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                comments: p.comments.filter((c) => c.id !== commentId),
+                commentsCount:
+                  typeof json.data?.commentsCount === "number"
+                    ? json.data.commentsCount
+                    : Math.max(0, p.commentsCount - 1),
+              }
+            : p,
+        ),
+      );
+      pushToast({ kind: "info", title: "Comment deleted" });
+      return true;
+    } catch {
+      pushToast({ kind: "error", title: "Network error deleting comment" });
+      return false;
     }
   }
 
@@ -845,6 +958,7 @@ export function PWAHomeFeedClient({
                   const isHighlighted = highlightedPostId === post.id;
                   const postComments: FeedComment[] = post.comments.map((c) => ({
                     id: c.id,
+                    authorId: c.authorId,
                     author: c.authorName,
                     text: c.content,
                     timeLabel: formatDateTime(c.createdAt),
@@ -921,13 +1035,46 @@ export function PWAHomeFeedClient({
                               </span>
                             </button>
                           ) : post.mediaType === "video" ? (
-                            <video
-                              src={post.mediaUrl}
-                              controls
-                              playsInline
-                              preload="metadata"
-                              className="max-h-96 w-full bg-black object-contain"
-                            />
+                            <div
+                              ref={(el) => registerContainer(entry.instanceKey, el)}
+                              className="relative bg-black"
+                            >
+                              <video
+                                ref={(el) => registerVideo(entry.instanceKey, el)}
+                                src={post.mediaUrl}
+                                controls
+                                playsInline
+                                muted={feedMuted}
+                                loop
+                                preload="metadata"
+                                onPlay={() => handleVideoPlay(entry.instanceKey)}
+                                onPause={(e) =>
+                                  handleVideoPause(entry.instanceKey, e.currentTarget)
+                                }
+                                className="max-h-96 w-full bg-black object-contain"
+                              />
+                              <div className="pointer-events-none absolute left-3 right-3 top-3 flex items-center justify-between">
+                                {!autoplayEnabled ? (
+                                  <span className="rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
+                                    Autoplay paused
+                                  </span>
+                                ) : (
+                                  <span />
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={toggleMute}
+                                  aria-label={feedMuted ? "Unmute videos" : "Mute videos"}
+                                  className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-colors hover:bg-black/80"
+                                >
+                                  {feedMuted ? (
+                                    <VolumeX className="h-4 w-4" aria-hidden="true" />
+                                  ) : (
+                                    <Volume2 className="h-4 w-4" aria-hidden="true" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
                           ) : (
                             <div className="flex flex-wrap items-center justify-between gap-3 p-3.5">
                               <div className="flex items-center gap-2.5 text-xs font-semibold text-interlink-ink">
@@ -1031,6 +1178,8 @@ export function PWAHomeFeedClient({
                           <CommentDrawer
                             comments={postComments}
                             draft={commentDrafts[entry.feedKey] ?? ""}
+                            currentUserId={user.id}
+                            postAuthorId={post.authorId}
                             onDraftChange={(val) =>
                               setCommentDrafts((prev) => ({
                                 ...prev,
@@ -1039,6 +1188,12 @@ export function PWAHomeFeedClient({
                             }
                             onSubmit={(e) =>
                               void submitCommunityPostComment(post.id, entry.feedKey, e)
+                            }
+                            onEditComment={(commentId, nextContent) =>
+                              editCommunityPostComment(post.id, commentId, nextContent)
+                            }
+                            onDeleteComment={(commentId) =>
+                              deleteCommunityPostComment(post.id, commentId)
                             }
                           />
                         </div>
@@ -1050,46 +1205,60 @@ export function PWAHomeFeedClient({
                 {/* 1. IMMERSIVE REEL CARD (TikTok / IG Reels Vertical Card) */}
                 {entry.kind === "reel" && (
                   <article className="overflow-hidden rounded-3xl border border-interlink-border/80 bg-interlink-surface shadow-card">
-                    <div className="relative aspect-[4/5] max-h-[540px] w-full overflow-hidden bg-black">
-                      {playingReelId === entry.instanceKey ? (
-                        <video
-                          src={entry.reel.videoUrl}
-                          poster={entry.reel.posterImageUrl || "/images/mentor-spotlight.jpg"}
-                          controls
-                          autoPlay
-                          playsInline
-                          loop
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <>
-                          <Image
-                            src={entry.reel.posterImageUrl || "/images/mentor-spotlight.jpg"}
-                            alt={`${entry.reel.mentorName} — ${entry.reel.title}`}
-                            fill
-                            sizes="(max-width: 680px) 100vw, 680px"
-                            className="object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/35" />
-                        </>
+                    <div
+                      ref={(el) => registerContainer(entry.instanceKey, el)}
+                      className="relative aspect-[4/5] max-h-[540px] w-full overflow-hidden bg-black"
+                    >
+                      <video
+                        ref={(el) => registerVideo(entry.instanceKey, el)}
+                        src={entry.reel.videoUrl}
+                        poster={entry.reel.posterImageUrl || "/images/mentor-spotlight.jpg"}
+                        controls={activeVideoKey === entry.instanceKey}
+                        playsInline
+                        muted={feedMuted}
+                        loop
+                        preload="metadata"
+                        onPlay={() => handleVideoPlay(entry.instanceKey)}
+                        onPause={(e) =>
+                          handleVideoPause(entry.instanceKey, e.currentTarget)
+                        }
+                        className="h-full w-full object-cover"
+                      />
+
+                      {activeVideoKey !== entry.instanceKey && (
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/35" />
                       )}
 
-                      {/* Top Badges */}
+                      {/* Top Badges + Sound Toggle */}
                       <div className="pointer-events-none absolute left-4 right-4 top-4 flex items-center justify-between gap-2">
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
                           <Video className="h-3 w-3 text-emerald-400" />
                           {entry.reel.topicTag}
                         </span>
-                        <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
-                          {entry.reel.durationLabel}
-                        </span>
+                        <div className="pointer-events-auto flex items-center gap-2">
+                          <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+                            {entry.reel.durationLabel}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={toggleMute}
+                            aria-label={feedMuted ? "Unmute videos" : "Mute videos"}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition-colors hover:bg-black/80"
+                          >
+                            {feedMuted ? (
+                              <VolumeX className="h-4 w-4" aria-hidden="true" />
+                            ) : (
+                              <Volume2 className="h-4 w-4" aria-hidden="true" />
+                            )}
+                          </button>
+                        </div>
                       </div>
 
                       {/* Center Play Trigger when paused */}
-                      {playingReelId !== entry.instanceKey && (
+                      {activeVideoKey !== entry.instanceKey && (
                         <button
                           type="button"
-                          onClick={() => setPlayingReelId(entry.instanceKey)}
+                          onClick={() => triggerManualPlay(entry.instanceKey)}
                           aria-label={`Play reel: ${entry.reel.title}`}
                           className="absolute inset-0 flex items-center justify-center focus-ring"
                         >
@@ -1155,7 +1324,7 @@ export function PWAHomeFeedClient({
                       </div>
 
                       {/* Bottom Creator Overlay */}
-                      {playingReelId !== entry.instanceKey && (
+                      {activeVideoKey !== entry.instanceKey && (
                         <div className="pointer-events-none absolute bottom-0 left-0 right-14 p-4 text-white">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold">{entry.reel.mentorName}</span>
@@ -1871,25 +2040,145 @@ export function PWAHomeFeedClient({
 function CommentDrawer({
   comments,
   draft,
+  currentUserId,
+  postAuthorId,
   onDraftChange,
   onSubmit,
+  onEditComment,
+  onDeleteComment,
 }: {
   comments: FeedComment[];
   draft: string;
+  currentUserId?: string;
+  postAuthorId?: string;
   onDraftChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
+  onEditComment?: (commentId: string, newContent: string) => Promise<boolean>;
+  onDeleteComment?: (commentId: string) => Promise<boolean>;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  async function saveEdit(commentId: string) {
+    if (!onEditComment) return;
+    setBusyId(commentId);
+    try {
+      const ok = await onEditComment(commentId, editingText);
+      if (ok) {
+        setEditingId(null);
+        setEditingText("");
+      }
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function removeComment(commentId: string) {
+    if (!onDeleteComment) return;
+    setBusyId(commentId);
+    try {
+      await onDeleteComment(commentId);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className="border-t border-interlink-border/60 bg-interlink-app-bg/50 px-4 py-3.5">
       {comments.length > 0 ? (
         <ul className="mb-3 space-y-2.5">
-          {comments.map((comment) => (
-            <li key={comment.id} className="text-xs leading-relaxed">
-              <span className="font-semibold text-interlink-ink">{comment.author}</span>{" "}
-              <span className="text-interlink-ink/85">{comment.text}</span>
-              <span className="ml-2 text-[10px] text-interlink-muted">{comment.timeLabel}</span>
-            </li>
-          ))}
+          {comments.map((comment) => {
+            const isCommentAuthor = Boolean(
+              currentUserId && comment.authorId && comment.authorId === currentUserId,
+            );
+            const isPostAuthor = Boolean(
+              currentUserId && postAuthorId && postAuthorId === currentUserId,
+            );
+            const canEdit = Boolean(onEditComment && isCommentAuthor);
+            const canDelete = Boolean(
+              onDeleteComment && (isCommentAuthor || isPostAuthor),
+            );
+            const isEditing = editingId === comment.id;
+
+            return (
+              <li key={comment.id} className="text-xs leading-relaxed">
+                {isEditing ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      aria-label="Edit comment"
+                      className="min-w-0 flex-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1.5 text-xs text-interlink-ink focus:border-interlink-forest focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={busyId === comment.id || !editingText.trim()}
+                      onClick={() => void saveEdit(comment.id)}
+                      aria-label="Save edited comment"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-interlink-forest text-white disabled:opacity-40"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingId(null);
+                        setEditingText("");
+                      }}
+                      aria-label="Cancel comment edit"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-interlink-border text-interlink-muted hover:text-interlink-ink"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <span className="font-semibold text-interlink-ink">
+                        {comment.author}
+                      </span>{" "}
+                      <span className="text-interlink-ink/85">{comment.text}</span>
+                      <span className="ml-2 text-[10px] text-interlink-muted">
+                        {comment.timeLabel}
+                      </span>
+                    </div>
+
+                    {(canEdit || canDelete) && (
+                      <div className="flex shrink-0 items-center gap-1">
+                        {canEdit && (
+                          <button
+                            type="button"
+                            disabled={busyId === comment.id}
+                            onClick={() => {
+                              setEditingId(comment.id);
+                              setEditingText(comment.text);
+                            }}
+                            aria-label="Edit comment"
+                            className="rounded p-1 text-interlink-muted hover:text-interlink-forest"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            type="button"
+                            disabled={busyId === comment.id}
+                            onClick={() => void removeComment(comment.id)}
+                            aria-label="Delete comment"
+                            className="rounded p-1 text-interlink-muted hover:text-red-600"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="mb-3 text-xs text-interlink-muted">

@@ -101,9 +101,9 @@ function VerifyEmailInner() {
           <AuthBottomCard
             icon={Settings}
             title="Need a new link?"
-            description="Request another verification email in settings"
-            ctaLabel="Settings"
-            ctaHref="/settings"
+            description="Request another verification email in your account"
+            ctaLabel="Account"
+            ctaHref="/account"
           />
         </div>
       )}

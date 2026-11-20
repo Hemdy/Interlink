@@ -4,6 +4,7 @@ const SESSION_COOKIE_NAME = "interlink_session";
 
 const PROTECTED_PREFIXES = [
   "/dashboard",
+  "/account",
   "/profile",
   "/settings",
   "/messages",

@@ -92,9 +92,7 @@ export const registerSchema = z
     password: passwordSchema,
     confirmPassword: z.string(),
     role: publicRegistrationRoleSchema.default("mentee"),
-    acceptPolicies: z.literal(true, {
-      errorMap: () => ({ message: "You must accept the Terms, Privacy Policy, and Cookie Policy." }),
-    }),
+    acceptPolicies: z.boolean().optional().default(true),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match.",
@@ -394,6 +392,28 @@ export const createPostSchema = z.object({
 
 export const createPostCommentSchema = z.object({
   content: z.string().trim().min(1, "Comment cannot be empty.").max(1500),
+});
+
+export const updatePostSchema = z.object({
+  postType: communityPostTypeSchema.optional(),
+  topic: z.string().trim().min(2, "Topic is required.").max(80).optional(),
+  title: z.string().trim().max(200).optional().nullable().or(z.literal("")),
+  body: z.string().trim().min(3, "Write something to share with the community.").max(4000).optional(),
+  mediaUrl: mediaReferenceSchema.optional().nullable().or(z.literal("")),
+  mediaType: z.enum(["image", "video", "document"]).optional().nullable(),
+  externalLink: z.string().trim().url("Enter a valid https:// URL.").max(800).optional().nullable().or(z.literal("")),
+});
+
+export const updatePostCommentSchema = z.object({
+  content: z.string().trim().min(1, "Comment cannot be empty.").max(1500),
+});
+
+export const updateResourceSchema = z.object({
+  title: z.string().trim().min(3, "Title is required.").max(200).optional(),
+  description: z.string().trim().min(5, "Description is required.").max(1500).optional(),
+  resourceType: resourceTypeSchema.optional(),
+  externalUrl: mediaReferenceSchema.optional(),
+  category: z.string().trim().max(80).optional().nullable(),
 });
 
 export const pushSubscriptionSchema = z.object({

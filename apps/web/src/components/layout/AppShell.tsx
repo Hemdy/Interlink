@@ -64,7 +64,7 @@ function getNavItemsForUser(user: SessionUser): NavItem[] {
       { label: "Messages", href: "/messages", icon: MessageSquare },
       { label: "Resources", href: "/learn", icon: BookOpen },
       { label: "Notifications", href: "/notifications", icon: Bell },
-      { label: "Settings", href: "/settings", icon: Settings },
+      { label: "Account", href: "/account", icon: Settings },
     ];
   }
 
@@ -79,7 +79,7 @@ function getNavItemsForUser(user: SessionUser): NavItem[] {
       { label: "Resources", href: "/learn", icon: BookOpen },
       { label: "Notifications", href: "/notifications", icon: Bell },
       { label: "My Profile", href: "/profile", icon: UserCircle },
-      { label: "Settings", href: "/settings", icon: Settings },
+      { label: "Account", href: "/account", icon: Settings },
     ];
   }
 
@@ -95,7 +95,7 @@ function getNavItemsForUser(user: SessionUser): NavItem[] {
     { label: "Resources", href: "/learn", icon: BookOpen },
     { label: "Notifications", href: "/notifications", icon: Bell },
     { label: "My Profile", href: "/profile", icon: UserCircle },
-    { label: "Settings", href: "/settings", icon: Settings },
+    { label: "Account", href: "/account", icon: Settings },
   ];
 }
 

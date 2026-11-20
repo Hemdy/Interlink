@@ -294,19 +294,19 @@ export function PushNotificationsManager({
     }
   }
 
-  async function togglePref(
-    type: NotificationType,
-    channel: "pushEnabled" | "inAppEnabled",
-  ) {
+  async function togglePref(type: NotificationType) {
     const current = prefsMap[type] ?? {
       notificationType: type,
       inAppEnabled: true,
       emailEnabled: true,
       pushEnabled: true,
     };
+    const nextEnabled = !(current.inAppEnabled || current.pushEnabled);
     const nextRow: PrefRow = {
       ...current,
-      [channel]: !current[channel],
+      inAppEnabled: nextEnabled,
+      emailEnabled: nextEnabled,
+      pushEnabled: nextEnabled,
     };
 
     setPrefsMap((prev) => ({ ...prev, [type]: nextRow }));
@@ -484,7 +484,7 @@ export function PushNotificationsManager({
       {/* Notification Preferences */}
       <div className="space-y-2.5 border-t border-interlink-border/60 pt-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-interlink-muted">
-          Notification Preferences
+          Notifications
         </p>
         <div className="divide-y divide-interlink-border/60 rounded-2xl border border-interlink-border/80 bg-interlink-app-bg/30">
           {PREF_CONFIG.map((item) => {
@@ -494,41 +494,26 @@ export function PushNotificationsManager({
               emailEnabled: true,
               pushEnabled: true,
             };
+            const enabled = pref.inAppEnabled || pref.pushEnabled;
             const busy = savingPrefType === item.type;
 
             return (
               <div
                 key={item.type}
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                className="flex items-center justify-between gap-3 px-4 py-3"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-interlink-ink">{item.label}</p>
                   <p className="mt-0.5 text-[11px] text-interlink-muted">{item.description}</p>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-medium text-interlink-muted">
-                      In-App
-                    </span>
-                    <ToggleSwitch
-                      checked={pref.inAppEnabled}
-                      disabled={busy}
-                      label={`${item.label} in-app notifications`}
-                      onToggle={() => void togglePref(item.type, "inAppEnabled")}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-medium text-interlink-muted">
-                      Push
-                    </span>
-                    <ToggleSwitch
-                      checked={pref.pushEnabled}
-                      disabled={busy}
-                      label={`${item.label} push notifications`}
-                      onToggle={() => void togglePref(item.type, "pushEnabled")}
-                    />
-                  </div>
+                <div className="flex shrink-0 items-center">
+                  <ToggleSwitch
+                    checked={enabled}
+                    disabled={busy}
+                    label={`${item.label} notifications`}
+                    onToggle={() => void togglePref(item.type)}
+                  />
                 </div>
               </div>
             );

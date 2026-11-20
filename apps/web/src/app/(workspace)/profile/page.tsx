@@ -9,8 +9,9 @@ import {
   mentorProfiles,
 } from "@interlink/database";
 import { WorkspacePageActions } from "@/components/layout/WorkspaceHeaderContext";
+import { listUserPublishedContent } from "@/features/content/infrastructure/postQueries";
 import { listActiveIndustries } from "@/features/discovery/infrastructure/mentorQueries";
-import { ProfileEditorClient } from "@/features/profiles/ui/ProfileEditorClient";
+import { ProfileHubClient } from "@/features/profiles/ui/ProfileHubClient";
 import { getCurrentUser } from "@/lib/auth/session";
 
 export default async function ProfilePage() {
@@ -20,31 +21,39 @@ export default async function ProfilePage() {
   const role = user.roles.includes("mentor") ? "mentor" : "mentee";
   const db = isDatabaseConfigured() ? getDb() : null;
 
-  const [industryList, initialMentor, initialMentee, slots] = await Promise.all([
-    listActiveIndustries(),
-    db && role === "mentor"
-      ? db
-          .select()
-          .from(mentorProfiles)
-          .where(eq(mentorProfiles.userId, user.id))
-          .limit(1)
-          .then((r) => r[0] ?? null)
-      : Promise.resolve(null),
-    db && role === "mentee"
-      ? db
-          .select()
-          .from(menteeProfiles)
-          .where(eq(menteeProfiles.userId, user.id))
-          .limit(1)
-          .then((r) => r[0] ?? null)
-      : Promise.resolve(null),
-    db && role === "mentor"
-      ? db
-          .select()
-          .from(mentorAvailability)
-          .where(eq(mentorAvailability.mentorId, user.id))
-      : Promise.resolve([]),
-  ]);
+  const [industryList, initialMentor, initialMentee, slots, publishedContent] =
+    await Promise.all([
+      listActiveIndustries(),
+      db && role === "mentor"
+        ? db
+            .select()
+            .from(mentorProfiles)
+            .where(eq(mentorProfiles.userId, user.id))
+            .limit(1)
+            .then((r) => r[0] ?? null)
+        : Promise.resolve(null),
+      db && role === "mentee"
+        ? db
+            .select()
+            .from(menteeProfiles)
+            .where(eq(menteeProfiles.userId, user.id))
+            .limit(1)
+            .then((r) => r[0] ?? null)
+        : Promise.resolve(null),
+      db && role === "mentor"
+        ? db
+            .select()
+            .from(mentorAvailability)
+            .where(eq(mentorAvailability.mentorId, user.id))
+        : Promise.resolve([]),
+      db
+        ? listUserPublishedContent(user.id).catch(() => ({
+            posts: [],
+            videos: [],
+            articles: [],
+          }))
+        : Promise.resolve({ posts: [], videos: [], articles: [] }),
+    ]);
 
   return (
     <>
@@ -59,15 +68,16 @@ export default async function ProfilePage() {
         </WorkspacePageActions>
       )}
 
-      <ProfileEditorClient
+      <ProfileHubClient
+        user={user}
         role={role}
         industries={industryList}
         initialMentor={initialMentor}
         initialMentee={initialMentee}
         initialSlots={slots}
-        userFirstName={user.firstName}
-        userLastName={user.lastName}
-        initialProfileImage={user.profileImage}
+        initialPosts={publishedContent.posts}
+        initialVideos={publishedContent.videos}
+        initialArticles={publishedContent.articles}
       />
     </>
   );

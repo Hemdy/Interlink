@@ -1,10 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { formatDateTime } from "@interlink/utils";
-import { Bell, CheckCheck } from "lucide-react";
-import { Badge, Card } from "@/components/ui/Card";
+import { useRouter } from "next/navigation";
+import {
+  Bell,
+  Calendar,
+  ChevronLeft,
+  Heart,
+  MessageCircle,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  Users,
+  Video,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/Feedback";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -20,11 +31,104 @@ interface NotificationItem {
   createdAt: string;
 }
 
+function getDateBucket(iso: string): "Today" | "Yesterday" | "Others" {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Others";
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
+
+  if (date >= startOfToday) return "Today";
+  if (date >= startOfYesterday) return "Yesterday";
+  return "Others";
+}
+
+function formatCompactTimestamp(iso: string, bucket: "Today" | "Yesterday" | "Others"): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  if (bucket === "Others") {
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+  }
+  return date
+    .toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true })
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
+function getNotificationVisual(type: string): {
+  icon: React.ComponentType<{ className?: string }>;
+  containerClass: string;
+} {
+  if (type === "post_liked") {
+    return {
+      icon: Heart,
+      containerClass:
+        "bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-sm",
+    };
+  }
+  if (type === "post_commented" || type === "new_message") {
+    return {
+      icon: MessageCircle,
+      containerClass:
+        "bg-gradient-to-br from-interlink-forest to-emerald-600 text-white shadow-sm",
+    };
+  }
+  if (type === "new_post") {
+    return {
+      icon: Sparkles,
+      containerClass:
+        "bg-gradient-to-br from-amber-400 to-interlink-gold text-white shadow-sm",
+    };
+  }
+  if (type === "session_scheduled" || type === "session_rescheduled") {
+    return {
+      icon: Video,
+      containerClass:
+        "bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-sm",
+    };
+  }
+  if (type.startsWith("session_")) {
+    return {
+      icon: Calendar,
+      containerClass:
+        "bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-sm",
+    };
+  }
+  if (type.startsWith("request_") || type === "info_requested") {
+    return {
+      icon: Users,
+      containerClass:
+        "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-sm",
+    };
+  }
+  if (type.startsWith("goal_") || type === "progress_submitted" || type === "mentor_feedback") {
+    return {
+      icon: Target,
+      containerClass:
+        "bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-sm",
+    };
+  }
+  if (type === "verification_changed") {
+    return {
+      icon: ShieldCheck,
+      containerClass:
+        "bg-gradient-to-br from-interlink-forest to-teal-700 text-white shadow-sm",
+    };
+  }
+  return {
+    icon: Bell,
+    containerClass:
+      "bg-gradient-to-br from-slate-600 to-slate-800 text-white shadow-sm",
+  };
+}
+
 export function NotificationsClient({
   initialNotifications,
 }: {
   initialNotifications: NotificationItem[];
 }) {
+  const router = useRouter();
   const { pushToast } = useToast();
   const [items, setItems] = useState(initialNotifications);
 
@@ -73,68 +177,148 @@ export function NotificationsClient({
     }
   }
 
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<Bell className="h-5 w-5" />}
-        title="You're all caught up"
-        description="Notifications for posts, likes, comments, mentorship requests, sessions, goals, and messages appear here."
-      />
-    );
-  }
+  const groupedSections = useMemo(() => {
+    const buckets: Record<"Today" | "Yesterday" | "Others", NotificationItem[]> = {
+      Today: [],
+      Yesterday: [],
+      Others: [],
+    };
+    for (const item of items) {
+      buckets[getDateBucket(item.createdAt)].push(item);
+    }
+    return (["Today", "Yesterday", "Others"] as const)
+      .filter((key) => buckets[key].length > 0)
+      .map((key) => ({ label: key, rows: buckets[key] }));
+  }, [items]);
 
   const hasUnread = items.some((n) => !n.isRead);
 
   return (
-    <div className="space-y-4">
-      {hasUnread && (
-        <div className="flex justify-end">
-          <Button size="sm" variant="outline" onClick={markAllRead}>
-            <CheckCheck className="h-4 w-4" /> Mark All Read
-          </Button>
-        </div>
-      )}
-
-      {items.map((n) => (
-        <Card
-          key={n.id}
-          className={
-            n.isRead
-              ? "bg-interlink-surface"
-              : "border-interlink-forest/40 bg-interlink-forest/5"
-          }
+    <div className="mx-auto max-w-xl space-y-5">
+      {/* Minimal Header Matching Reference Layout */}
+      <div className="flex items-center justify-between pt-1">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          aria-label="Go back"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-interlink-ink transition-colors hover:bg-interlink-surface focus-ring"
         >
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-interlink-ink">{n.title}</h2>
-                {!n.isRead && <Badge tone="forest">New</Badge>}
-              </div>
-              <p className="mt-1 text-sm text-interlink-muted">{n.message}</p>
-              <p className="mt-1.5 text-xs text-interlink-muted">
-                {formatDateTime(n.createdAt)}
-              </p>
-            </div>
+          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+        </button>
 
-            <div className="flex items-center gap-2">
-              {n.actionUrl && (
-                <Link
-                  href={n.actionUrl}
-                  onClick={() => void markOneRead(n.id)}
-                  className="rounded-full border border-interlink-border bg-interlink-surface px-3.5 py-1.5 text-xs font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
-                >
-                  Open
-                </Link>
-              )}
-              {!n.isRead && (
-                <Button size="sm" variant="ghost" onClick={() => markOneRead(n.id)}>
-                  Mark read
-                </Button>
-              )}
-            </div>
+        <h1 className="font-display text-lg font-semibold tracking-tight text-interlink-ink">
+          Notifications
+        </h1>
+
+        <Link
+          href="/account#cat-notifications"
+          aria-label="Notification preferences"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-interlink-ink transition-colors hover:bg-interlink-surface focus-ring"
+        >
+          <Settings className="h-5 w-5" aria-hidden="true" />
+        </Link>
+      </div>
+
+      {items.length === 0 ? (
+        <EmptyState
+          icon={<Bell className="h-5 w-5" />}
+          title="You're all caught up"
+          description="Notifications for posts, likes, comments, mentorship requests, sessions, goals, and messages appear here."
+        />
+      ) : (
+        <>
+          <div className="space-y-5">
+            {groupedSections.map((section) => (
+              <section key={section.label} className="space-y-2.5">
+                <h2 className="px-1 text-xs font-medium text-interlink-muted">
+                  {section.label}
+                </h2>
+                <div className="space-y-2.5">
+                  {section.rows.map((n) => {
+                    const visual = getNotificationVisual(n.type);
+                    const Icon = visual.icon;
+                    const timeText = formatCompactTimestamp(n.createdAt, section.label);
+
+                    const cardInner = (
+                      <div className="flex items-center gap-3.5">
+                        <div className="relative shrink-0">
+                          <div
+                            className={`flex h-11 w-11 items-center justify-center rounded-full ${visual.containerClass}`}
+                          >
+                            <Icon className="h-5 w-5" aria-hidden="true" />
+                          </div>
+                          {!n.isRead && (
+                            <span
+                              aria-label="Unread"
+                              className="absolute left-0 top-0 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-interlink-surface"
+                            />
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="truncate text-sm font-semibold text-interlink-ink">
+                              {n.title}
+                            </p>
+                            <span className="shrink-0 text-[11px] font-medium text-interlink-muted">
+                              {timeText}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-interlink-muted">
+                            {n.message}
+                          </p>
+                        </div>
+                      </div>
+                    );
+
+                    const baseCardClass = `block w-full rounded-2xl border px-3.5 py-3 text-left transition-colors focus-ring ${
+                      n.isRead
+                        ? "border-interlink-border/60 bg-interlink-surface hover:border-interlink-forest/40"
+                        : "border-interlink-forest/25 bg-interlink-surface shadow-subtle hover:border-interlink-forest/55"
+                    }`;
+
+                    if (n.actionUrl) {
+                      return (
+                        <Link
+                          key={n.id}
+                          href={n.actionUrl}
+                          onClick={() => void markOneRead(n.id)}
+                          className={baseCardClass}
+                        >
+                          {cardInner}
+                        </Link>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onClick={() => void markOneRead(n.id)}
+                        className={baseCardClass}
+                      >
+                        {cardInner}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
-        </Card>
-      ))}
+
+          {hasUnread && (
+            <div className="flex justify-center pt-3">
+              <Button
+                type="button"
+                onClick={markAllRead}
+                className="rounded-2xl px-8 py-3 text-sm font-semibold shadow-card"
+              >
+                Mark all as read
+              </Button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

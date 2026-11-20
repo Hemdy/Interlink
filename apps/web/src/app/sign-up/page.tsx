@@ -3,18 +3,15 @@
 import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Lock, LogIn, Mail, User } from "lucide-react";
-import { ErrorAlert, LoadingSpinner } from "@/components/ui/Feedback";
+import { Lock, Mail, User } from "lucide-react";
+import { ErrorAlert } from "@/components/ui/Feedback";
 import { useToast } from "@/components/ui/ToastProvider";
 import { postJson } from "@/lib/api/client";
 import {
-  AuthBottomCard,
-  AuthDivider,
   AuthPillInput,
   AuthShell,
   AuthSubmitButton,
 } from "@/features/auth/ui/AuthShell";
-import { GoogleAuthButton } from "@/features/auth/ui/GoogleAuthButton";
 import { resetClientSessionAndNavigate } from "@/features/auth/ui/SessionSyncGuard";
 import { useNavigationMode } from "@/features/pwa/useNavigationMode";
 
@@ -68,7 +65,6 @@ function SignUpInner() {
           password,
           confirmPassword,
           role,
-          acceptPolicies: true,
         },
         "Unable to register.",
       );
@@ -96,147 +92,123 @@ function SignUpInner() {
       titleLeading="Create"
       titleHighlight="Account"
       subtitle="Start your mentorship journey as a mentee or mentor."
-      maxWidthClass="max-w-[460px]"
     >
-      {/* Role Selector Pill */}
-      <div className="animate-auth-group mt-6 grid grid-cols-2 gap-1.5 rounded-full border border-interlink-border/90 bg-interlink-surface/85 p-1 shadow-subtle backdrop-blur-sm">
-        <button
-          type="button"
-          onClick={() => setRole("mentee")}
-          className={`rounded-full py-2 text-xs font-semibold transition-all ${
-            role === "mentee"
-              ? "bg-gradient-to-r from-interlink-forest to-interlink-forest-deep text-white shadow-sm"
-              : "text-interlink-muted hover:text-interlink-ink"
-          }`}
-        >
-          Join as Mentee
-        </button>
-        <button
-          type="button"
-          onClick={() => setRole("mentor")}
-          className={`rounded-full py-2 text-xs font-semibold transition-all ${
-            role === "mentor"
-              ? "bg-gradient-to-r from-interlink-forest to-interlink-forest-deep text-white shadow-sm"
-              : "text-interlink-muted hover:text-interlink-ink"
-          }`}
-        >
-          Join as Mentor
-        </button>
+      {/* Form Group matching sign-in layout, pill inputs, and sequential animations */}
+      <div className="mt-12">
+        {error && (
+          <div className="mb-5">
+            <ErrorAlert message={error} />
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="animate-auth-group grid grid-cols-2 gap-1.5 rounded-full border border-interlink-border/90 bg-interlink-surface/85 p-1 shadow-subtle backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={() => setRole("mentee")}
+              className={`rounded-full py-2 text-xs font-semibold transition-all ${
+                role === "mentee"
+                  ? "bg-gradient-to-r from-interlink-forest to-interlink-forest-deep text-white shadow-sm"
+                  : "text-interlink-muted hover:text-interlink-ink"
+              }`}
+            >
+              Join as Mentee
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole("mentor")}
+              className={`rounded-full py-2 text-xs font-semibold transition-all ${
+                role === "mentor"
+                  ? "bg-gradient-to-r from-interlink-forest to-interlink-forest-deep text-white shadow-sm"
+                  : "text-interlink-muted hover:text-interlink-ink"
+              }`}
+            >
+              Join as Mentor
+            </button>
+          </div>
+
+          <div className="animate-auth-group-delay-1 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <AuthPillInput
+              icon={User}
+              name="firstName"
+              placeholder="First Name"
+              aria-label="First Name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+              autoComplete="given-name"
+            />
+            <AuthPillInput
+              icon={User}
+              name="lastName"
+              placeholder="Last Name"
+              aria-label="Last Name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+              autoComplete="family-name"
+            />
+          </div>
+
+          <div className="animate-auth-group-delay-2 space-y-3.5">
+            <AuthPillInput
+              icon={Mail}
+              name="email"
+              type="email"
+              placeholder="E-mail"
+              aria-label="E-mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+
+            <AuthPillInput
+              icon={Lock}
+              showPasswordToggle
+              name="password"
+              placeholder="Create Password"
+              aria-label="Create Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+
+            <AuthPillInput
+              icon={Lock}
+              showPasswordToggle
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              aria-label="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+          </div>
+
+          <div className="animate-auth-group-delay-3 pt-2">
+            <AuthSubmitButton
+              loading={loading}
+              label="Sign Up"
+              loadingLabel="Creating account..."
+            />
+          </div>
+        </form>
+
+        <p className="animate-auth-group-delay-3 mt-7 text-center text-xs text-interlink-muted">
+          Already have an account?{" "}
+          <Link
+            href="/sign-in"
+            className="font-semibold text-interlink-forest transition-colors hover:underline"
+          >
+            Sign in
+          </Link>
+        </p>
       </div>
-
-      {error && (
-        <div className="mt-4">
-          <ErrorAlert message={error} />
-        </div>
-      )}
-
-      <div className="animate-auth-group mt-4">
-        <GoogleAuthButton
-          variant="pill"
-          role={role}
-          label={`Sign up as ${role === "mentor" ? "Mentor" : "Mentee"} with Google`}
-          onSuccess={() => {
-            resetClientSessionAndNavigate("/dashboard");
-          }}
-        />
-      </div>
-
-      <div className="animate-auth-group-delay-1">
-        <AuthDivider label="or register with email" />
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="animate-auth-group-delay-1 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <AuthPillInput
-            icon={User}
-            name="firstName"
-            placeholder="First Name"
-            aria-label="First Name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            required
-            autoComplete="given-name"
-          />
-          <AuthPillInput
-            icon={User}
-            name="lastName"
-            placeholder="Last Name"
-            aria-label="Last Name"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            required
-            autoComplete="family-name"
-          />
-        </div>
-
-        <div className="animate-auth-group-delay-2 space-y-3">
-          <AuthPillInput
-            icon={Mail}
-            name="email"
-            type="email"
-            placeholder="E-mail"
-            aria-label="E-mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
-
-          <AuthPillInput
-            icon={Lock}
-            showPasswordToggle
-            name="password"
-            placeholder="Create Password"
-            aria-label="Create Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-
-          <AuthPillInput
-            icon={Lock}
-            showPasswordToggle
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            aria-label="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-        </div>
-
-        <div className="animate-auth-group-delay-3 pt-1">
-          <AuthSubmitButton loading={loading} label="Sign Up" loadingLabel="Creating account..." />
-        </div>
-      </form>
-
-      <p className="animate-auth-group-delay-3 mt-5 text-center text-[11px] leading-relaxed text-interlink-muted">
-        By clicking Sign Up, you agree to our{" "}
-        <Link href="/legal/terms" className="font-medium text-interlink-forest hover:underline">
-          Terms and Condition
-        </Link>
-        . Learn how we process your data in our{" "}
-        <Link href="/legal/privacy" className="font-medium text-interlink-forest hover:underline">
-          Privacy Policy
-        </Link>{" "}
-        and{" "}
-        <Link href="/legal/cookies" className="font-medium text-interlink-forest hover:underline">
-          Cookie Policy
-        </Link>
-        .
-      </p>
-
-      <AuthBottomCard
-        icon={LogIn}
-        title="Already have an account?"
-        description="Sign in to access your mentorship workspace"
-        ctaLabel="Sign In"
-        ctaHref="/sign-in"
-      />
     </AuthShell>
   );
 }
@@ -247,7 +219,7 @@ export default function SignUpPage() {
       fallback={
         <div className="dark [color-scheme:dark]">
           <div className="flex min-h-screen items-center justify-center bg-interlink-canvas">
-            <LoadingSpinner />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-interlink-forest border-t-transparent" />
           </div>
         </div>
       }
