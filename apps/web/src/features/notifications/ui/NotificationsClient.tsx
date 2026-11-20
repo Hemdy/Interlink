@@ -78,7 +78,7 @@ export function NotificationsClient({
       <EmptyState
         icon={<Bell className="h-5 w-5" />}
         title="You're all caught up"
-        description="Notifications for mentorship requests, sessions, goals, messages, and verification updates appear here."
+        description="Notifications for posts, likes, comments, mentorship requests, sessions, goals, and messages appear here."
       />
     );
   }

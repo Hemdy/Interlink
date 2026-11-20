@@ -1,5 +1,5 @@
-// Interlink Dashboard Service Worker - v2.0.0
-const CACHE_NAME = "interlink-dashboard-v2";
+// Interlink Dashboard Service Worker - v3.0.0
+const CACHE_NAME = "interlink-dashboard-v3";
 const OFFLINE_URL = "/offline.html";
 
 // Static assets to precache on installation
@@ -47,12 +47,10 @@ self.addEventListener("fetch", (event) => {
 
   // Ignore cross-origin and browser extension requests
   if (url.origin !== self.location.origin) {
-    // Optionally allow Pixabay images or external CDN fonts
     return;
   }
 
   // 1. API routes: STRICTLY NETWORK-ONLY
-  // Never cache authenticated API endpoints or mutation routes
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
       fetch(request).catch(() => {
@@ -73,7 +71,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 1b. Never cache Next.js App Router RSC payloads or prefetches (may carry per-user session state)
+  // 1b. Never cache Next.js App Router RSC payloads or prefetches
   if (
     url.searchParams.has("_rsc") ||
     request.headers.get("RSC") === "1" ||
@@ -84,8 +82,6 @@ self.addEventListener("fetch", (event) => {
   }
 
   // 2. HTML Navigation requests (pages): NETWORK-FIRST
-  // Critical for security: Server-side session validation must run on every request.
-  // Never serve cached authenticated HTML from previous sessions.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request).catch(async () => {
@@ -130,6 +126,75 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+// Web Push Notification Handler (works when PWA is backgrounded or closed)
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  let payload = {
+    title: "Interlink",
+    body: "You have a new update on Interlink.",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    tag: "interlink-notification",
+    url: "/dashboard",
+  };
+
+  try {
+    const parsed = event.data.json();
+    if (parsed && typeof parsed === "object") {
+      payload = { ...payload, ...parsed };
+    }
+  } catch {
+    const text = event.data.text();
+    if (text) payload.body = text;
+  }
+
+  const options = {
+    body: payload.body,
+    icon: payload.icon || "/icon-192.png",
+    badge: payload.badge || "/icon-192.png",
+    tag: payload.tag || "interlink-notification",
+    renotify: Boolean(payload.tag),
+    data: {
+      url: payload.url || "/dashboard",
+      postId: payload.postId || null,
+      commentId: payload.commentId || null,
+    },
+  };
+
+  event.waitUntil(self.registration.showNotification(payload.title || "Interlink", options));
+});
+
+// Notification Click Handler: focus existing Interlink tab or open target post/comment URL
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const rawUrl = event.notification.data?.url || "/dashboard";
+  const targetUrl = new URL(rawUrl, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then(async (clientList) => {
+        for (const client of clientList) {
+          if (client.url.startsWith(self.location.origin) && "focus" in client) {
+            await client.focus();
+            if ("navigate" in client) {
+              try {
+                await client.navigate(targetUrl);
+              } catch {
+                // Keep focused if navigation is blocked
+              }
+            }
+            return;
+          }
+        }
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(targetUrl);
+        }
+      })
+  );
+});
+
 // Purge cache when user logs out or upon demand
 self.addEventListener("message", (event) => {
   if (!event.data) return;
@@ -142,11 +207,9 @@ self.addEventListener("message", (event) => {
     caches.keys().then((names) => {
       return Promise.all(
         names.map((name) => {
-          // Keep precache assets, delete any runtime caches
           return caches.delete(name);
         })
       ).then(() => {
-        // Re-precache offline page and icons
         return caches
           .open(CACHE_NAME)
           .then((cache) => cache.addAll(PRECACHE_ASSETS));

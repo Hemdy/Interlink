@@ -56,6 +56,7 @@ export function MentorDirectoryClient({
   const [availability, setAvailability] = useState("");
   const [minExperience, setMinExperience] = useState("");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [pricingFilter, setPricingFilter] = useState<"all" | "free" | "paid">("all");
   const [sort, setSort] = useState<"relevant" | "experience" | "newest">("relevant");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
@@ -69,9 +70,10 @@ export function MentorDirectoryClient({
     if (availability) count++;
     if (minExperience) count++;
     if (verifiedOnly) count++;
+    if (pricingFilter !== "all") count++;
     if (sort !== "relevant") count++;
     return count;
-  }, [industryId, sessionPreference, availability, minExperience, verifiedOnly, sort]);
+  }, [industryId, sessionPreference, availability, minExperience, verifiedOnly, pricingFilter, sort]);
 
   const comparedMentors = useMemo(
     () => mentors.filter((m) => compareIds.includes(m.userId)),
@@ -83,6 +85,7 @@ export function MentorDirectoryClient({
     industryId?: string;
     sessionPreference?: string;
     availability?: string;
+    pricing?: "all" | "free" | "paid";
     minExperience?: string;
     verifiedOnly?: boolean;
     sort?: "relevant" | "experience" | "newest";
@@ -98,6 +101,8 @@ export function MentorDirectoryClient({
           : sessionPreference;
       const activeAvailability =
         overrides?.availability !== undefined ? overrides.availability : availability;
+      const activePricing =
+        overrides?.pricing !== undefined ? overrides.pricing : pricingFilter;
       const activeMinExperience =
         overrides?.minExperience !== undefined ? overrides.minExperience : minExperience;
       const activeVerifiedOnly =
@@ -109,6 +114,7 @@ export function MentorDirectoryClient({
       if (activeIndustryId) params.set("industryId", activeIndustryId);
       if (activeSessionPreference) params.set("sessionPreference", activeSessionPreference);
       if (activeAvailability) params.set("availability", activeAvailability);
+      if (activePricing !== "all") params.set("pricing", activePricing);
       if (activeMinExperience) params.set("minExperience", activeMinExperience);
       if (activeVerifiedOnly) params.set("verifiedOnly", "true");
       params.set("sort", activeSort);
@@ -156,6 +162,11 @@ export function MentorDirectoryClient({
     void executeFilter({ verifiedOnly: val });
   }
 
+  function handlePricingChange(val: "all" | "free" | "paid") {
+    setPricingFilter(val);
+    void executeFilter({ pricing: val });
+  }
+
   function handleSortChange(val: "relevant" | "experience" | "newest") {
     setSort(val);
     void executeFilter({ sort: val });
@@ -166,6 +177,7 @@ export function MentorDirectoryClient({
     setIndustryId("");
     setSessionPreference("");
     setAvailability("");
+    setPricingFilter("all");
     setMinExperience("");
     setVerifiedOnly(false);
     setSort("relevant");
@@ -174,6 +186,7 @@ export function MentorDirectoryClient({
       industryId: "",
       sessionPreference: "",
       availability: "",
+      pricing: "all",
       minExperience: "",
       verifiedOnly: false,
       sort: "relevant",
@@ -504,6 +517,28 @@ export function MentorDirectoryClient({
               <ShieldCheck className="h-3.5 w-3.5" />
               Verified Only
             </button>
+            <button
+              type="button"
+              onClick={() => handlePricingChange(pricingFilter === "free" ? "all" : "free")}
+              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                pricingFilter === "free"
+                  ? "border-interlink-forest bg-interlink-forest/15 text-interlink-forest"
+                  : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+              }`}
+            >
+              Free Available
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePricingChange(pricingFilter === "paid" ? "all" : "paid")}
+              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                pricingFilter === "paid"
+                  ? "border-interlink-forest bg-interlink-forest/15 text-interlink-forest"
+                  : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+              }`}
+            >
+              Paid Packages
+            </button>
             {industries.slice(0, 8).map((ind) => (
               <button
                 key={ind.id}
@@ -712,10 +747,26 @@ export function MentorDirectoryClient({
 
                 {/* Minimal Top Controls */}
                 <div className="relative z-10 flex items-center justify-between gap-2 p-3.5">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <span className="inline-flex items-center gap-1 rounded-full bg-black/35 px-2.5 py-1 text-[11px] font-semibold text-white/95 backdrop-blur-md">
                       <Award className="h-3.5 w-3.5 shrink-0 text-[#e5b869]" aria-hidden="true" />
                       <span>{mentor.yearsOfExperience}+ yrs</span>
+                    </span>
+
+                    <span className="rounded-full bg-black/35 px-2.5 py-1 text-[11px] font-semibold text-white/95 backdrop-blur-md">
+                      {(() => {
+                        if (mentor.pricingMode === "free") return "Free";
+                        const minRate = [
+                          mentor.hourlyRateNgn,
+                          mentor.sessionRateNgn,
+                          mentor.monthlyRateNgn,
+                        ].filter((r): r is number => typeof r === "number" && r > 0);
+                        const lowest = minRate.length > 0 ? Math.min(...minRate) : null;
+                        if (mentor.pricingMode === "hybrid" && lowest) {
+                          return `Free · ₦${lowest.toLocaleString("en-NG")}+`;
+                        }
+                        return lowest ? `₦${lowest.toLocaleString("en-NG")}+` : "Paid";
+                      })()}
                     </span>
 
                     {typeof mentor.matchScore === "number" && mentor.matchScore > 0 && (

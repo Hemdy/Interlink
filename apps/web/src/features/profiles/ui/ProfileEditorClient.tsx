@@ -2,10 +2,12 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { calculateMentorshipSplit, type MentorshipPricingMode } from "@interlink/types";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input, Select, Textarea } from "@/components/ui/Input";
+import { MediaDropzone } from "@/components/ui/media/MediaDropzone";
 import { useToast } from "@/components/ui/ToastProvider";
 import { AvatarUploadCard } from "@/features/profiles/ui/AvatarUploadCard";
 
@@ -47,6 +49,11 @@ export function ProfileEditorClient({
     sessionPreference: "online" | "in_person" | "hybrid";
     availabilityStatus: "accepting" | "paused" | "full";
     maximumMentees: number;
+    pricingMode?: MentorshipPricingMode;
+    offersFreeMentorship?: boolean;
+    hourlyRateNgn?: number | null;
+    sessionRateNgn?: number | null;
+    monthlyRateNgn?: number | null;
     visibility: "public" | "members_only" | "private";
     verificationStatus: string;
     profileCompletion: number;
@@ -80,7 +87,6 @@ export function ProfileEditorClient({
   const router = useRouter();
   const { pushToast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [uploadingDoc, setUploadingDoc] = useState(false);
   const [uploadedDocKey, setUploadedDocKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,6 +126,18 @@ export function ProfileEditorClient({
   );
   const [maximumMentees, setMaximumMentees] = useState(
     String(initialMentor?.maximumMentees ?? 3),
+  );
+  const [pricingMode, setPricingMode] = useState<MentorshipPricingMode>(
+    initialMentor?.pricingMode ?? "free",
+  );
+  const [hourlyRateNgn, setHourlyRateNgn] = useState(
+    initialMentor?.hourlyRateNgn ? String(initialMentor.hourlyRateNgn) : "",
+  );
+  const [sessionRateNgn, setSessionRateNgn] = useState(
+    initialMentor?.sessionRateNgn ? String(initialMentor.sessionRateNgn) : "",
+  );
+  const [monthlyRateNgn, setMonthlyRateNgn] = useState(
+    initialMentor?.monthlyRateNgn ? String(initialMentor.monthlyRateNgn) : "",
   );
   const [visibility, setVisibility] = useState<"public" | "members_only" | "private">(
     initialMentor?.visibility ?? initialMentee?.visibility ?? "public",
@@ -167,35 +185,6 @@ export function ProfileEditorClient({
       .filter(Boolean);
   }
 
-  async function handleVerificationDocUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingDoc(true);
-    setError(null);
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("purpose", "verification");
-      const res = await fetch("/api/v1/storage/upload", {
-        method: "POST",
-        body: form,
-      });
-      const json = (await res.json()) as {
-        data?: { key: string };
-        error?: { message: string };
-      };
-      if (!res.ok) {
-        setError(json.error?.message ?? "Unable to upload verification document.");
-        return;
-      }
-      setUploadedDocKey(json.data?.key ?? null);
-      pushToast({ kind: "success", title: "Verification document uploaded for review" });
-      router.refresh();
-    } finally {
-      setUploadingDoc(false);
-    }
-  }
-
   async function saveProfile(e: React.FormEvent, markComplete = true) {
     e.preventDefault();
     setError(null);
@@ -222,6 +211,20 @@ export function ProfileEditorClient({
             sessionPreference,
             availabilityStatus,
             maximumMentees: Number.parseInt(maximumMentees, 10) || 3,
+            pricingMode,
+            offersFreeMentorship: pricingMode !== "paid",
+            hourlyRateNgn:
+              pricingMode === "free" || !hourlyRateNgn.trim()
+                ? null
+                : Number.parseInt(hourlyRateNgn, 10) || null,
+            sessionRateNgn:
+              pricingMode === "free" || !sessionRateNgn.trim()
+                ? null
+                : Number.parseInt(sessionRateNgn, 10) || null,
+            monthlyRateNgn:
+              pricingMode === "free" || !monthlyRateNgn.trim()
+                ? null
+                : Number.parseInt(monthlyRateNgn, 10) || null,
             visibility,
             onboardingCompleted: markComplete,
             verificationNotes: verificationNotes || null,
@@ -658,26 +661,29 @@ export function ProfileEditorClient({
                   <p className="text-xs font-semibold text-interlink-ink">
                     Verification Credential (Optional)
                   </p>
-                  <p className="mt-0.5 text-[11px] text-interlink-muted">
-                    Upload a supporting certificate or ID for private administrator review.
+                  <p className="mb-3 mt-0.5 text-[11px] text-interlink-muted">
+                    Drag &amp; drop a supporting certificate, PDF document, or credential photo for
+                    private administrator review.
                   </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <label className="inline-block cursor-pointer rounded-full border border-interlink-border bg-interlink-app-bg px-4 py-2 text-xs font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest">
-                      {uploadingDoc ? "Uploading..." : "Upload Document"}
-                      <input
-                        type="file"
-                        accept="application/pdf,image/jpeg,image/png,image/webp"
-                        onChange={handleVerificationDocUpload}
-                        disabled={uploadingDoc}
-                        className="sr-only"
-                      />
-                    </label>
-                    {uploadedDocKey && (
-                      <span className="text-xs font-medium text-interlink-forest">
-                        Uploaded: {uploadedDocKey}
-                      </span>
-                    )}
-                  </div>
+                  <MediaDropzone
+                    acceptKind="image_or_pdf"
+                    purpose="verification"
+                    cropAspect="free"
+                    onUploaded={(result) => {
+                      setUploadedDocKey(result.key);
+                      pushToast({
+                        kind: "success",
+                        title: "Verification document uploaded for review",
+                      });
+                      router.refresh();
+                    }}
+                    onRemoved={() => setUploadedDocKey(null)}
+                  />
+                  {uploadedDocKey && (
+                    <p className="mt-2 text-[11px] font-medium text-interlink-forest">
+                      Submitted for review ({uploadedDocKey.split("/").pop()})
+                    </p>
+                  )}
                 </div>
 
                 {isOnboarding && (
@@ -692,6 +698,122 @@ export function ProfileEditorClient({
             )}
           </div>
         </Card>
+
+        {/* Section 5 (Mentors): Free & Paid Marketplace Pricing */}
+        {role === "mentor" && (
+          <Card id="profile-pricing">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h2 className="font-display text-base font-semibold text-interlink-ink">
+                  Mentorship Pricing &amp; Packages
+                </h2>
+                <p className="mt-0.5 text-xs text-interlink-muted">
+                  Offer free mentorship, paid packages, or both. Completed paid bookings split 85% to
+                  you and 15% Interlink platform fee.
+                </p>
+              </div>
+              <span className="rounded-full bg-interlink-forest/10 px-3 py-1 text-[11px] font-semibold text-interlink-forest">
+                85% Mentor &middot; 15% Platform
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+              {(
+                [
+                  {
+                    value: "free",
+                    label: "Free Mentorship Only",
+                    desc: "Open access at ₦0",
+                  },
+                  {
+                    value: "hybrid",
+                    label: "Free + Paid Options",
+                    desc: "Keep free seats & offer paid packages",
+                  },
+                  {
+                    value: "paid",
+                    label: "Paid Packages Only",
+                    desc: "Hourly, per-session, or monthly",
+                  },
+                ] as const
+              ).map((option) => {
+                const active = pricingMode === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setPricingMode(option.value)}
+                    className={`rounded-2xl border p-3.5 text-left transition-all ${
+                      active
+                        ? "border-interlink-forest bg-interlink-forest/[0.08] ring-1 ring-interlink-forest"
+                        : "border-interlink-border bg-interlink-app-bg/50 hover:border-interlink-forest/50"
+                    }`}
+                  >
+                    <p className="text-xs font-semibold text-interlink-ink">{option.label}</p>
+                    <p className="mt-0.5 text-[11px] text-interlink-muted">{option.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {pricingMode !== "free" && (
+              <div className="mt-5 space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <Input
+                    label="Hourly Rate (₦ NGN)"
+                    type="number"
+                    min={1000}
+                    step={500}
+                    placeholder="e.g., 10000"
+                    value={hourlyRateNgn}
+                    onChange={(e) => setHourlyRateNgn(e.target.value)}
+                  />
+                  <Input
+                    label="Per-Session Rate (₦ NGN)"
+                    type="number"
+                    min={1000}
+                    step={500}
+                    placeholder="e.g., 15000"
+                    value={sessionRateNgn}
+                    onChange={(e) => setSessionRateNgn(e.target.value)}
+                  />
+                  <Input
+                    label="Monthly Package (₦ NGN)"
+                    type="number"
+                    min={1000}
+                    step={1000}
+                    placeholder="e.g., 45000"
+                    value={monthlyRateNgn}
+                    onChange={(e) => setMonthlyRateNgn(e.target.value)}
+                  />
+                </div>
+
+                {(() => {
+                  const previewGross =
+                    Number.parseInt(sessionRateNgn || hourlyRateNgn || monthlyRateNgn || "0", 10) ||
+                    0;
+                  if (previewGross < 1000) return null;
+                  const split = calculateMentorshipSplit(previewGross);
+                  return (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-interlink-border bg-interlink-app-bg/70 px-4 py-3 text-xs">
+                      <span className="text-interlink-muted">
+                        Example payout on ₦{split.grossAmountNgn.toLocaleString("en-NG")} booking:
+                      </span>
+                      <div className="flex flex-wrap items-center gap-4 font-semibold">
+                        <span className="text-interlink-forest">
+                          You receive: ₦{split.mentorPayoutNgn.toLocaleString("en-NG")} (85%)
+                        </span>
+                        <span className="text-interlink-muted">
+                          Interlink fee: ₦{split.platformFeeNgn.toLocaleString("en-NG")} (15%)
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* Action Row */}
         <div className="flex flex-wrap items-center justify-end gap-3 pt-1">

@@ -21,11 +21,32 @@ interface RequestItem {
   expectedOutcome: string;
   preferredDuration: string;
   sessionPreference: string;
+  billingCadence?: string;
+  agreedAmountNgn?: number;
+  selectedSlotSummary?: string | null;
   status: string;
   mentorNotes: string | null;
   createdAt: string;
   mentee: { id: string; firstName: string; lastName: string } | null;
   mentor: { id: string; firstName: string; lastName: string } | null;
+}
+
+interface TransactionItem {
+  id: string;
+  requestId: string;
+  mentorId: string;
+  menteeId: string;
+  billingCadence: string;
+  grossAmountNgn: number;
+  platformFeeNgn: number;
+  mentorPayoutNgn: number;
+  provider: string;
+  providerReference: string | null;
+  status: string;
+  createdAt: string;
+  settledAt: string | null;
+  mentor: { id: string; firstName: string; lastName: string } | null;
+  mentee: { id: string; firstName: string; lastName: string } | null;
 }
 
 function daysAgo(dateIso: string): string {
@@ -37,9 +58,11 @@ function daysAgo(dateIso: string): string {
 
 export function RequestsClient({
   initialRequests,
+  initialTransactions = [],
   currentUserId,
 }: {
   initialRequests: RequestItem[];
+  initialTransactions?: TransactionItem[];
   currentUserId: string;
 }) {
   const router = useRouter();
@@ -48,6 +71,7 @@ export function RequestsClient({
     "Hello! I'm excited to be your mentor. Looking forward to supporting you on your journey!";
 
   const [requests, setRequests] = useState(initialRequests);
+  const [transactions, setTransactions] = useState(initialTransactions);
   const [actionModal, setActionModal] = useState<{
     requestId: string;
     action: "reject" | "request-info";
@@ -161,6 +185,57 @@ export function RequestsClient({
     return "forest";
   };
 
+  async function handleTransactionAction(
+    txId: string,
+    action: "mark_completed" | "cancel",
+  ) {
+    setBusyId(txId);
+    try {
+      const res = await fetch(`/api/v1/mentorships/transactions?id=${txId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const json = (await res.json()) as {
+        data?: { transaction?: TransactionItem };
+        error?: { message: string };
+      };
+      if (!res.ok) {
+        pushToast({ kind: "error", title: json.error?.message ?? "Unable to update booking" });
+        return;
+      }
+      setTransactions((prev) =>
+        prev.map((t) =>
+          t.id === txId
+            ? {
+                ...t,
+                status: action === "cancel" ? "cancelled" : "completed",
+                settledAt: action === "cancel" ? null : new Date().toISOString(),
+              }
+            : t,
+        ),
+      );
+      pushToast({
+        kind: "success",
+        title: action === "cancel" ? "Checkout intent cancelled" : "Paid mentorship confirmed",
+        description:
+          action === "mark_completed"
+            ? "85% mentor payout & 15% Interlink commission recorded in ledger."
+            : undefined,
+      });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const mentorLedgerRows = transactions.filter((t) => t.mentorId === currentUserId);
+  const settledMentorPayout = mentorLedgerRows
+    .filter((t) => t.status === "completed")
+    .reduce((sum, t) => sum + t.mentorPayoutNgn, 0);
+  const settledPlatformFee = mentorLedgerRows
+    .filter((t) => t.status === "completed")
+    .reduce((sum, t) => sum + t.platformFeeNgn, 0);
+
   return (
     <div className="space-y-10">
       {/* Incoming Mentor Queue */}
@@ -190,10 +265,17 @@ export function RequestsClient({
                       <Badge tone={statusTone(req.status)}>
                         {req.status.replace(/_/g, " ")}
                       </Badge>
+                      {typeof req.agreedAmountNgn === "number" && req.agreedAmountNgn > 0 && (
+                        <Badge tone="gold">
+                          ₦{req.agreedAmountNgn.toLocaleString("en-NG")} &middot;{" "}
+                          {(req.billingCadence ?? "paid").replace("_", " ")}
+                        </Badge>
+                      )}
                     </div>
                     <p className="mt-1 inline-flex items-center gap-1 text-xs text-interlink-muted">
                       <Clock className="h-3.5 w-3.5" /> Submitted {daysAgo(req.createdAt)} &middot;{" "}
                       {req.preferredDuration} &middot; {req.sessionPreference}
+                      {req.selectedSlotSummary ? ` · Slot: ${req.selectedSlotSummary}` : ""}
                     </p>
                   </div>
 
@@ -291,6 +373,11 @@ export function RequestsClient({
                       <Badge tone={statusTone(req.status)}>
                         {req.status.replace(/_/g, " ")}
                       </Badge>
+                      {typeof req.agreedAmountNgn === "number" && req.agreedAmountNgn > 0 && (
+                        <Badge tone="gold">
+                          ₦{req.agreedAmountNgn.toLocaleString("en-NG")}
+                        </Badge>
+                      )}
                     </div>
                     <p className="mt-1 text-xs text-interlink-muted">
                       Sent {daysAgo(req.createdAt)} &middot; Objective: {req.careerObjective}
@@ -319,6 +406,95 @@ export function RequestsClient({
           </div>
         )}
       </section>
+
+      {/* Paid Mentorship Bookings & 85% / 15% Commission Ledger */}
+      {transactions.length > 0 && (
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="font-display text-lg font-semibold text-interlink-ink">
+                Paid Mentorship Bookings &amp; Ledger ({transactions.length})
+              </h2>
+              <p className="text-xs text-interlink-muted">
+                Paystack-ready settlement split: 85% mentor payout &middot; 15% Interlink commission.
+              </p>
+            </div>
+            {mentorLedgerRows.length > 0 && (
+              <div className="flex flex-wrap gap-2 text-xs">
+                <Badge tone="forest">
+                  Mentor Payout (85%): ₦{settledMentorPayout.toLocaleString("en-NG")}
+                </Badge>
+                <Badge tone="neutral">
+                  Platform Fee (15%): ₦{settledPlatformFee.toLocaleString("en-NG")}
+                </Badge>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {transactions.map((tx) => {
+              const isMentee = tx.menteeId === currentUserId;
+              const partnerName = isMentee
+                ? tx.mentor
+                  ? `${tx.mentor.firstName} ${tx.mentor.lastName}`
+                  : "Mentor"
+                : tx.mentee
+                  ? `${tx.mentee.firstName} ${tx.mentee.lastName}`
+                  : "Mentee";
+              return (
+                <Card key={tx.id}>
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-interlink-ink">
+                          {isMentee ? `Booking with ${partnerName}` : `Earnings from ${partnerName}`}
+                        </span>
+                        <Badge
+                          tone={
+                            tx.status === "completed"
+                              ? "success"
+                              : tx.status === "cancelled"
+                                ? "danger"
+                                : "gold"
+                          }
+                        >
+                          {tx.status.replace(/_/g, " ")}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-interlink-muted">
+                        Gross: ₦{tx.grossAmountNgn.toLocaleString("en-NG")} &middot; Mentor (85%): ₦
+                        {tx.mentorPayoutNgn.toLocaleString("en-NG")} &middot; Interlink (15%): ₦
+                        {tx.platformFeeNgn.toLocaleString("en-NG")}
+                        {tx.providerReference ? ` · Ref: ${tx.providerReference}` : ""}
+                      </p>
+                    </div>
+
+                    {tx.status === "pending_checkout" && (
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          loading={busyId === tx.id}
+                          onClick={() => handleTransactionAction(tx.id, "mark_completed")}
+                        >
+                          Confirm Payment Settlement
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          loading={busyId === tx.id}
+                          onClick={() => handleTransactionAction(tx.id, "cancel")}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <Modal
         open={Boolean(actionModal)}

@@ -5,6 +5,7 @@ import {
   mentorProfiles,
   mentorshipRequestHistory,
   mentorshipRequests,
+  mentorshipTransactions,
   mentorships,
   messages,
 } from "@interlink/database";
@@ -104,6 +105,11 @@ export async function PATCH(
   let conversationId: string | null = null;
 
   if (mentorshipRecord) {
+    await db
+      .update(mentorshipTransactions)
+      .set({ mentorshipId: mentorshipRecord.id, updatedAt: now })
+      .where(eq(mentorshipTransactions.requestId, reqRecord.id));
+
     const [existingConv] = await db
       .select({ id: conversations.id })
       .from(conversations)

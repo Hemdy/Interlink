@@ -30,6 +30,7 @@ loadRootEnvFile(".env.local");
 loadRootEnvFile(".env");
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["web-push"],
   transpilePackages: [
     "@interlink/database",
     "@interlink/types",

@@ -22,6 +22,7 @@ export interface MentorDirectoryFilters {
   language?: string;
   sessionPreference?: string;
   availability?: string;
+  pricing?: "all" | "free" | "paid";
   minExperience?: number;
   verifiedOnly?: boolean;
   sort?: "relevant" | "experience" | "newest";
@@ -52,6 +53,11 @@ const getCachedPublicMentorCatalog = unstable_cache(
           verificationStatus: mentorProfiles.verificationStatus,
           sessionPreference: mentorProfiles.sessionPreference,
           maximumMentees: mentorProfiles.maximumMentees,
+          pricingMode: mentorProfiles.pricingMode,
+          offersFreeMentorship: mentorProfiles.offersFreeMentorship,
+          hourlyRateNgn: mentorProfiles.hourlyRateNgn,
+          sessionRateNgn: mentorProfiles.sessionRateNgn,
+          monthlyRateNgn: mentorProfiles.monthlyRateNgn,
           profileCompletion: mentorProfiles.profileCompletion,
           location: mentorProfiles.location,
           visibility: mentorProfiles.visibility,
@@ -153,6 +159,12 @@ export async function listPublicMentors(filters: MentorDirectoryFilters = {}): P
         return false;
       }
       if (filters.verifiedOnly && row.verificationStatus !== "verified") return false;
+      if (filters.pricing === "free" && !row.offersFreeMentorship && row.pricingMode !== "free") {
+        return false;
+      }
+      if (filters.pricing === "paid" && row.pricingMode === "free") {
+        return false;
+      }
       if (filters.language) {
         const langLower = filters.language.toLowerCase();
         if (!row.languages.some((l) => l.toLowerCase().includes(langLower))) return false;
@@ -196,6 +208,11 @@ export async function listPublicMentors(filters: MentorDirectoryFilters = {}): P
       sessionPreference: row.sessionPreference,
       maximumMentees: row.maximumMentees,
       activeMenteeCount: activeCountMap.get(row.userId) ?? 0,
+      pricingMode: row.pricingMode,
+      offersFreeMentorship: row.offersFreeMentorship,
+      hourlyRateNgn: row.hourlyRateNgn,
+      sessionRateNgn: row.sessionRateNgn,
+      monthlyRateNgn: row.monthlyRateNgn,
       profileCompletion: row.profileCompletion,
       location: row.location,
       updatedAt: row.updatedAt,
@@ -323,6 +340,11 @@ export async function getMentorPublicDetail(mentorUserId: string, viewerUserId?:
       sessionPreference: mentorProfiles.sessionPreference,
       availabilityStatus: mentorProfiles.availabilityStatus,
       maximumMentees: mentorProfiles.maximumMentees,
+      pricingMode: mentorProfiles.pricingMode,
+      offersFreeMentorship: mentorProfiles.offersFreeMentorship,
+      hourlyRateNgn: mentorProfiles.hourlyRateNgn,
+      sessionRateNgn: mentorProfiles.sessionRateNgn,
+      monthlyRateNgn: mentorProfiles.monthlyRateNgn,
       verificationStatus: mentorProfiles.verificationStatus,
       visibility: mentorProfiles.visibility,
       profileCompletion: mentorProfiles.profileCompletion,

@@ -21,6 +21,7 @@ import {
   listPublishedMentorReels,
   listPublishedPlatformEvents,
 } from "@/features/content/infrastructure/contentQueries";
+import { listPublicCommunityPosts } from "@/features/content/infrastructure/postQueries";
 import {
   PWAHomeFeedClient,
   type FeedPostItem,
@@ -155,6 +156,7 @@ export default async function DashboardPage() {
     publishedReels,
     publishedEvents,
     sharedResourceRows,
+    communityPosts,
   ] = await Promise.all([
     db
       .select()
@@ -189,6 +191,7 @@ export default async function DashboardPage() {
       .orderBy(desc(resources.createdAt))
       .limit(6)
       .catch(() => []),
+    listPublicCommunityPosts(user.id, 30).catch(() => []),
   ]);
 
   const activeRelationships = userMentorships.filter((m) => m.status === "active");
@@ -310,6 +313,7 @@ export default async function DashboardPage() {
         pendingRequests={feedRequests}
         activeGoals={feedGoals}
         sharedPosts={feedPosts}
+        communityPosts={communityPosts}
       />
     </>
   );

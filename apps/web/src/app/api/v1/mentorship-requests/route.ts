@@ -1,13 +1,16 @@
+import { randomUUID } from "node:crypto";
 import { and, count, desc, eq, inArray, or } from "drizzle-orm";
 import {
   getDb,
   mentorProfiles,
   mentorshipRequestHistory,
   mentorshipRequests,
+  mentorshipTransactions,
   mentorships,
   userBlocks,
   users,
 } from "@interlink/database";
+import { calculateMentorshipSplit } from "@interlink/types";
 import { createMentorshipRequestSchema } from "@interlink/validation";
 import { apiError, created, ensureDatabaseConfigured, ok, parseBody } from "@/lib/api/http";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -150,6 +153,32 @@ export async function POST(request: Request) {
     return apiError("You already have an active mentorship relationship with this mentor.", 409);
   }
 
+  const billingCadence = data.billingCadence ?? "free";
+  let agreedAmountNgn = 0;
+
+  if (billingCadence === "free") {
+    if (mentorProfile.pricingMode === "paid" && !mentorProfile.offersFreeMentorship) {
+      return apiError(
+        "This mentor currently accepts paid mentorship packages only. Choose one of their paid options.",
+        400,
+      );
+    }
+  } else {
+    if (mentorProfile.pricingMode === "free") {
+      return apiError("This mentor only offers free mentorship.", 400);
+    }
+    const rateMap = {
+      hourly: mentorProfile.hourlyRateNgn,
+      per_session: mentorProfile.sessionRateNgn,
+      monthly: mentorProfile.monthlyRateNgn,
+    } as const;
+    const configuredRate = rateMap[billingCadence];
+    if (!configuredRate || configuredRate <= 0) {
+      return apiError(`This mentor has not configured a ${billingCadence.replace("_", " ")} rate.`, 400);
+    }
+    agreedAmountNgn = configuredRate;
+  }
+
   const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
   const [createdReq] = await db
     .insert(mentorshipRequests)
@@ -163,6 +192,9 @@ export async function POST(request: Request) {
       preferredDuration: data.preferredDuration,
       relevantBackground: data.relevantBackground || null,
       sessionPreference: data.sessionPreference,
+      billingCadence,
+      agreedAmountNgn,
+      selectedSlotSummary: data.selectedSlotSummary || null,
       status: "pending",
       expiresAt,
     })
@@ -172,22 +204,51 @@ export async function POST(request: Request) {
     return apiError("Failed to create mentorship request.", 500);
   }
 
+  let createdTransaction = null;
+  if (agreedAmountNgn > 0 && billingCadence !== "free") {
+    const split = calculateMentorshipSplit(agreedAmountNgn);
+    const reference = `ILK-PAY-${randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
+    const [tx] = await db
+      .insert(mentorshipTransactions)
+      .values({
+        requestId: createdReq.id,
+        mentorId: data.mentorId,
+        menteeId: user.id,
+        billingCadence,
+        grossAmountNgn: split.grossAmountNgn,
+        platformFeeNgn: split.platformFeeNgn,
+        mentorPayoutNgn: split.mentorPayoutNgn,
+        currency: "NGN",
+        provider: "paystack",
+        providerReference: reference,
+        status: "pending_checkout",
+      })
+      .returning();
+    createdTransaction = tx ?? null;
+  }
+
   await db.insert(mentorshipRequestHistory).values({
     requestId: createdReq.id,
     actorId: user.id,
     previousStatus: null,
     newStatus: "pending",
-    notes: "Mentorship request submitted.",
+    notes:
+      agreedAmountNgn > 0
+        ? `Paid mentorship request submitted (₦${agreedAmountNgn.toLocaleString("en-NG")} · ${billingCadence.replace("_", " ")}).`
+        : "Mentorship request submitted.",
   });
 
   await createNotification({
     userId: data.mentorId,
     type: "request_received",
     title: "New Mentorship Request",
-    message: `${user.firstName} ${user.lastName} sent you a structured mentorship request.`,
+    message:
+      agreedAmountNgn > 0
+        ? `${user.firstName} ${user.lastName} requested a paid mentorship (${billingCadence.replace("_", " ")} · ₦${agreedAmountNgn.toLocaleString("en-NG")}).`
+        : `${user.firstName} ${user.lastName} sent you a structured mentorship request.`,
     relatedEntityId: createdReq.id,
     actionUrl: "/requests",
   });
 
-  return created({ request: createdReq });
+  return created({ request: createdReq, transaction: createdTransaction });
 }

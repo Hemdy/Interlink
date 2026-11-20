@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bookmark, Flag, ShieldAlert } from "lucide-react";
-import type { SessionUser } from "@interlink/types";
-import { REPORT_REASONS } from "@interlink/types";
+import type { BillingCadence, MentorshipPricingMode, SessionUser } from "@interlink/types";
+import { calculateMentorshipSplit, REPORT_REASONS } from "@interlink/types";
 import { Button } from "@/components/ui/Button";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input, Select, Textarea } from "@/components/ui/Input";
@@ -18,13 +18,53 @@ export function MentorProfileActions({
   initialSaved,
   canRequest,
   user,
+  pricing,
+  slotOptions = [],
 }: {
   mentorId: string;
   mentorName: string;
   initialSaved: boolean;
   canRequest: boolean;
   user: SessionUser | null;
+  pricing?: {
+    pricingMode: MentorshipPricingMode;
+    offersFreeMentorship: boolean;
+    hourlyRateNgn: number | null;
+    sessionRateNgn: number | null;
+    monthlyRateNgn: number | null;
+  };
+  slotOptions?: string[];
 }) {
+  const availablePackages = (() => {
+    const opts: Array<{ cadence: BillingCadence; label: string; amountNgn: number }> = [];
+    if (!pricing || pricing.pricingMode === "free" || pricing.offersFreeMentorship) {
+      opts.push({ cadence: "free", label: "Free Mentorship — ₦0", amountNgn: 0 });
+    }
+    if (pricing && pricing.pricingMode !== "free") {
+      if (pricing.hourlyRateNgn) {
+        opts.push({
+          cadence: "hourly",
+          label: `Hourly Session — ₦${pricing.hourlyRateNgn.toLocaleString("en-NG")}/hr`,
+          amountNgn: pricing.hourlyRateNgn,
+        });
+      }
+      if (pricing.sessionRateNgn) {
+        opts.push({
+          cadence: "per_session",
+          label: `Per Session — ₦${pricing.sessionRateNgn.toLocaleString("en-NG")}`,
+          amountNgn: pricing.sessionRateNgn,
+        });
+      }
+      if (pricing.monthlyRateNgn) {
+        opts.push({
+          cadence: "monthly",
+          label: `Monthly Package — ₦${pricing.monthlyRateNgn.toLocaleString("en-NG")}/mo`,
+          amountNgn: pricing.monthlyRateNgn,
+        });
+      }
+    }
+    return opts;
+  })();
   const router = useRouter();
   const { pushToast } = useToast();
   const { openSignIn } = useAuthModal();
@@ -42,6 +82,10 @@ export function MentorProfileActions({
   const [sessionPreference, setSessionPreference] = useState<"online" | "in_person" | "hybrid">(
     "online",
   );
+  const [billingCadence, setBillingCadence] = useState<BillingCadence>(
+    availablePackages[0]?.cadence ?? "free",
+  );
+  const [selectedSlotSummary, setSelectedSlotSummary] = useState(slotOptions[0] ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -89,17 +133,25 @@ export function MentorProfileActions({
           preferredDuration,
           relevantBackground,
           sessionPreference,
+          billingCadence,
+          selectedSlotSummary: selectedSlotSummary || null,
         }),
       });
-      const json = (await res.json()) as { error?: { message: string } };
+      const json = (await res.json()) as {
+        data?: { transaction?: { providerReference: string; grossAmountNgn: number } | null };
+        error?: { message: string };
+      };
       if (!res.ok) {
         setError(json.error?.message ?? "Unable to submit request.");
         return;
       }
+      const tx = json.data?.transaction;
       pushToast({
         kind: "success",
-        title: "Mentorship request submitted",
-        description: `${mentorName} has been notified of your request.`,
+        title: tx ? "Paid booking & request submitted" : "Mentorship request submitted",
+        description: tx
+          ? `Checkout ref ${tx.providerReference} created for ₦${tx.grossAmountNgn.toLocaleString("en-NG")}. Confirm payment in Requests.`
+          : `${mentorName} has been notified of your request.`,
       });
       setRequestOpen(false);
       router.push("/requests");
@@ -214,6 +266,50 @@ export function MentorProfileActions({
           )}
 
           <form onSubmit={handleSubmitRequest} className="mt-5 space-y-4">
+            {availablePackages.length > 0 && (
+              <div className="space-y-2 rounded-2xl border border-interlink-border bg-interlink-app-bg/60 p-3.5">
+                <Select
+                  label="Mentorship Package"
+                  value={billingCadence}
+                  onChange={(e) => setBillingCadence(e.target.value as BillingCadence)}
+                >
+                  {availablePackages.map((pkg) => (
+                    <option key={pkg.cadence} value={pkg.cadence}>
+                      {pkg.label}
+                    </option>
+                  ))}
+                </Select>
+                {(() => {
+                  const activePkg = availablePackages.find((p) => p.cadence === billingCadence);
+                  if (!activePkg || activePkg.amountNgn <= 0) return null;
+                  const split = calculateMentorshipSplit(activePkg.amountNgn);
+                  return (
+                    <p className="text-[11px] text-interlink-muted">
+                      Breakdown: <strong className="text-interlink-ink">₦{split.mentorPayoutNgn.toLocaleString("en-NG")} (85%)</strong>{" "}
+                      goes to {mentorName} &middot;{" "}
+                      <strong className="text-interlink-ink">₦{split.platformFeeNgn.toLocaleString("en-NG")} (15%)</strong>{" "}
+                      Interlink platform fee. Checkout intent recorded for Paystack settlement.
+                    </p>
+                  );
+                })()}
+              </div>
+            )}
+
+            {slotOptions.length > 0 && (
+              <Select
+                label="Preferred Booking Slot"
+                value={selectedSlotSummary}
+                onChange={(e) => setSelectedSlotSummary(e.target.value)}
+              >
+                <option value="">Flexible (coordinate in workspace)</option>
+                {slotOptions.map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </Select>
+            )}
+
             <Textarea
               label="Introduction Message"
               placeholder="Introduce yourself and your current stage..."

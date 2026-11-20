@@ -10,12 +10,17 @@ import {
   Copy,
   CornerUpLeft,
   ExternalLink,
+  Eye,
+  FileText,
   Loader2,
   Paperclip,
   SlidersHorizontal,
   X,
 } from "lucide-react";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { MediaDropzone } from "@/components/ui/media/MediaDropzone";
 
 export interface ChatParticipant {
   id: string;
@@ -38,8 +43,19 @@ const DEFAULT_PROMPT_CHIPS = [
   { id: "feedback", label: "ask feedback", text: "Would love your feedback when you have a moment: " },
 ];
 
-function isImageUrl(url: string): boolean {
-  return /\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(url) || url.startsWith("/api/v1/storage/file");
+type AttachmentKind = "image" | "video" | "document";
+
+function detectAttachmentKind(url: string): AttachmentKind {
+  let target = url;
+  try {
+    target = decodeURIComponent(url);
+  } catch {
+    // Keep original url if URI decoding fails.
+  }
+  const clean = target.split("#")[0] ?? target;
+  if (/\.(mp4|webm|mov|m4v)(\?|$)/i.test(clean)) return "video";
+  if (/\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(clean)) return "image";
+  return "document";
 }
 
 export function ConversationChatPanel({
@@ -76,6 +92,11 @@ export function ConversationChatPanel({
   const [messageText, setMessageText] = useState("");
   const [attachmentUrl, setAttachmentUrl] = useState("");
   const [showAttachmentInput, setShowAttachmentInput] = useState(false);
+  const [attachmentDropzoneKey, setAttachmentDropzoneKey] = useState(0);
+  const [previewAttachment, setPreviewAttachment] = useState<{
+    url: string;
+    kind: AttachmentKind;
+  } | null>(null);
   const [showPromptChips, setShowPromptChips] = useState(true);
   const [dismissedChips, setDismissedChips] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -89,7 +110,7 @@ export function ConversationChatPanel({
     Boolean(conversationId) &&
     !isTerminated &&
     !sending &&
-    messageText.trim().length > 0;
+    (messageText.trim().length > 0 || attachmentUrl.trim().length > 0);
 
   useEffect(() => {
     const el = listRef.current;
@@ -106,8 +127,9 @@ export function ConversationChatPanel({
   }, [messageText]);
 
   async function submitCurrentMessage() {
-    const trimmed = messageText.trim();
     const cleanedAttachment = attachmentUrl.trim() || null;
+    const trimmed =
+      messageText.trim() || (cleanedAttachment ? "Shared an attachment" : "");
     if (!trimmed || !conversationId || isTerminated || sending) return;
 
     const prevText = messageText;
@@ -115,6 +137,7 @@ export function ConversationChatPanel({
     setMessageText("");
     setAttachmentUrl("");
     setShowAttachmentInput(false);
+    setAttachmentDropzoneKey((k) => k + 1);
 
     const ok = await onSendMessage(trimmed, cleanedAttachment);
     if (!ok) {
@@ -159,6 +182,66 @@ export function ConversationChatPanel({
   const partnerFullName = partner
     ? `${partner.firstName} ${partner.lastName}`.trim()
     : "Mentorship Partner";
+
+  function renderAttachmentBubble(url: string) {
+    const kind = detectAttachmentKind(url);
+    return (
+      <div className="mt-2 overflow-hidden rounded-2xl border border-interlink-border bg-white dark:border-white/10 dark:bg-black/30">
+        {kind === "image" ? (
+          <button
+            type="button"
+            onClick={() => setPreviewAttachment({ url, kind })}
+            aria-label="Preview attached image"
+            className="group relative block focus:outline-none"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt="Message attachment"
+              className="max-h-56 w-auto rounded-2xl object-cover transition-transform group-hover:scale-[1.01]"
+            />
+            <span className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <Eye className="h-3 w-3" aria-hidden="true" />
+              Preview
+            </span>
+          </button>
+        ) : kind === "video" ? (
+          <div className="p-1.5">
+            <video
+              src={url}
+              controls
+              playsInline
+              preload="metadata"
+              className="max-h-60 w-full rounded-xl bg-black object-contain"
+            />
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3 py-2">
+            <FileText
+              className="h-4 w-4 shrink-0 text-interlink-forest dark:text-emerald-300"
+              aria-hidden="true"
+            />
+            <button
+              type="button"
+              onClick={() => setPreviewAttachment({ url, kind })}
+              className="text-xs font-semibold text-interlink-forest hover:underline dark:text-emerald-200"
+            >
+              Preview Document
+            </button>
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open document in new tab"
+              className="ml-1 text-interlink-muted hover:text-interlink-ink dark:text-white/60 dark:hover:text-white"
+            >
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -280,35 +363,7 @@ export function ConversationChatPanel({
                       <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                     </div>
 
-                    {msg.attachmentUrl && (
-                      <div className="mt-2 overflow-hidden rounded-2xl border border-interlink-border bg-white dark:border-white/10 dark:bg-black/30">
-                        {isImageUrl(msg.attachmentUrl) ? (
-                          <a
-                            href={msg.attachmentUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={msg.attachmentUrl}
-                              alt="Message attachment"
-                              className="max-h-52 w-auto rounded-2xl object-cover"
-                            />
-                          </a>
-                        ) : (
-                          <a
-                            href={msg.attachmentUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-interlink-forest hover:underline dark:text-emerald-200"
-                          >
-                            <Paperclip className="h-3 w-3" aria-hidden="true" />
-                            <span>Open attachment</span>
-                          </a>
-                        )}
-                      </div>
-                    )}
+                    {msg.attachmentUrl && renderAttachmentBubble(msg.attachmentUrl)}
 
                     <span className="mt-1 px-1 text-[10px] text-interlink-muted dark:text-white/40">
                       {isTemp ? "Sending..." : formatDateTime(msg.createdAt)}
@@ -372,35 +427,7 @@ export function ConversationChatPanel({
                     </div>
                   </div>
 
-                  {msg.attachmentUrl && (
-                    <div className="mt-2 overflow-hidden rounded-2xl border border-interlink-border bg-white dark:border-white/10 dark:bg-black/30">
-                      {isImageUrl(msg.attachmentUrl) ? (
-                        <a
-                          href={msg.attachmentUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={msg.attachmentUrl}
-                            alt="Message attachment"
-                            className="max-h-52 w-auto rounded-2xl object-cover"
-                          />
-                        </a>
-                      ) : (
-                        <a
-                          href={msg.attachmentUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-interlink-forest hover:underline dark:text-emerald-200"
-                        >
-                          <Paperclip className="h-3 w-3" aria-hidden="true" />
-                          <span>Open attachment</span>
-                        </a>
-                      )}
-                    </div>
-                  )}
+                  {msg.attachmentUrl && renderAttachmentBubble(msg.attachmentUrl)}
 
                   <span className="mt-1 px-1 text-[10px] text-interlink-muted dark:text-white/40">
                     {formatDateTime(msg.createdAt)}
@@ -426,27 +453,34 @@ export function ConversationChatPanel({
           className="rounded-[20px] border border-interlink-border/90 bg-interlink-surface/95 p-3 shadow-[0_8px_28px_rgba(32,43,60,0.08)] backdrop-blur-xl dark:border-white/[0.10] dark:bg-white/[0.06] dark:shadow-[0_12px_36px_rgba(0,0,0,0.38)] sm:p-3.5"
         >
           {showAttachmentInput && (
-            <div className="mb-2.5 flex items-center gap-2 rounded-xl border border-interlink-border bg-interlink-app-bg px-3 py-1.5 dark:border-white/10 dark:bg-black/30">
-              <Paperclip className="h-3.5 w-3.5 shrink-0 text-interlink-muted dark:text-white/60" aria-hidden="true" />
-              <input
-                type="url"
-                value={attachmentUrl}
-                onChange={(e) => setAttachmentUrl(e.target.value)}
-                placeholder="Paste link or image URL (optional)..."
-                aria-label="Attachment URL"
-                className="w-full bg-transparent text-[16px] text-interlink-ink placeholder:text-interlink-muted focus:outline-none dark:text-white dark:placeholder:text-white/40 sm:text-xs"
+            <div className="mb-3">
+              <div className="mb-1.5 flex items-center justify-between px-0.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-interlink-muted dark:text-white/55">
+                  Attach image, video, or document
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAttachmentUrl("");
+                    setShowAttachmentInput(false);
+                    setAttachmentDropzoneKey((k) => k + 1);
+                  }}
+                  aria-label="Close attachment panel"
+                  className="rounded-full p-1 text-interlink-muted hover:bg-interlink-border/30 hover:text-interlink-ink dark:text-white/55 dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </div>
+              <MediaDropzone
+                key={attachmentDropzoneKey}
+                acceptKind="all"
+                purpose="chat"
+                mentorshipId={mentorshipId}
+                cropAspect="free"
+                compact
+                onUploaded={(result) => setAttachmentUrl(result.url)}
+                onRemoved={() => setAttachmentUrl("")}
               />
-              <button
-                type="button"
-                onClick={() => {
-                  setAttachmentUrl("");
-                  setShowAttachmentInput(false);
-                }}
-                aria-label="Close attachment input"
-                className="text-interlink-muted hover:text-interlink-ink dark:text-white/50 dark:hover:text-white"
-              >
-                <X className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
             </div>
           )}
 
@@ -472,8 +506,8 @@ export function ConversationChatPanel({
                 type="button"
                 onClick={() => setShowAttachmentInput((prev) => !prev)}
                 disabled={isTerminated || !conversationId}
-                aria-label="Attach link or file URL"
-                title="Attach link or image URL"
+                aria-label="Attach image, video, or document"
+                title="Attach image, video, or document"
                 className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
                   showAttachmentInput || attachmentUrl
                     ? "border-interlink-forest/50 bg-interlink-forest/15 text-interlink-forest dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-200"
@@ -548,6 +582,50 @@ export function ConversationChatPanel({
           Never share passwords, banking PINs, or sensitive identity documents in messages.
         </p>
       </div>
+
+      <Modal
+        open={Boolean(previewAttachment)}
+        onClose={() => setPreviewAttachment(null)}
+        title="Attachment Preview"
+        maxWidthClass="max-w-3xl"
+      >
+        {previewAttachment?.kind === "image" && (
+          <div className="flex max-h-[75vh] justify-center overflow-auto rounded-2xl bg-black/5 p-2 dark:bg-black/40">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewAttachment.url}
+              alt="Message attachment preview"
+              className="max-h-[70vh] rounded-xl object-contain"
+            />
+          </div>
+        )}
+
+        {previewAttachment?.kind === "document" && (
+          <div className="overflow-hidden rounded-2xl border border-interlink-border bg-white dark:border-white/10">
+            <iframe
+              src={previewAttachment.url}
+              title="Message document preview"
+              className="h-[70vh] w-full"
+            />
+          </div>
+        )}
+
+        {previewAttachment && (
+          <div className="mt-4 flex justify-end gap-2">
+            <a
+              href={previewAttachment.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-interlink-border px-4 text-sm font-medium text-interlink-ink hover:bg-interlink-app-bg dark:border-white/15 dark:text-white dark:hover:bg-white/10"
+            >
+              Open in new tab
+            </a>
+            <Button type="button" onClick={() => setPreviewAttachment(null)}>
+              Close
+            </Button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

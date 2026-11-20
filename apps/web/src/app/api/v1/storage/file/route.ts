@@ -29,7 +29,10 @@ export async function GET(request: Request) {
     const folder = parts[0];
     const scopeId = parts[1];
 
-    if (folder !== "avatars") {
+    const isPublicFolder =
+      folder === "avatars" || folder === "reels" || folder === "posts";
+
+    if (!isPublicFolder) {
       const user = await getCurrentUser();
       if (!user) return apiError("Authentication required.", 401);
 
@@ -39,6 +42,12 @@ export async function GET(request: Request) {
         }
       } else if (folder === "resources") {
         if (!scopeId) return apiError("Invalid resource key.", 400);
+        const mentorship = await getMentorshipForParticipant(scopeId, user.id);
+        if (!mentorship && scopeId !== user.id && !isAdminRole(user.roles)) {
+          return apiError("Forbidden.", 403);
+        }
+      } else if (folder === "chat") {
+        if (!scopeId) return apiError("Invalid chat key.", 400);
         const mentorship = await getMentorshipForParticipant(scopeId, user.id);
         if (!mentorship && !isAdminRole(user.roles)) {
           return apiError("Forbidden.", 403);
@@ -59,7 +68,7 @@ export async function GET(request: Request) {
     }
 
     const response = NextResponse.redirect(signedUrl);
-    if (folder === "avatars") {
+    if (isPublicFolder) {
       response.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
     } else {
       response.headers.set("Cache-Control", "private, no-store");

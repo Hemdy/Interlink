@@ -12,6 +12,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/ToastProvider";
+import { PushNotificationsManager } from "@/features/notifications/ui/PushNotificationsManager";
 import { AvatarUploadCard } from "@/features/profiles/ui/AvatarUploadCard";
 import { purgeServiceWorkerAuthCache } from "@/features/pwa/ServiceWorkerRegister";
 import { isInstalledPWA } from "@/features/pwa/useNavigationMode";
@@ -231,6 +232,8 @@ export function SettingsClient({
           </div>
         </div>
       </Card>
+
+      <PushNotificationsManager />
 
       <Card>
         <h2 className="font-display text-base font-semibold text-interlink-ink">

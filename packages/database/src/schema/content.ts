@@ -1,5 +1,65 @@
-import { boolean, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { COMMUNITY_POST_TYPES } from "@interlink/types";
+import {
+  boolean,
+  integer,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { users } from "./users";
+
+export const communityPostTypeEnum = pgEnum("community_post_type", COMMUNITY_POST_TYPES);
+
+export const communityPosts = pgTable("community_posts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  authorId: uuid("author_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  postType: communityPostTypeEnum("post_type").notNull().default("post"),
+  topic: varchar("topic", { length: 80 }).notNull().default("Community"),
+  title: varchar("title", { length: 200 }),
+  body: text("body").notNull(),
+  mediaUrl: text("media_url"),
+  mediaType: varchar("media_type", { length: 30 }),
+  externalLink: text("external_link"),
+  likesCount: integer("likes_count").notNull().default(0),
+  commentsCount: integer("comments_count").notNull().default(0),
+  isPublished: boolean("is_published").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const postLikes = pgTable(
+  "post_likes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => communityPosts.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("unique_post_like_user").on(table.postId, table.userId)],
+);
+
+export const postComments = pgTable("post_comments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  postId: uuid("post_id")
+    .notNull()
+    .references(() => communityPosts.id, { onDelete: "cascade" }),
+  authorId: uuid("author_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const mentorReels = pgTable("mentor_reels", {
   id: uuid("id").defaultRandom().primaryKey(),

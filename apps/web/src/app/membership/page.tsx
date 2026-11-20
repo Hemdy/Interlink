@@ -1,137 +1,68 @@
-import { Check, Info } from "lucide-react";
+import { count, eq } from "drizzle-orm";
+import { getDb, isDatabaseConfigured, membershipTierInterests } from "@interlink/database";
 import { PublicShell } from "@/components/layout/PublicShell";
-import { Badge, Card } from "@/components/ui/Card";
 import { InteractiveMatteHero } from "@/components/ui/InteractiveMatteHero";
-import { SessionLink } from "@/components/ui/SessionLink";
+import { MembershipClient } from "@/features/membership/ui/MembershipClient";
+import { getCurrentUser } from "@/lib/auth/session";
 
-export default function MembershipPage() {
+export default async function MembershipPage() {
+  const user = await getCurrentUser();
+  const db = isDatabaseConfigured() ? getDb() : null;
+
+  const counts = { free: 0, plus: 0, pro: 0 };
+  let userTier: string | null = null;
+
+  if (db) {
+    try {
+      const [grouped, mine] = await Promise.all([
+        db
+          .select({ tier: membershipTierInterests.tier, total: count() })
+          .from(membershipTierInterests)
+          .groupBy(membershipTierInterests.tier),
+        user
+          ? db
+              .select({ tier: membershipTierInterests.tier })
+              .from(membershipTierInterests)
+              .where(eq(membershipTierInterests.userId, user.id))
+              .limit(1)
+          : Promise.resolve([]),
+      ]);
+
+      for (const row of grouped) {
+        counts[row.tier] = Number(row.total);
+      }
+      userTier = mine[0]?.tier ?? null;
+    } catch {
+      // Fall back gracefully if query fails
+    }
+  }
+
   return (
-    <PublicShell>
+    <PublicShell user={user}>
       <InteractiveMatteHero>
-        <div className="mx-auto max-w-[1100px] px-6 sm:px-10">
+        <div className="mx-auto max-w-[1160px] px-6 sm:px-10">
           <div className="animate-hero-up">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-interlink-forest">
-              Membership &amp; Access
+              Membership &amp; Marketplace Access
             </p>
             <h1 className="mt-3 font-display text-3xl font-light text-interlink-ink sm:text-4xl lg:text-[42px]">
-              Accessible mentorship first — built for genuine career outcomes.
+              Accessible community mentorship first — built to scale career outcomes.
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-interlink-muted">
-              Per the Interlink Product Charter, core mentorship is completely free during our
-              initial release so students, graduates, career changers, and experienced mentors can
-              build trusted relationships without barriers.
+              Free profiles, community participation, and access to free mentorship stay open to all
+              members. Explore our proposed Plus and Pro tiers alongside flexible mentor packages.
             </p>
           </div>
         </div>
       </InteractiveMatteHero>
 
       <section className="bg-interlink-app-bg py-16">
-        <div className="mx-auto max-w-[1100px] px-6 sm:px-10">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {/* Free Mentee Access */}
-            <Card elevated className="flex flex-col justify-between border-t-4 border-t-interlink-forest">
-              <div>
-                <div className="flex items-center justify-between">
-                  <h2 className="font-display text-xl font-semibold text-interlink-ink">
-                    Mentee Account
-                  </h2>
-                  <Badge tone="forest">Active Now &middot; Free</Badge>
-                </div>
-                <p className="mt-3 text-3xl font-light text-interlink-forest">
-                  &#8358;0 <span className="text-xs text-interlink-muted">/ month</span>
-                </p>
-                <p className="mt-2 text-sm text-interlink-muted">
-                  Everything you need to discover verified mentors and track measurable goals.
-                </p>
-
-                <ul className="mt-6 space-y-3 text-sm text-interlink-ink/85">
-                  {[
-                    "Structured mentee profile and onboarding",
-                    "Searchable mentor directory with industry & expertise filters",
-                    "Rule-based compatibility recommendations",
-                    "Dedicated mentorship workspaces with goals & milestones",
-                    "Session scheduling & private workspace messaging",
-                    "Safety reporting and privacy controls",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2.5">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-interlink-forest" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mt-8">
-                <SessionLink
-                  authedHref="/mentors"
-                  authedLabel="Browse Mentors"
-                  guestHref="/sign-up"
-                  guestLabel="Create Free Mentee Account"
-                  className="block w-full rounded-full bg-interlink-forest py-2.5 text-center text-sm font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
-                />
-              </div>
-            </Card>
-
-            {/* Free Mentor Access */}
-            <Card elevated className="flex flex-col justify-between border-t-4 border-t-interlink-gold">
-              <div>
-                <div className="flex items-center justify-between">
-                  <h2 className="font-display text-xl font-semibold text-interlink-ink">
-                    Mentor Account
-                  </h2>
-                  <Badge tone="gold">Active Now &middot; Free</Badge>
-                </div>
-                <p className="mt-3 text-3xl font-light text-interlink-ink">
-                  &#8358;0 <span className="text-xs text-interlink-muted">/ month</span>
-                </p>
-                <p className="mt-2 text-sm text-interlink-muted">
-                  Full mentorship management tools with capacity and availability protection.
-                </p>
-
-                <ul className="mt-6 space-y-3 text-sm text-interlink-ink/85">
-                  {[
-                    "Credible professional profile with 3-tier verification pathway",
-                    "Custom weekly availability slots & active mentee capacity limits",
-                    "One-click pause when your schedule is full",
-                    "Structured request screening (Accept, Decline, or Request Info)",
-                    "Goal review, milestone feedback & session tracking",
-                    "Verified impact history across completed mentorships",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2.5">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-interlink-forest" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mt-8">
-                <SessionLink
-                  authedHref="/profile"
-                  authedLabel="Manage Mentor Profile"
-                  guestHref="/sign-up?role=mentor"
-                  guestLabel="Join as a Mentor"
-                  className="block w-full rounded-full border border-interlink-hairline bg-interlink-surface py-2.5 text-center text-sm font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
-                />
-              </div>
-            </Card>
-          </div>
-
-          <Card elevated className="mt-8">
-            <div className="flex items-start gap-3">
-              <Info className="mt-0.5 h-5 w-5 shrink-0 text-interlink-forest" />
-              <div>
-                <h3 className="text-sm font-semibold text-interlink-ink">
-                  Future Institutional &amp; Sponsored Programmes (Phase 2)
-                </h3>
-                <p className="mt-1 text-sm leading-relaxed text-interlink-muted">
-                  Universities, NGOs, and corporate teams will be able to sponsor structured
-                  mentorship cohorts on Interlink. Core free mentorship for individuals will
-                  always remain available, and mentor verification will never depend on payment.
-                </p>
-              </div>
-            </div>
-          </Card>
+        <div className="mx-auto max-w-[1160px] px-6 sm:px-10">
+          <MembershipClient
+            user={user}
+            initialCounts={counts}
+            initialUserTier={userTier}
+          />
         </div>
       </section>
     </PublicShell>

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input, Select, Textarea } from "@/components/ui/Input";
+import { MediaDropzone } from "@/components/ui/media/MediaDropzone";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
 import { ConversationChatPanel } from "@/features/messaging/ui/ConversationChatPanel";
@@ -195,6 +196,9 @@ export function MentorshipWorkspaceClient({
   const [resTitle, setResTitle] = useState("");
   const [resDesc, setResDesc] = useState("");
   const [resUrl, setResUrl] = useState("");
+  const [resType, setResType] = useState<"guide" | "video" | "link">("guide");
+  const [resDropzoneResetKey, setResDropzoneResetKey] = useState(0);
+  const [previewResource, setPreviewResource] = useState<ResourceItem | null>(null);
 
   // Completion & Review modal
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
@@ -581,12 +585,16 @@ export function MentorshipWorkspaceClient({
 
   async function addResource(e: React.FormEvent) {
     e.preventDefault();
+    if (!resUrl) {
+      pushToast({ kind: "error", title: "Please upload an image, video, or document first." });
+      return;
+    }
     const tempId = `temp-res-${Date.now()}`;
     const optimisticResource: ResourceItem = {
       id: tempId,
       title: resTitle,
       description: resDesc,
-      resourceType: "link",
+      resourceType: resType,
       externalUrl: resUrl,
       createdAt: new Date().toISOString(),
     };
@@ -596,6 +604,7 @@ export function MentorshipWorkspaceClient({
     setResTitle("");
     setResDesc("");
     setResUrl("");
+    setResDropzoneResetKey((k) => k + 1);
     pushToast({ kind: "success", title: "Resource shared in workspace" });
 
     try {
@@ -607,7 +616,7 @@ export function MentorshipWorkspaceClient({
           title: optimisticResource.title,
           description: optimisticResource.description,
           externalUrl: optimisticResource.externalUrl,
-          resourceType: "link",
+          resourceType: optimisticResource.resourceType,
         }),
       });
       if (!res.ok) throw new Error("Failed");
@@ -1182,14 +1191,23 @@ export function MentorshipWorkspaceClient({
                       <h4 className="font-semibold text-interlink-ink">{r.title}</h4>
                       <p className="mt-1 text-xs text-interlink-muted">{r.description}</p>
                     </div>
-                    <a
-                      href={r.externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 text-xs font-medium text-interlink-forest hover:underline"
-                    >
-                      Open Link &rarr;
-                    </a>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewResource(r)}
+                        className="rounded-full border border-interlink-border bg-interlink-app-bg px-3 py-1 text-xs font-medium text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+                      >
+                        Preview
+                      </button>
+                      <a
+                        href={r.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-medium text-interlink-forest hover:underline"
+                      >
+                        Open &rarr;
+                      </a>
+                    </div>
                   </div>
                 </Card>
               ))
@@ -1214,19 +1232,70 @@ export function MentorshipWorkspaceClient({
                 required
                 rows={2}
               />
-              <Input
-                label="URL"
-                type="url"
-                placeholder="https://..."
-                value={resUrl}
-                onChange={(e) => setResUrl(e.target.value)}
-                required
+              <MediaDropzone
+                key={resDropzoneResetKey}
+                label="Upload Document, Image, or Video"
+                acceptKind="all"
+                purpose="resource"
+                mentorshipId={mentorship.id}
+                cropAspect="free"
+                onUploaded={(result) => {
+                  setResUrl(result.url);
+                  setResType(result.category === "video" ? "video" : "guide");
+                  if (!resTitle.trim()) {
+                    setResTitle(result.fileName.replace(/\.[^.]+$/, ""));
+                  }
+                }}
+                onRemoved={() => setResUrl("")}
               />
-              <Button type="submit" loading={busy} className="w-full">
+              <Button type="submit" loading={busy} disabled={!resUrl} className="w-full">
                 Share Resource
               </Button>
             </form>
           </Card>
+
+          <Modal
+            open={Boolean(previewResource)}
+            onClose={() => setPreviewResource(null)}
+            title={previewResource?.title ?? "Workspace Resource Preview"}
+            maxWidthClass="max-w-2xl"
+          >
+            {previewResource && (
+              <div className="bg-interlink-surface p-5 text-interlink-ink">
+                <h3 className="font-display text-base font-semibold">{previewResource.title}</h3>
+                <p className="mt-1 text-xs text-interlink-muted">{previewResource.description}</p>
+                <div className="mt-4 overflow-hidden rounded-2xl border border-interlink-border bg-black/90">
+                  {previewResource.resourceType === "video" ||
+                  /\.(mp4|webm|mov)(\?|$)/i.test(previewResource.externalUrl) ? (
+                    <video
+                      src={previewResource.externalUrl}
+                      controls
+                      playsInline
+                      className="max-h-[60vh] w-full"
+                    />
+                  ) : /\.(png|jpe?g|webp|gif)(\?|$)/i.test(previewResource.externalUrl) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={previewResource.externalUrl}
+                      alt={previewResource.title}
+                      className="mx-auto max-h-[60vh] w-auto object-contain"
+                    />
+                  ) : (
+                    <iframe
+                      src={previewResource.externalUrl}
+                      title={previewResource.title}
+                      className="h-[60vh] w-full bg-white"
+                    />
+                  )}
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setPreviewResource(null)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Modal>
         </div>
       )}
 

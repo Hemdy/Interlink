@@ -22,6 +22,20 @@
       "when": 1794475437107,
       "tag": "0002_marvelous_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795167815957,
+      "tag": "0003_common_iron_patriot",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795173834921,
+      "tag": "0004_sloppy_iron_man",
+      "breakpoints": true
     }
   ]
 }

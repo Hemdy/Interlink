@@ -1,19 +1,11 @@
 import { eq } from "drizzle-orm";
 import { getDb, notificationPreferences } from "@interlink/database";
-import { NOTIFICATION_TYPES } from "@interlink/types";
-import { z } from "zod";
+import { updateNotificationPreferencesSchema } from "@interlink/validation";
 import { apiError, ensureDatabaseConfigured, ok, parseBody } from "@/lib/api/http";
 import { getCurrentUser } from "@/lib/auth/session";
 
-const updatePrefsSchema = z.object({
-  preferences: z.array(
-    z.object({
-      notificationType: z.enum(NOTIFICATION_TYPES),
-      inAppEnabled: z.boolean(),
-      emailEnabled: z.boolean(),
-    }),
-  ),
-});
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const dbGuard = ensureDatabaseConfigured();
@@ -37,10 +29,11 @@ export async function PUT(request: Request) {
   const user = await getCurrentUser();
   if (!user) return apiError("Authentication required.", 401);
 
-  const parsed = await parseBody(request, updatePrefsSchema);
+  const parsed = await parseBody(request, updateNotificationPreferencesSchema);
   if (parsed.error) return parsed.error;
 
   const db = getDb();
+  const now = new Date();
   for (const pref of parsed.data.preferences) {
     await db
       .insert(notificationPreferences)
@@ -49,7 +42,8 @@ export async function PUT(request: Request) {
         notificationType: pref.notificationType,
         inAppEnabled: pref.inAppEnabled,
         emailEnabled: pref.emailEnabled,
-        updatedAt: new Date(),
+        pushEnabled: pref.pushEnabled,
+        updatedAt: now,
       })
       .onConflictDoUpdate({
         target: [
@@ -59,7 +53,8 @@ export async function PUT(request: Request) {
         set: {
           inAppEnabled: pref.inAppEnabled,
           emailEnabled: pref.emailEnabled,
-          updatedAt: new Date(),
+          pushEnabled: pref.pushEnabled,
+          updatedAt: now,
         },
       });
   }

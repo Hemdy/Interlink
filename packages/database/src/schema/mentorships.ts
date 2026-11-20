@@ -1,4 +1,9 @@
-import { MENTORSHIP_STATUSES, REQUEST_STATUSES } from "@interlink/types";
+import {
+  BILLING_CADENCES,
+  MENTORSHIP_STATUSES,
+  PAYMENT_STATUSES,
+  REQUEST_STATUSES,
+} from "@interlink/types";
 import { sql } from "drizzle-orm";
 import {
   check,
@@ -17,6 +22,8 @@ import { users } from "./users";
 export const requestStatusEnum = pgEnum("request_status", REQUEST_STATUSES);
 export const mentorshipStatusEnum = pgEnum("mentorship_status", MENTORSHIP_STATUSES);
 export const reviewVisibilityEnum = pgEnum("review_visibility", ["private", "public"]);
+export const billingCadenceEnum = pgEnum("billing_cadence", BILLING_CADENCES);
+export const paymentStatusEnum = pgEnum("payment_status", PAYMENT_STATUSES);
 
 export const mentorshipRequests = pgTable(
   "mentorship_requests",
@@ -35,6 +42,9 @@ export const mentorshipRequests = pgTable(
     preferredDuration: varchar("preferred_duration", { length: 80 }).notNull().default("3 months"),
     relevantBackground: text("relevant_background"),
     sessionPreference: sessionPreferenceEnum("session_preference").notNull().default("online"),
+    billingCadence: billingCadenceEnum("billing_cadence").notNull().default("free"),
+    agreedAmountNgn: integer("agreed_amount_ngn").notNull().default(0),
+    selectedSlotSummary: varchar("selected_slot_summary", { length: 160 }),
     status: requestStatusEnum("status").notNull().default("pending"),
     mentorNotes: text("mentor_notes"),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
@@ -111,5 +121,37 @@ export const reviews = pgTable(
   (table) => [
     check("rating_range_check", sql`${table.rating} >= 1 AND ${table.rating} <= 5`),
     uniqueIndex("unique_review_per_mentorship_reviewer").on(table.mentorshipId, table.reviewerId),
+  ],
+);
+
+export const mentorshipTransactions = pgTable(
+  "mentorship_transactions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    requestId: uuid("request_id")
+      .notNull()
+      .references(() => mentorshipRequests.id, { onDelete: "cascade" }),
+    mentorshipId: uuid("mentorship_id").references(() => mentorships.id, { onDelete: "set null" }),
+    mentorId: uuid("mentor_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    menteeId: uuid("mentee_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    billingCadence: billingCadenceEnum("billing_cadence").notNull().default("per_session"),
+    grossAmountNgn: integer("gross_amount_ngn").notNull(),
+    platformFeeNgn: integer("platform_fee_ngn").notNull(),
+    mentorPayoutNgn: integer("mentor_payout_ngn").notNull(),
+    currency: varchar("currency", { length: 10 }).notNull().default("NGN"),
+    provider: varchar("provider", { length: 40 }).notNull().default("paystack"),
+    providerReference: varchar("provider_reference", { length: 140 }).unique(),
+    status: paymentStatusEnum("status").notNull().default("pending_checkout"),
+    settledAt: timestamp("settled_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("non_negative_transaction_amounts", sql`${table.grossAmountNgn} >= 0 AND ${table.platformFeeNgn} >= 0 AND ${table.mentorPayoutNgn} >= 0`),
+    check("split_sum_equals_gross", sql`${table.platformFeeNgn} + ${table.mentorPayoutNgn} = ${table.grossAmountNgn}`),
   ],
 );

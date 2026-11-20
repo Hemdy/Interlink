@@ -7,3 +7,4 @@ export * from "./mentorships";
 export * from "./workspace";
 export * from "./governance";
 export * from "./content";
+export * from "./monetization";

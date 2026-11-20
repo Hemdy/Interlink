@@ -119,9 +119,20 @@ export const NOTIFICATION_TYPES = [
   "relationship_completed",
   "verification_changed",
   "report_updated",
+  "post_liked",
+  "post_commented",
+  "new_post",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+export const COMMUNITY_POST_TYPES = ["post", "resource", "opportunity", "question"] as const;
+
+export type CommunityPostType = (typeof COMMUNITY_POST_TYPES)[number];
+
+export const PUSH_DELIVERY_STATUSES = ["pending", "retry", "sent", "dead"] as const;
+
+export type PushDeliveryStatus = (typeof PUSH_DELIVERY_STATUSES)[number];
 
 export const RESOURCE_TYPES = ["article", "guide", "template", "video", "link"] as const;
 
@@ -130,6 +141,42 @@ export type ResourceType = (typeof RESOURCE_TYPES)[number];
 export const PROFILE_VISIBILITIES = ["public", "members_only", "private"] as const;
 
 export type ProfileVisibility = (typeof PROFILE_VISIBILITIES)[number];
+
+export const MENTORSHIP_PRICING_MODES = ["free", "paid", "hybrid"] as const;
+
+export type MentorshipPricingMode = (typeof MENTORSHIP_PRICING_MODES)[number];
+
+export const BILLING_CADENCES = ["free", "hourly", "per_session", "monthly"] as const;
+
+export type BillingCadence = (typeof BILLING_CADENCES)[number];
+
+export const PAYMENT_STATUSES = [
+  "not_required",
+  "pending_checkout",
+  "completed",
+  "refunded",
+  "cancelled",
+] as const;
+
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+export const MEMBERSHIP_TIERS = ["free", "plus", "pro"] as const;
+
+export type MembershipTier = (typeof MEMBERSHIP_TIERS)[number];
+
+export const INTERLINK_COMMISSION_RATE = 0.15;
+export const MENTOR_PAYOUT_RATE = 0.85;
+
+export function calculateMentorshipSplit(grossAmountNgn: number): {
+  grossAmountNgn: number;
+  platformFeeNgn: number;
+  mentorPayoutNgn: number;
+} {
+  const gross = Math.max(0, Math.round(grossAmountNgn));
+  const platformFeeNgn = Math.round(gross * INTERLINK_COMMISSION_RATE);
+  const mentorPayoutNgn = gross - platformFeeNgn;
+  return { grossAmountNgn: gross, platformFeeNgn, mentorPayoutNgn };
+}
 
 export const ADMIN_ROLES: readonly UserRole[] = [
   "admin",
@@ -170,6 +217,11 @@ export interface PublicMentorSummary {
   sessionPreference: SessionPreference;
   maximumMentees: number;
   activeMenteeCount: number;
+  pricingMode: MentorshipPricingMode;
+  offersFreeMentorship: boolean;
+  hourlyRateNgn: number | null;
+  sessionRateNgn: number | null;
+  monthlyRateNgn: number | null;
   profileCompletion: number;
   location: string | null;
   updatedAt: string;

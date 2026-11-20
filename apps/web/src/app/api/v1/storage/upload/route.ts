@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb, users, verificationRecords } from "@interlink/database";
 import { uuidSchema } from "@interlink/validation";
 import { apiError, created, ensureDatabaseConfigured, handleRouteError } from "@/lib/api/http";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUser, isAdminRole } from "@/lib/auth/session";
 import { getMentorshipForParticipant } from "@/features/mentorships/infrastructure/mentorshipQueries";
 import {
   getPresignedAssetUrl,
@@ -14,26 +14,52 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_DOC_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 const MAX_INLINE_AVATAR_BYTES = 1024 * 1024;
 
-const MIME_TO_EXT: Record<string, { ext: string; mime: string }> = {
-  "image/jpeg": { ext: "jpg", mime: "image/jpeg" },
-  "image/jpg": { ext: "jpg", mime: "image/jpeg" },
-  "image/png": { ext: "png", mime: "image/png" },
-  "image/webp": { ext: "webp", mime: "image/webp" },
-  "application/pdf": { ext: "pdf", mime: "application/pdf" },
+type AssetCategory = "image" | "video" | "document";
+
+const MIME_TO_EXT: Record<string, { ext: string; mime: string; category: AssetCategory }> = {
+  "image/jpeg": { ext: "jpg", mime: "image/jpeg", category: "image" },
+  "image/jpg": { ext: "jpg", mime: "image/jpeg", category: "image" },
+  "image/png": { ext: "png", mime: "image/png", category: "image" },
+  "image/webp": { ext: "webp", mime: "image/webp", category: "image" },
+  "video/mp4": { ext: "mp4", mime: "video/mp4", category: "video" },
+  "video/webm": { ext: "webm", mime: "video/webm", category: "video" },
+  "video/quicktime": { ext: "mov", mime: "video/quicktime", category: "video" },
+  "application/pdf": { ext: "pdf", mime: "application/pdf", category: "document" },
+  "text/plain": { ext: "txt", mime: "text/plain", category: "document" },
+  "text/markdown": { ext: "md", mime: "text/markdown", category: "document" },
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+    ext: "docx",
+    mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    category: "document",
+  },
 };
 
-const EXT_TO_MIME: Record<string, { ext: string; mime: string }> = {
-  jpg: { ext: "jpg", mime: "image/jpeg" },
-  jpeg: { ext: "jpg", mime: "image/jpeg" },
-  png: { ext: "png", mime: "image/png" },
-  webp: { ext: "webp", mime: "image/webp" },
-  pdf: { ext: "pdf", mime: "application/pdf" },
+const EXT_TO_MIME: Record<string, { ext: string; mime: string; category: AssetCategory }> = {
+  jpg: { ext: "jpg", mime: "image/jpeg", category: "image" },
+  jpeg: { ext: "jpg", mime: "image/jpeg", category: "image" },
+  png: { ext: "png", mime: "image/png", category: "image" },
+  webp: { ext: "webp", mime: "image/webp", category: "image" },
+  mp4: { ext: "mp4", mime: "video/mp4", category: "video" },
+  webm: { ext: "webm", mime: "video/webm", category: "video" },
+  mov: { ext: "mov", mime: "video/quicktime", category: "video" },
+  pdf: { ext: "pdf", mime: "application/pdf", category: "document" },
+  txt: { ext: "txt", mime: "text/plain", category: "document" },
+  md: { ext: "md", mime: "text/markdown", category: "document" },
+  docx: {
+    ext: "docx",
+    mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    category: "document",
+  },
 };
 
-function resolveFileType(file: File): { ext: string; mime: string } | null {
+function resolveFileType(
+  file: File,
+): { ext: string; mime: string; category: AssetCategory } | null {
   const normalizedType = file.type.toLowerCase().trim();
   if (normalizedType && MIME_TO_EXT[normalizedType]) {
     return MIME_TO_EXT[normalizedType];
@@ -66,17 +92,34 @@ export async function POST(request: Request) {
       return apiError("A file field is required.", 400);
     }
 
-    if (file.size <= 0 || file.size > MAX_BYTES) {
-      return apiError("File size must be between 1 byte and 5 MB.", 400);
-    }
-
     const resolved = resolveFileType(file);
     if (!resolved) {
-      return apiError("Unsupported file type. Allowed: JPEG, PNG, WebP, or PDF.", 400);
+      return apiError(
+        "Unsupported file type. Allowed: JPEG, PNG, WebP, MP4, WebM, MOV, PDF, TXT, MD, or DOCX.",
+        400,
+      );
     }
 
-    if (purpose === "avatar" && resolved.mime === "application/pdf") {
+    const maxAllowedBytes =
+      purpose === "avatar"
+        ? MAX_AVATAR_BYTES
+        : resolved.category === "video"
+          ? MAX_VIDEO_BYTES
+          : MAX_IMAGE_DOC_BYTES;
+
+    if (file.size <= 0 || file.size > maxAllowedBytes) {
+      return apiError(
+        `File size must be between 1 byte and ${Math.round(maxAllowedBytes / (1024 * 1024))} MB.`,
+        400,
+      );
+    }
+
+    if (purpose === "avatar" && resolved.category !== "image") {
       return apiError("Profile photographs must be JPEG, PNG, or WebP images.", 400);
+    }
+
+    if (purpose === "verification" && resolved.category === "video") {
+      return apiError("Verification uploads must be PDF documents or images.", 400);
     }
 
     if (purpose !== "avatar" && !isObjectStorageConfigured()) {
@@ -88,13 +131,34 @@ export async function POST(request: Request) {
       key = `avatars/${user.id}/${randomUUID()}.${resolved.ext}`;
     } else if (purpose === "verification") {
       key = `verifications/${user.id}/${randomUUID()}.${resolved.ext}`;
-    } else if (purpose === "resource") {
+    } else if (purpose === "reel") {
+      if (!user.roles.includes("mentor") && !isAdminRole(user.roles)) {
+        return apiError("Only mentors or administrators can upload spotlight media.", 403);
+      }
+      if (resolved.category === "document") {
+        return apiError("Spotlight reels require video or image files.", 400);
+      }
+      key = `reels/${user.id}/${randomUUID()}.${resolved.ext}`;
+    } else if (purpose === "chat") {
       if (!mentorshipId || !uuidSchema.safeParse(mentorshipId).success) {
-        return apiError("Valid mentorshipId is required for workspace resource uploads.", 400);
+        return apiError("Valid mentorshipId is required for chat uploads.", 400);
       }
       const mentorship = await getMentorshipForParticipant(mentorshipId, user.id);
       if (!mentorship) return apiError("Forbidden.", 403);
-      key = `resources/${mentorshipId}/${randomUUID()}.${resolved.ext}`;
+      key = `chat/${mentorshipId}/${randomUUID()}.${resolved.ext}`;
+    } else if (purpose === "resource") {
+      if (mentorshipId) {
+        if (!uuidSchema.safeParse(mentorshipId).success) {
+          return apiError("Invalid mentorshipId for resource upload.", 400);
+        }
+        const mentorship = await getMentorshipForParticipant(mentorshipId, user.id);
+        if (!mentorship) return apiError("Forbidden.", 403);
+        key = `resources/${mentorshipId}/${randomUUID()}.${resolved.ext}`;
+      } else {
+        key = `resources/${user.id}/${randomUUID()}.${resolved.ext}`;
+      }
+    } else if (purpose === "post") {
+      key = `posts/${user.id}/${randomUUID()}.${resolved.ext}`;
     } else {
       return apiError("Invalid upload purpose.", 400);
     }
@@ -138,9 +202,12 @@ export async function POST(request: Request) {
 
       return created({
         key: storedValue,
+        url: signedUrl,
         signedUrl,
         contentType: resolved.mime,
         size: file.size,
+        fileName: file.name,
+        category: resolved.category,
       });
     }
 
@@ -157,12 +224,16 @@ export async function POST(request: Request) {
     }
 
     const signedUrl = await getPresignedAssetUrl(key, 3600);
+    const permanentUrl = `/api/v1/storage/file?key=${encodeURIComponent(key)}`;
 
     return created({
       key,
+      url: permanentUrl,
       signedUrl,
       contentType: resolved.mime,
       size: file.size,
+      fileName: file.name,
+      category: resolved.category,
     });
   } catch (err) {
     return handleRouteError("storage/upload", err);

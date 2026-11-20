@@ -1,5 +1,6 @@
 import {
   AVAILABILITY_STATUSES,
+  MENTORSHIP_PRICING_MODES,
   PROFILE_VISIBILITIES,
   SESSION_PREFERENCES,
   VERIFICATION_STATUSES,
@@ -22,6 +23,7 @@ export const verificationStatusEnum = pgEnum("verification_status", VERIFICATION
 export const sessionPreferenceEnum = pgEnum("session_preference", SESSION_PREFERENCES);
 export const availabilityStatusEnum = pgEnum("availability_status", AVAILABILITY_STATUSES);
 export const profileVisibilityEnum = pgEnum("profile_visibility", PROFILE_VISIBILITIES);
+export const pricingModeEnum = pgEnum("mentorship_pricing_mode", MENTORSHIP_PRICING_MODES);
 
 export const mentorProfiles = pgTable("mentor_profiles", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -46,6 +48,11 @@ export const mentorProfiles = pgTable("mentor_profiles", {
   sessionPreference: sessionPreferenceEnum("session_preference").notNull().default("online"),
   availabilityStatus: availabilityStatusEnum("availability_status").notNull().default("accepting"),
   maximumMentees: integer("maximum_mentees").notNull().default(3),
+  pricingMode: pricingModeEnum("pricing_mode").notNull().default("free"),
+  offersFreeMentorship: boolean("offers_free_mentorship").notNull().default(true),
+  hourlyRateNgn: integer("hourly_rate_ngn"),
+  sessionRateNgn: integer("session_rate_ngn"),
+  monthlyRateNgn: integer("monthly_rate_ngn"),
   verificationStatus: verificationStatusEnum("verification_status").notNull().default("registered"),
   visibility: profileVisibilityEnum("visibility").notNull().default("public"),
   profileCompletion: integer("profile_completion").notNull().default(0),

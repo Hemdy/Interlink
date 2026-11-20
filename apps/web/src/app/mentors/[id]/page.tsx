@@ -29,6 +29,10 @@ export default async function MentorDetailPage({
     mentor.activeMenteeCount < mentor.maximumMentees &&
     user?.id !== mentor.userId;
 
+  const slotOptions = mentor.availabilitySlots.map(
+    (s) => `${dayNames[s.dayOfWeek]} ${s.startTime}–${s.endTime} (${s.timezone})`,
+  );
+
   return (
     <PublicShell user={user}>
       <section className="bg-interlink-app-bg py-10">
@@ -180,12 +184,43 @@ export default async function MentorDetailPage({
                   </p>
                 </div>
 
+                {/* Pricing & Package Options */}
+                <div className="mb-4 space-y-2 border-b border-interlink-border/60 pb-4 text-xs">
+                  <p className="font-semibold text-interlink-ink">Mentorship Options</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(mentor.pricingMode === "free" || mentor.offersFreeMentorship) && (
+                      <Badge tone="forest">Free Mentorship (₦0)</Badge>
+                    )}
+                    {mentor.pricingMode !== "free" && mentor.hourlyRateNgn && (
+                      <Badge tone="gold">₦{mentor.hourlyRateNgn.toLocaleString("en-NG")} / hr</Badge>
+                    )}
+                    {mentor.pricingMode !== "free" && mentor.sessionRateNgn && (
+                      <Badge tone="gold">
+                        ₦{mentor.sessionRateNgn.toLocaleString("en-NG")} / session
+                      </Badge>
+                    )}
+                    {mentor.pricingMode !== "free" && mentor.monthlyRateNgn && (
+                      <Badge tone="gold">
+                        ₦{mentor.monthlyRateNgn.toLocaleString("en-NG")} / month
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
                 <MentorProfileActions
                   mentorId={mentor.userId}
                   mentorName={`${mentor.firstName} ${mentor.lastName}`}
                   initialSaved={mentor.isSaved}
                   canRequest={canRequest}
                   user={user}
+                  pricing={{
+                    pricingMode: mentor.pricingMode,
+                    offersFreeMentorship: mentor.offersFreeMentorship,
+                    hourlyRateNgn: mentor.hourlyRateNgn,
+                    sessionRateNgn: mentor.sessionRateNgn,
+                    monthlyRateNgn: mentor.monthlyRateNgn,
+                  }}
+                  slotOptions={slotOptions}
                 />
 
                 {(mentor.linkedinUrl || mentor.portfolioUrl) && (

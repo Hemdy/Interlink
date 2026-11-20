@@ -4,6 +4,7 @@ import {
   getDb,
   isDatabaseConfigured,
   mentorshipRequests,
+  mentorshipTransactions,
   users,
 } from "@interlink/database";
 import { EmptyState } from "@/components/ui/Feedback";
@@ -24,18 +25,35 @@ export default async function RequestsPage() {
   }
 
   const db = getDb();
-  const rows = await db
-    .select()
-    .from(mentorshipRequests)
-    .where(
-      or(
-        eq(mentorshipRequests.menteeId, user.id),
-        eq(mentorshipRequests.mentorId, user.id),
-      ),
-    )
-    .orderBy(desc(mentorshipRequests.createdAt));
+  const [rows, txRows] = await Promise.all([
+    db
+      .select()
+      .from(mentorshipRequests)
+      .where(
+        or(
+          eq(mentorshipRequests.menteeId, user.id),
+          eq(mentorshipRequests.mentorId, user.id),
+        ),
+      )
+      .orderBy(desc(mentorshipRequests.createdAt)),
+    db
+      .select()
+      .from(mentorshipTransactions)
+      .where(
+        or(
+          eq(mentorshipTransactions.menteeId, user.id),
+          eq(mentorshipTransactions.mentorId, user.id),
+        ),
+      )
+      .orderBy(desc(mentorshipTransactions.createdAt)),
+  ]);
 
-  const userIds = Array.from(new Set(rows.flatMap((r) => [r.menteeId, r.mentorId])));
+  const userIds = Array.from(
+    new Set([
+      ...rows.flatMap((r) => [r.menteeId, r.mentorId]),
+      ...txRows.flatMap((t) => [t.menteeId, t.mentorId]),
+    ]),
+  );
   const relatedUsers =
     userIds.length > 0
       ? await db
@@ -53,5 +71,19 @@ export default async function RequestsPage() {
     mentor: userMap.get(r.mentorId) ?? null,
   }));
 
-  return <RequestsClient initialRequests={serialized} currentUserId={user.id} />;
+  const serializedTransactions = txRows.map((t) => ({
+    ...t,
+    createdAt: t.createdAt.toISOString(),
+    settledAt: t.settledAt ? t.settledAt.toISOString() : null,
+    mentor: userMap.get(t.mentorId) ?? null,
+    mentee: userMap.get(t.menteeId) ?? null,
+  }));
+
+  return (
+    <RequestsClient
+      initialRequests={serialized}
+      initialTransactions={serializedTransactions}
+      currentUserId={user.id}
+    />
+  );
 }

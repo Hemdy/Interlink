@@ -13,6 +13,10 @@ export async function GET(request: Request) {
   const minExperienceRaw = searchParams.get("minExperience");
   const minExperience = minExperienceRaw ? Number.parseInt(minExperienceRaw, 10) : undefined;
 
+  const pricingParam = searchParams.get("pricing");
+  const pricing =
+    pricingParam === "free" || pricingParam === "paid" ? pricingParam : "all";
+
   const result = await listPublicMentors({
     q: searchParams.get("q") ?? undefined,
     industryId: searchParams.get("industryId") ?? undefined,
@@ -20,6 +24,7 @@ export async function GET(request: Request) {
     language: searchParams.get("language") ?? undefined,
     sessionPreference: searchParams.get("sessionPreference") ?? undefined,
     availability: searchParams.get("availability") ?? undefined,
+    pricing,
     minExperience: Number.isFinite(minExperience) ? minExperience : undefined,
     verifiedOnly: searchParams.get("verifiedOnly") === "true",
     sort,

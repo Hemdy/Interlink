@@ -8,10 +8,14 @@ import {
   Calendar,
   CheckCircle2,
   Compass,
+  ExternalLink,
+  Eye,
+  FileText,
   Heart,
   MapPin,
   MessageCircle,
   Play,
+  Plus,
   Route,
   Send,
   Share2,
@@ -22,6 +26,7 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { formatDateTime } from "@interlink/utils";
 import type {
   MentorReelItem,
   PlatformEventItem,
@@ -35,6 +40,8 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import type { CommunityPostItem } from "@/features/content/infrastructure/postQueries";
+import { CreatePostModal } from "@/features/dashboard/ui/CreatePostModal";
 import { postJson } from "@/lib/api/client";
 
 export interface FeedSessionItem {
@@ -76,6 +83,7 @@ export interface FeedPostItem {
 type FeedFilter = "all" | "mentors" | "reels" | "events" | "sessions" | "posts";
 
 type FeedEntry =
+  | { kind: "community_post"; feedKey: string; post: CommunityPostItem; initialLikes: number; initialComments: FeedComment[] }
   | { kind: "reel"; feedKey: string; reel: MentorReelItem; initialLikes: number; initialComments: FeedComment[] }
   | { kind: "mentor"; feedKey: string; mentor: PublicMentorSummary; initialLikes: number; initialComments: FeedComment[] }
   | { kind: "event"; feedKey: string; event: PlatformEventItem; initialLikes: number; initialComments: FeedComment[] }
@@ -137,6 +145,7 @@ export function PWAHomeFeedClient({
   pendingRequests,
   activeGoals,
   sharedPosts,
+  communityPosts = [],
 }: {
   user: SessionUser;
   role: "mentor" | "mentee";
@@ -148,11 +157,22 @@ export function PWAHomeFeedClient({
   pendingRequests: FeedRequestItem[];
   activeGoals: FeedGoalItem[];
   sharedPosts: FeedPostItem[];
+  communityPosts?: CommunityPostItem[];
 }) {
   const { pushToast } = useToast();
   const [filter, setFilter] = useState<FeedFilter>("all");
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const [feedCycles, setFeedCycles] = useState(1);
+
+  // Community Posts state (real persisted public posts + Create Post modal)
+  const [livePosts, setLivePosts] = useState<CommunityPostItem[]>(communityPosts);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
+  const [previewPostMedia, setPreviewPostMedia] = useState<{
+    url: string;
+    kind: "image" | "document";
+    title: string;
+  } | null>(null);
 
   // Interactive social state
   const [likedIds, setLikedIds] = useState<Record<string, boolean>>({});
@@ -197,6 +217,26 @@ export function PWAHomeFeedClient({
     }
   }, [user.id]);
 
+  // Deep-link handling for ?post=<id> from Web Push or in-app notifications
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const targetPostId = params.get("post");
+    if (!targetPostId) return;
+
+    setHighlightedPostId(targetPostId);
+    setOpenCommentKey(`community-${targetPostId}-c0`);
+    setVisibleCount((prev) => Math.max(prev, 24));
+
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById(`post-${targetPostId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   // Merge unique mentors across recommended + directory
   const allMentors = useMemo(() => {
     const seen = new Set<string>();
@@ -215,10 +255,19 @@ export function PWAHomeFeedClient({
     [sharedPosts],
   );
 
-  // Build rich interleaved base feed deck (varied media, creators, events, sessions, posts)
+  // Build rich interleaved base feed deck (community posts first, then varied media, creators, events, sessions)
   const baseDeck = useMemo<FeedEntry[]>(() => {
     const deck: FeedEntry[] = [];
+
+    // Highlighted deep-linked post (if any) + newest community posts appear right at the top
+    const orderedCommunity = [...livePosts].sort((a, b) => {
+      if (highlightedPostId && a.id === highlightedPostId) return -1;
+      if (highlightedPostId && b.id === highlightedPostId) return 1;
+      return 0;
+    });
+
     const maxLen = Math.max(
+      orderedCommunity.length,
       reels.length,
       allMentors.length,
       events.length,
@@ -238,6 +287,22 @@ export function PWAHomeFeedClient({
           request: req,
           initialLikes: 0,
           initialComments: [],
+        });
+      }
+
+      if (i < orderedCommunity.length) {
+        const cPost = orderedCommunity[i]!;
+        deck.push({
+          kind: "community_post",
+          feedKey: `community-${cPost.id}`,
+          post: cPost,
+          initialLikes: cPost.likesCount,
+          initialComments: cPost.comments.map((c) => ({
+            id: c.id,
+            author: c.authorName,
+            text: c.content,
+            timeLabel: formatDateTime(c.createdAt),
+          })),
         });
       }
 
@@ -328,6 +393,8 @@ export function PWAHomeFeedClient({
     allMentors,
     allPosts,
     events,
+    highlightedPostId,
+    livePosts,
     pendingRequests,
     reels,
     role,
@@ -340,7 +407,7 @@ export function PWAHomeFeedClient({
     if (filter === "reels") return baseDeck.filter((e) => e.kind === "reel");
     if (filter === "events") return baseDeck.filter((e) => e.kind === "event");
     if (filter === "sessions") return baseDeck.filter((e) => e.kind === "session" || e.kind === "goal");
-    return baseDeck.filter((e) => e.kind === "post");
+    return baseDeck.filter((e) => e.kind === "community_post" || e.kind === "post");
   }, [baseDeck, filter]);
 
   // Repeat discovery stream cleanly across cycles so infinite scroll keeps flowing
@@ -475,6 +542,95 @@ export function PWAHomeFeedClient({
     setCommentDrafts((prev) => ({ ...prev, [feedKey]: "" }));
   }
 
+  async function toggleCommunityPostLike(postId: string) {
+    const previous = livePosts;
+    setLivePosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        const nextLiked = !p.viewerHasLiked;
+        return {
+          ...p,
+          viewerHasLiked: nextLiked,
+          likesCount: Math.max(0, p.likesCount + (nextLiked ? 1 : -1)),
+        };
+      }),
+    );
+
+    try {
+      const res = await fetch(`/api/v1/posts/${postId}/like`, { method: "POST" });
+      const json = (await res.json()) as {
+        data?: { liked: boolean; likesCount: number };
+      };
+      if (!res.ok || !json.data) throw new Error("Failed");
+
+      setLivePosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                viewerHasLiked: json.data!.liked,
+                likesCount: json.data!.likesCount,
+              }
+            : p,
+        ),
+      );
+    } catch {
+      setLivePosts(previous);
+      pushToast({ kind: "error", title: "Could not update post like" });
+    }
+  }
+
+  async function submitCommunityPostComment(
+    postId: string,
+    feedKey: string,
+    e: React.FormEvent,
+  ) {
+    e.preventDefault();
+    const content = (commentDrafts[feedKey] ?? "").trim();
+    if (!content) return;
+
+    setCommentDrafts((prev) => ({ ...prev, [feedKey]: "" }));
+
+    try {
+      const res = await fetch(`/api/v1/posts/${postId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      const json = (await res.json()) as {
+        data?: {
+          comment: CommunityPostItem["comments"][number];
+          commentsCount: number;
+        };
+        error?: { message?: string };
+      };
+
+      if (!res.ok || !json.data?.comment) {
+        setCommentDrafts((prev) => ({ ...prev, [feedKey]: content }));
+        pushToast({
+          kind: "error",
+          title: json.error?.message || "Could not post comment",
+        });
+        return;
+      }
+
+      setLivePosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                comments: [...p.comments, json.data!.comment],
+                commentsCount: json.data!.commentsCount,
+              }
+            : p,
+        ),
+      );
+    } catch {
+      setCommentDrafts((prev) => ({ ...prev, [feedKey]: content }));
+      pushToast({ kind: "error", title: "Network error publishing comment" });
+    }
+  }
+
   async function handleShare(title: string, path: string) {
     const shareUrl =
       typeof window !== "undefined" ? `${window.location.origin}${path}` : path;
@@ -536,10 +692,34 @@ export function PWAHomeFeedClient({
 
   return (
     <div className="mx-auto max-w-[680px] space-y-5">
-      {/* Top Story / Discovery Rail (IG-inspired horizontal strip) */}
-      {(allMentors.length > 0 || reels.length > 0) && (
-        <div className="no-scrollbar flex items-center gap-3.5 overflow-x-auto pb-1">
-          {reels.slice(0, 2).map((reel) => (
+      {/* Top Story / Discovery Rail (Create Post profile icon first on far left) */}
+      <div className="no-scrollbar flex items-center gap-3.5 overflow-x-auto pb-1">
+        <button
+          type="button"
+          onClick={() => setCreateModalOpen(true)}
+          aria-label="Create Post"
+          className="group flex w-[68px] shrink-0 flex-col items-center gap-1.5 text-center focus-ring"
+        >
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-interlink-forest/30 via-interlink-gold/40 to-emerald-400/50 p-[2px] shadow-subtle transition-transform group-hover:scale-105">
+            <div className="rounded-full border-2 border-interlink-surface bg-interlink-surface">
+              <UserAvatar
+                src={user.profileImage}
+                firstName={user.firstName}
+                lastName={user.lastName}
+                size="md"
+                className="border-0"
+              />
+            </div>
+            <span className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full border-2 border-interlink-surface bg-interlink-forest text-white shadow-sm">
+              <Plus className="h-3 w-3 stroke-[2.75]" aria-hidden="true" />
+            </span>
+          </div>
+          <span className="w-full truncate text-[11px] font-semibold text-interlink-ink">
+            Create Post
+          </span>
+        </button>
+
+        {reels.slice(0, 2).map((reel) => (
             <button
               key={`story-reel-${reel.id}`}
               type="button"
@@ -594,8 +774,7 @@ export function PWAHomeFeedClient({
               </span>
             </Link>
           ))}
-        </div>
-      )}
+      </div>
 
       {/* Sticky Feed Category Filter Pills */}
       <div className="no-scrollbar sticky top-[68px] z-10 -mx-4 flex items-center gap-2 overflow-x-auto bg-interlink-app-bg/92 px-4 py-2.5 backdrop-blur-md sm:mx-0 sm:px-0">
@@ -659,6 +838,214 @@ export function PWAHomeFeedClient({
                     <div className="h-px flex-1 bg-interlink-border/60" />
                   </div>
                 )}
+
+                {/* 0. PUBLIC COMMUNITY POST / RESOURCE CARD */}
+                {entry.kind === "community_post" && (() => {
+                  const post = entry.post;
+                  const isHighlighted = highlightedPostId === post.id;
+                  const postComments: FeedComment[] = post.comments.map((c) => ({
+                    id: c.id,
+                    author: c.authorName,
+                    text: c.content,
+                    timeLabel: formatDateTime(c.createdAt),
+                  }));
+
+                  return (
+                    <article
+                      id={`post-${post.id}`}
+                      className={`overflow-hidden rounded-3xl border bg-interlink-surface p-5 shadow-subtle transition-all hover:shadow-card ${
+                        isHighlighted
+                          ? "border-interlink-forest ring-2 ring-interlink-forest/40"
+                          : "border-interlink-border/80"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <UserAvatar
+                            src={post.authorImage}
+                            firstName={post.authorName.split(" ")[0] ?? "M"}
+                            lastName={post.authorName.split(" ").slice(1).join(" ")}
+                            size="sm"
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-interlink-ink">
+                              {post.authorName}
+                            </p>
+                            <p className="text-[11px] text-interlink-muted">
+                              {formatDateTime(post.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                          <Badge tone="forest" className="capitalize">
+                            {post.postType}
+                          </Badge>
+                          <Badge tone="neutral">{post.topic}</Badge>
+                        </div>
+                      </div>
+
+                      {post.title && (
+                        <h3 className="mt-3.5 font-display text-base font-semibold leading-snug text-interlink-ink">
+                          {post.title}
+                        </h3>
+                      )}
+
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-interlink-ink/90">
+                        {post.body}
+                      </p>
+
+                      {post.mediaUrl && (
+                        <div className="mt-3.5 overflow-hidden rounded-2xl border border-interlink-border bg-black/5 dark:bg-black/30">
+                          {post.mediaType === "image" ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPreviewPostMedia({
+                                  url: post.mediaUrl!,
+                                  kind: "image",
+                                  title: post.title || `Post by ${post.authorName}`,
+                                })
+                              }
+                              className="group relative block w-full focus:outline-none"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={post.mediaUrl}
+                                alt={post.title || "Community post image"}
+                                className="max-h-96 w-full object-cover transition-transform group-hover:scale-[1.01]"
+                              />
+                              <span className="pointer-events-none absolute bottom-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white">
+                                <Eye className="h-3 w-3" aria-hidden="true" />
+                                Preview
+                              </span>
+                            </button>
+                          ) : post.mediaType === "video" ? (
+                            <video
+                              src={post.mediaUrl}
+                              controls
+                              playsInline
+                              preload="metadata"
+                              className="max-h-96 w-full bg-black object-contain"
+                            />
+                          ) : (
+                            <div className="flex flex-wrap items-center justify-between gap-3 p-3.5">
+                              <div className="flex items-center gap-2.5 text-xs font-semibold text-interlink-ink">
+                                <FileText className="h-4 w-4 text-interlink-forest" />
+                                <span>Attached Document</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPreviewPostMedia({
+                                      url: post.mediaUrl!,
+                                      kind: "document",
+                                      title: post.title || "Attached Document",
+                                    })
+                                  }
+                                  className="inline-flex items-center gap-1 rounded-full bg-interlink-forest/12 px-3 py-1.5 text-xs font-semibold text-interlink-forest hover:bg-interlink-forest hover:text-white"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                  Preview
+                                </button>
+                                <a
+                                  href={post.mediaUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  aria-label="Open document in new tab"
+                                  className="inline-flex items-center gap-1 rounded-full border border-interlink-border px-2.5 py-1.5 text-xs text-interlink-muted hover:text-interlink-ink"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {post.externalLink && (
+                        <a
+                          href={post.externalLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 flex items-center justify-between rounded-2xl border border-interlink-border bg-interlink-app-bg/50 px-3.5 py-2.5 text-xs font-semibold text-interlink-forest transition-colors hover:border-interlink-forest"
+                        >
+                          <span className="truncate">{post.externalLink}</span>
+                          <ExternalLink className="ml-2 h-3.5 w-3.5 shrink-0" />
+                        </a>
+                      )}
+
+                      <div className="mt-4 flex items-center justify-between gap-2 border-t border-interlink-border/60 pt-3">
+                        <div className="flex items-center gap-4 text-interlink-muted">
+                          <button
+                            type="button"
+                            onClick={() => void toggleCommunityPostLike(post.id)}
+                            aria-label="Like post"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-rose-500"
+                          >
+                            <Heart
+                              className={`h-4 w-4 ${post.viewerHasLiked ? "fill-rose-500 text-rose-500" : ""}`}
+                            />
+                            <span>{post.likesCount}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
+                            }
+                            aria-label="Comment on post"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-interlink-ink"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                            <span>{post.commentsCount}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleBookmark(entry.feedKey)}
+                            aria-label="Bookmark post"
+                            className="inline-flex items-center gap-1 text-xs font-semibold hover:text-interlink-forest"
+                          >
+                            <Bookmark
+                              className={`h-4 w-4 ${isBookmarked ? "fill-interlink-forest text-interlink-forest" : ""}`}
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleShare(
+                                post.title || `Post by ${post.authorName}`,
+                                `/dashboard?post=${post.id}`,
+                              )
+                            }
+                            aria-label="Share post"
+                            className="inline-flex items-center gap-1 text-xs font-semibold hover:text-interlink-ink"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {commentsOpen && (
+                        <div className="-mx-5 -mb-5 mt-3">
+                          <CommentDrawer
+                            comments={postComments}
+                            draft={commentDrafts[entry.feedKey] ?? ""}
+                            onDraftChange={(val) =>
+                              setCommentDrafts((prev) => ({
+                                ...prev,
+                                [entry.feedKey]: val,
+                              }))
+                            }
+                            onSubmit={(e) =>
+                              void submitCommunityPostComment(post.id, entry.feedKey, e)
+                            }
+                          />
+                        </div>
+                      )}
+                    </article>
+                  );
+                })()}
 
                 {/* 1. IMMERSIVE REEL CARD (TikTok / IG Reels Vertical Card) */}
                 {entry.kind === "reel" && (
@@ -1419,6 +1806,62 @@ export function PWAHomeFeedClient({
               </Button>
             </div>
           </form>
+        )}
+      </Modal>
+
+      {/* Create Community Post Modal */}
+      <CreatePostModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onCreated={(createdPost) => {
+          setLivePosts((prev) => [createdPost, ...prev]);
+          setFilter("all");
+          setHighlightedPostId(createdPost.id);
+        }}
+      />
+
+      {/* Community Post Attachment Preview Modal */}
+      <Modal
+        open={Boolean(previewPostMedia)}
+        onClose={() => setPreviewPostMedia(null)}
+        title={previewPostMedia?.title ?? "Attachment Preview"}
+        maxWidthClass="max-w-3xl"
+      >
+        {previewPostMedia?.kind === "image" && (
+          <div className="flex max-h-[75vh] justify-center overflow-auto rounded-2xl bg-black/5 p-2 dark:bg-black/40">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewPostMedia.url}
+              alt={previewPostMedia.title}
+              className="max-h-[70vh] rounded-xl object-contain"
+            />
+          </div>
+        )}
+
+        {previewPostMedia?.kind === "document" && (
+          <div className="overflow-hidden rounded-2xl border border-interlink-border bg-white dark:border-white/10">
+            <iframe
+              src={previewPostMedia.url}
+              title={previewPostMedia.title}
+              className="h-[70vh] w-full"
+            />
+          </div>
+        )}
+
+        {previewPostMedia && (
+          <div className="mt-4 flex justify-end gap-2">
+            <a
+              href={previewPostMedia.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-interlink-border px-4 text-sm font-medium text-interlink-ink hover:bg-interlink-app-bg"
+            >
+              Open in new tab
+            </a>
+            <Button type="button" onClick={() => setPreviewPostMedia(null)}>
+              Close
+            </Button>
+          </div>
         )}
       </Modal>
     </div>

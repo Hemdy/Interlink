@@ -65,6 +65,10 @@ async function upsertMentorProfile(request: Request) {
   const onboardingCompleted = data.onboardingCompleted ?? profileCompletion >= 55;
   const now = new Date();
 
+  const pricingMode = data.pricingMode;
+  const offersFreeMentorship =
+    pricingMode === "free" ? true : pricingMode === "hybrid" ? true : Boolean(data.offersFreeMentorship);
+
   const values = {
     userId: user.id,
     biography: data.biography,
@@ -84,6 +88,11 @@ async function upsertMentorProfile(request: Request) {
     sessionPreference: data.sessionPreference,
     availabilityStatus: data.availabilityStatus,
     maximumMentees: data.maximumMentees,
+    pricingMode,
+    offersFreeMentorship,
+    hourlyRateNgn: pricingMode === "free" ? null : (data.hourlyRateNgn ?? null),
+    sessionRateNgn: pricingMode === "free" ? null : (data.sessionRateNgn ?? null),
+    monthlyRateNgn: pricingMode === "free" ? null : (data.monthlyRateNgn ?? null),
     visibility: data.visibility,
     profileCompletion,
     onboardingCompleted,

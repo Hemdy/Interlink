@@ -9,6 +9,7 @@ import { Badge, Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input, Textarea } from "@/components/ui/Input";
+import { MediaDropzone } from "@/components/ui/media/MediaDropzone";
 import { Modal } from "@/components/ui/Modal";
 import { Reveal } from "@/components/ui/Reveal";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -39,6 +40,7 @@ export function MentorSpotlightSection({
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [posterImageUrl, setPosterImageUrl] = useState("");
   const [durationLabel, setDurationLabel] = useState("0:45");
   const [topicTag, setTopicTag] = useState("Career Growth");
 
@@ -65,6 +67,10 @@ export function MentorSpotlightSection({
 
   async function handlePublishReel(e: React.FormEvent) {
     e.preventDefault();
+    if (!videoUrl) {
+      setFormError("Please upload a video clip before publishing.");
+      return;
+    }
     setFormError(null);
     setSaving(true);
     try {
@@ -77,6 +83,7 @@ export function MentorSpotlightSection({
           title,
           summary,
           videoUrl,
+          posterImageUrl: posterImageUrl || null,
           durationLabel,
           topicTag,
         },
@@ -91,6 +98,7 @@ export function MentorSpotlightSection({
       setTitle("");
       setSummary("");
       setVideoUrl("");
+      setPosterImageUrl("");
       pushToast({ kind: "success", title: "Mentor spotlight reel published" });
     } catch {
       setFormError("Network error while publishing your reel.");
@@ -410,13 +418,27 @@ export function MentorSpotlightSection({
             onChange={(e) => setSummary(e.target.value)}
             required
           />
-          <Input
-            label="Video URL (MP4 / WebM)"
-            type="url"
-            placeholder="https://..."
-            value={videoUrl}
-            onChange={(e) => setVideoUrl(e.target.value)}
-            required
+          <MediaDropzone
+            label="Spotlight Video (Preview, Trim & Crop before publishing)"
+            acceptKind="video"
+            purpose="reel"
+            openEditorOnSelect
+            onUploaded={(result) => {
+              setVideoUrl(result.url);
+              if (result.durationLabel) {
+                setDurationLabel(result.durationLabel);
+              }
+            }}
+            onRemoved={() => setVideoUrl("")}
+          />
+          <MediaDropzone
+            label="Cover Thumbnail (Optional)"
+            acceptKind="image"
+            purpose="reel"
+            cropAspect="16:9"
+            compact
+            onUploaded={(result) => setPosterImageUrl(result.url)}
+            onRemoved={() => setPosterImageUrl("")}
           />
           <div className="grid grid-cols-2 gap-3">
             <Input
