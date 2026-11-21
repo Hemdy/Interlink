@@ -35,21 +35,27 @@ export function DashboardFeedSkeleton() {
 
         {/* Full-screen vertical TikTok/Reels video card skeleton */}
         <div className="-mx-4 overflow-hidden bg-[#07130d] sm:mx-auto sm:max-w-[460px] sm:rounded-3xl">
+          {/* Top card action buttons strip */}
+          <div className="flex items-center justify-between bg-[#0d2117] px-4 py-2.5">
+            <div className="flex items-center gap-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-4 w-7 animate-pulse rounded-full bg-[#163425]" />
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-20 animate-pulse rounded-full bg-[#163425]" />
+              <div className="h-6 w-16 animate-pulse rounded-full bg-[#163425]" />
+            </div>
+          </div>
+
           <div className="relative h-[calc(100dvh-148px)] min-h-[520px] max-h-[820px] w-full animate-pulse bg-[#0d2117] sm:h-[min(82dvh,760px)]">
             <div className="flex items-center justify-between p-4">
               <div className="h-6 w-24 rounded-full bg-[#163425]" />
               <div className="h-8 w-8 rounded-full bg-[#163425]" />
             </div>
 
-            {/* Right floating social rail */}
-            <div className="absolute bottom-24 right-3.5 flex flex-col items-center gap-3.5">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-10 w-10 rounded-full bg-[#163425]" />
-              ))}
-            </div>
-
             {/* Bottom creator overlay */}
-            <div className="absolute bottom-12 left-4 right-16 space-y-2 sm:bottom-5">
+            <div className="absolute bottom-12 left-4 right-4 space-y-2 sm:bottom-5">
               <div className="h-4 w-36 rounded-full bg-[#163425]" />
               <div className="h-5 w-60 rounded-lg bg-[#163425]" />
               <div className="h-3 w-48 rounded-full bg-[#163425]" />
@@ -57,7 +63,7 @@ export function DashboardFeedSkeleton() {
           </div>
         </div>
 
-        {/* Mentor Discovery horizontal swipeable row skeleton */}
+        {/* Mentor Discovery horizontal swipeable row skeleton (max 4 per view group) */}
         <div className="rounded-3xl bg-[#10261b] p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -69,11 +75,11 @@ export function DashboardFeedSkeleton() {
             </div>
             <div className="h-3.5 w-10 animate-pulse rounded-full bg-[#163425]" />
           </div>
-          <div className="no-scrollbar flex gap-3 overflow-hidden">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="flex w-[168px] shrink-0 flex-col items-center rounded-2xl bg-[#163425] p-3.5 sm:w-[180px]"
+                className="flex flex-col items-center rounded-2xl bg-[#163425] p-3.5"
               >
                 <div className="h-14 w-14 animate-pulse rounded-full bg-[#1d422f]" />
                 <div className="mt-2.5 h-3 w-24 animate-pulse rounded-full bg-[#1d422f]" />

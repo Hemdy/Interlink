@@ -149,6 +149,91 @@ const DEFAULT_COMMUNITY_POSTS: FeedPostItem[] = [
 
 const BATCH_SIZE = 12;
 
+function FeedCardActionBar({
+  liked,
+  likesCount,
+  commentsCount,
+  bookmarked,
+  onLike,
+  onComment,
+  onBookmark,
+  onShare,
+  likeLabel = "Like post",
+  commentLabel = "Comment on post",
+  bookmarkLabel = "Bookmark post",
+  shareLabel = "Share post",
+  trailing,
+}: {
+  liked: boolean;
+  likesCount: number;
+  commentsCount: number;
+  bookmarked: boolean;
+  onLike: () => void;
+  onComment: () => void;
+  onBookmark: () => void;
+  onShare: () => void;
+  likeLabel?: string;
+  commentLabel?: string;
+  bookmarkLabel?: string;
+  shareLabel?: string;
+  trailing?: React.ReactNode;
+}) {
+  return (
+    <div
+      data-post-actions="true"
+      className="flex flex-wrap items-center justify-between gap-2 bg-[#0d2117] px-4 py-2.5 text-emerald-100/80"
+    >
+      <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={onLike}
+          aria-label={likeLabel}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-rose-400 focus-ring"
+        >
+          <Heart
+            className={`h-4 w-4 ${liked ? "fill-rose-500 text-rose-500" : ""}`}
+            aria-hidden="true"
+          />
+          <span>{likesCount}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onComment}
+          aria-label={commentLabel}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-white focus-ring"
+        >
+          <MessageCircle className="h-4 w-4" aria-hidden="true" />
+          <span>{commentsCount}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onBookmark}
+          aria-label={bookmarkLabel}
+          className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:text-emerald-300 focus-ring"
+        >
+          <Bookmark
+            className={`h-4 w-4 ${bookmarked ? "fill-amber-400 text-amber-400" : ""}`}
+            aria-hidden="true"
+          />
+        </button>
+
+        <button
+          type="button"
+          onClick={onShare}
+          aria-label={shareLabel}
+          className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:text-white focus-ring"
+        >
+          <Share2 className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+
+      {trailing && <div className="flex shrink-0 items-center gap-2">{trailing}</div>}
+    </div>
+  );
+}
+
 export function PWAHomeFeedClient({
   user,
   role,
@@ -184,6 +269,8 @@ export function PWAHomeFeedClient({
   const [livePosts, setLivePosts] = useState<CommunityPostItem[]>(communityPosts);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [showFloatingCreate, setShowFloatingCreate] = useState(false);
+  const [showDockedFilterBar, setShowDockedFilterBar] = useState(false);
+  const inlineFilterBarRef = useRef<HTMLDivElement | null>(null);
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
   const [previewPostMedia, setPreviewPostMedia] = useState<{
     url: string;
@@ -220,10 +307,18 @@ export function PWAHomeFeedClient({
 
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // Show floating bottom-right "+" Create Post button only once user scrolls past top of feed
+  // Show floating bottom-right "+" Create Post button & smoothly slide the docked category bar once scrolled past inline bar
   useEffect(() => {
     const handleScroll = () => {
-      setShowFloatingCreate(window.scrollY > 40);
+      const y = window.scrollY;
+      setShowFloatingCreate(y > 40);
+      const inlineEl = inlineFilterBarRef.current;
+      if (inlineEl && y > 16) {
+        const rect = inlineEl.getBoundingClientRect();
+        setShowDockedFilterBar(rect.top <= 68);
+      } else {
+        setShowDockedFilterBar(false);
+      }
     };
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -454,7 +549,7 @@ export function PWAHomeFeedClient({
       deck.push({
         kind: "mentor_carousel",
         feedKey: "mentor-discovery-1",
-        mentors: allMentors.slice(0, 4),
+        mentors: allMentors,
       });
     }
 
@@ -500,7 +595,7 @@ export function PWAHomeFeedClient({
         if (entry.kind === "mentor_carousel" && allMentors.length > 0) {
           const offset = (cycle * 4) % allMentors.length;
           const rotated = Array.from(
-            { length: Math.min(4, allMentors.length) },
+            { length: allMentors.length },
             (_, k) => allMentors[(offset + k) % allMentors.length]!,
           );
           expanded.push({
@@ -891,8 +986,45 @@ export function PWAHomeFeedClient({
     { id: "posts", label: "Posts" },
   ];
 
+  const renderFilterChipButtons = () =>
+    filterChips.map((chip) => {
+      const active = filter === chip.id;
+      return (
+        <button
+          key={chip.id}
+          type="button"
+          onClick={() => handleSelectFilter(chip.id)}
+          className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition-all active:scale-[0.97] ${
+            active
+              ? "bg-interlink-forest text-white shadow-subtle"
+              : "bg-[#122a1d] text-emerald-100/80 hover:bg-[#193828] hover:text-white"
+          }`}
+        >
+          {chip.label}
+        </button>
+      );
+    });
+
   return (
     <div className="mx-auto max-w-[680px] space-y-5 pb-4 text-[#edf6f1]">
+      {/* Fixed Sliding Category Navigation Bar (slides smoothly with the hidden header) */}
+      <div
+        data-feed-filter-bar-docked="true"
+        data-docked-visible={showDockedFilterBar ? "true" : "false"}
+        aria-hidden={!showDockedFilterBar}
+        className={`fixed inset-x-0 top-[68px] z-20 bg-[#0a1a12]/95 px-4 py-2.5 shadow-[0_8px_22px_rgba(0,0,0,0.28)] backdrop-blur-md transition-all duration-300 ease-out sm:px-8 ${
+          useBottomNav ? "" : "lg:left-64"
+        } ${
+          showDockedFilterBar
+            ? "translate-y-0 opacity-100 pointer-events-auto"
+            : "-translate-y-full opacity-0 pointer-events-none"
+        }`}
+      >
+        <div className="no-scrollbar mx-auto flex max-w-[680px] items-center gap-2 overflow-x-auto">
+          {renderFilterChipButtons()}
+        </div>
+      </div>
+
       {/* Top Story / Discovery Rail (Create Post profile icon first on far left) */}
       <div className="no-scrollbar flex items-center gap-3.5 overflow-x-auto pb-1">
         <button
@@ -977,25 +1109,15 @@ export function PWAHomeFeedClient({
           ))}
       </div>
 
-      {/* Sticky Feed Category Filter Pills */}
-      <div className="no-scrollbar sticky top-[68px] z-10 -mx-4 flex items-center gap-2 overflow-x-auto bg-[#0a1a12]/90 px-4 py-2.5 backdrop-blur-md sm:mx-0 sm:px-0">
-        {filterChips.map((chip) => {
-          const active = filter === chip.id;
-          return (
-            <button
-              key={chip.id}
-              type="button"
-              onClick={() => handleSelectFilter(chip.id)}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition-all active:scale-[0.97] ${
-                active
-                  ? "bg-interlink-forest text-white shadow-subtle"
-                  : "bg-[#122a1d] text-emerald-100/80 hover:bg-[#193828] hover:text-white"
-              }`}
-            >
-              {chip.label}
-            </button>
-          );
-        })}
+      {/* Inline Category Navigation Bar (scrolls naturally; docked bar slides smoothly below header once scrolled past) */}
+      <div
+        ref={inlineFilterBarRef}
+        data-feed-filter-bar="true"
+        className={`no-scrollbar -mx-4 flex items-center gap-2 overflow-x-auto bg-[#0a1a12] px-4 py-2 transition-opacity duration-200 sm:mx-0 sm:px-0 ${
+          showDockedFilterBar ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
+      >
+        {renderFilterChipButtons()}
       </div>
 
       {/* Empty Filter State */}
@@ -1079,6 +1201,23 @@ export function PWAHomeFeedClient({
                           isHighlighted ? "ring-2 ring-emerald-400/70" : ""
                         }`}
                       >
+                        <FeedCardActionBar
+                          liked={post.viewerHasLiked}
+                          likesCount={post.likesCount}
+                          commentsCount={postComments.length}
+                          bookmarked={isBookmarked}
+                          onLike={() => void toggleCommunityPostLike(post.id)}
+                          onComment={() => setCommentModalInstanceKey(entry.instanceKey)}
+                          onBookmark={() => toggleBookmark(entry.feedKey)}
+                          onShare={() =>
+                            handleShare(post.title || post.authorName, `/dashboard?post=${post.id}`)
+                          }
+                          likeLabel="Like reel"
+                          commentLabel="Comment on reel"
+                          bookmarkLabel="Save reel"
+                          shareLabel="Share reel"
+                        />
+
                         <div
                           ref={(el) => registerContainer(entry.instanceKey, el)}
                           className="relative h-[calc(100dvh-148px)] min-h-[520px] max-h-[820px] w-full overflow-hidden bg-[#07130d] sm:h-[min(82dvh,760px)]"
@@ -1142,71 +1281,8 @@ export function PWAHomeFeedClient({
                             </button>
                           )}
 
-                          {/* Right Floating TikTok-style Social Rail */}
-                          <div className="absolute bottom-24 right-3.5 z-10 flex flex-col items-center gap-3.5">
-                            <button
-                              type="button"
-                              onClick={() => void toggleCommunityPostLike(post.id)}
-                              aria-label="Like reel"
-                              className="flex flex-col items-center gap-1 text-white focus-ring"
-                            >
-                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
-                                <Heart
-                                  className={`h-5 w-5 ${
-                                    post.viewerHasLiked ? "fill-rose-500 text-rose-500" : "text-white"
-                                  }`}
-                                />
-                              </span>
-                              <span className="text-[11px] font-semibold drop-shadow">
-                                {post.likesCount}
-                              </span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => setCommentModalInstanceKey(entry.instanceKey)}
-                              aria-label="Comment on reel"
-                              className="flex flex-col items-center gap-1 text-white focus-ring"
-                            >
-                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
-                                <MessageCircle className="h-5 w-5" />
-                              </span>
-                              <span className="text-[11px] font-semibold drop-shadow">
-                                {postComments.length}
-                              </span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => toggleBookmark(entry.feedKey)}
-                              aria-label="Save reel"
-                              className="flex flex-col items-center gap-1 text-white focus-ring"
-                            >
-                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
-                                <Bookmark
-                                  className={`h-5 w-5 ${
-                                    isBookmarked ? "fill-amber-400 text-amber-400" : "text-white"
-                                  }`}
-                                />
-                              </span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleShare(post.title || post.authorName, `/dashboard?post=${post.id}`)
-                              }
-                              aria-label="Share reel"
-                              className="flex flex-col items-center gap-1 text-white focus-ring"
-                            >
-                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
-                                <Share2 className="h-5 w-5" />
-                              </span>
-                            </button>
-                          </div>
-
                           {/* Bottom Creator Overlay */}
-                          <div className="pointer-events-none absolute bottom-12 left-4 right-16 text-white sm:bottom-5">
+                          <div className="pointer-events-none absolute bottom-12 left-4 right-4 text-white sm:bottom-5">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-bold drop-shadow">
                                 {post.authorName}
@@ -1232,11 +1308,30 @@ export function PWAHomeFeedClient({
                   return (
                     <article
                       id={`post-${post.id}`}
-                      className={`overflow-hidden rounded-3xl bg-[#10261b] p-5 shadow-[0_14px_34px_rgba(0,0,0,0.32)] transition-colors hover:bg-[#132c1f] ${
+                      className={`overflow-hidden rounded-3xl bg-[#10261b] shadow-[0_14px_34px_rgba(0,0,0,0.32)] transition-colors hover:bg-[#132c1f] ${
                         isHighlighted ? "ring-2 ring-emerald-400/70" : ""
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-3">
+                      <FeedCardActionBar
+                        liked={post.viewerHasLiked}
+                        likesCount={post.likesCount}
+                        commentsCount={post.commentsCount}
+                        bookmarked={isBookmarked}
+                        onLike={() => void toggleCommunityPostLike(post.id)}
+                        onComment={() =>
+                          setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
+                        }
+                        onBookmark={() => toggleBookmark(entry.feedKey)}
+                        onShare={() =>
+                          handleShare(
+                            post.title || `Post by ${post.authorName}`,
+                            `/dashboard?post=${post.id}`,
+                          )
+                        }
+                      />
+
+                      <div className="p-5">
+                        <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-3">
                           <UserAvatar
                             src={post.authorImage}
@@ -1387,59 +1482,10 @@ export function PWAHomeFeedClient({
                           <ExternalLink className="ml-2 h-3.5 w-3.5 shrink-0" />
                         </a>
                       )}
-
-                      <div className="mt-4 flex items-center justify-between gap-2 pt-2">
-                        <div className="flex items-center gap-4 text-emerald-100/75">
-                          <button
-                            type="button"
-                            onClick={() => void toggleCommunityPostLike(post.id)}
-                            aria-label="Like post"
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-rose-400"
-                          >
-                            <Heart
-                              className={`h-4 w-4 ${post.viewerHasLiked ? "fill-rose-500 text-rose-500" : ""}`}
-                            />
-                            <span>{post.likesCount}</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
-                            }
-                            aria-label="Comment on post"
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-white"
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                            <span>{post.commentsCount}</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleBookmark(entry.feedKey)}
-                            aria-label="Bookmark post"
-                            className="inline-flex items-center gap-1 text-xs font-semibold hover:text-emerald-300"
-                          >
-                            <Bookmark
-                              className={`h-4 w-4 ${isBookmarked ? "fill-amber-400 text-amber-400" : ""}`}
-                            />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleShare(
-                                post.title || `Post by ${post.authorName}`,
-                                `/dashboard?post=${post.id}`,
-                              )
-                            }
-                            aria-label="Share post"
-                            className="inline-flex items-center gap-1 text-xs font-semibold hover:text-white"
-                          >
-                            <Share2 className="h-4 w-4" />
-                          </button>
-                        </div>
                       </div>
 
                       {commentsOpen && (
-                        <div className="-mx-5 -mb-5 mt-3">
+                        <div>
                           <CommentDrawer
                             comments={postComments}
                             draft={commentDrafts[entry.feedKey] ?? ""}
@@ -1471,6 +1517,41 @@ export function PWAHomeFeedClient({
                 {/* 1. IMMERSIVE REEL CARD (TikTok / IG Reels Full-Screen Vertical Card) */}
                 {entry.kind === "reel" && (
                   <article className="-mx-4 overflow-hidden bg-[#07130d] shadow-[0_22px_50px_rgba(0,0,0,0.45)] sm:mx-auto sm:max-w-[460px] sm:rounded-3xl">
+                    <FeedCardActionBar
+                      liked={isLiked}
+                      likesCount={likesCount}
+                      commentsCount={comments.length}
+                      bookmarked={isBookmarked}
+                      onLike={() => toggleLike(entry.feedKey)}
+                      onComment={() => setCommentModalInstanceKey(entry.instanceKey)}
+                      onBookmark={() => toggleBookmark(entry.feedKey)}
+                      onShare={() => handleShare(entry.reel.title, "/learn")}
+                      likeLabel="Like reel"
+                      commentLabel="Comment on reel"
+                      bookmarkLabel="Save reel"
+                      shareLabel="Share reel"
+                      trailing={
+                        <>
+                          <Link
+                            href={entry.reel.mentorId ? `/mentors/${entry.reel.mentorId}` : "/mentors"}
+                            className="rounded-full bg-interlink-forest/90 px-3 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-interlink-forest"
+                          >
+                            {entry.reel.mentorId ? "View Mentor" : "Browse Mentors"}
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setVideoError(false);
+                              setActiveReel(entry.reel);
+                            }}
+                            className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-white/20"
+                          >
+                            Takeaway
+                          </button>
+                        </>
+                      }
+                    />
+
                     <div
                       ref={(el) => registerContainer(entry.instanceKey, el)}
                       className="relative h-[calc(100dvh-148px)] min-h-[520px] max-h-[820px] w-full overflow-hidden bg-[#07130d] sm:h-[min(82dvh,760px)]"
@@ -1540,61 +1621,8 @@ export function PWAHomeFeedClient({
                         </button>
                       )}
 
-                      {/* Right Floating TikTok-style Social Rail */}
-                      <div className="absolute bottom-24 right-3.5 z-10 flex flex-col items-center gap-3.5">
-                        <button
-                          type="button"
-                          onClick={() => toggleLike(entry.feedKey)}
-                          aria-label="Like reel"
-                          className="flex flex-col items-center gap-1 text-white focus-ring"
-                        >
-                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
-                            <Heart
-                              className={`h-5 w-5 ${isLiked ? "fill-rose-500 text-rose-500" : "text-white"}`}
-                            />
-                          </span>
-                          <span className="text-[11px] font-semibold drop-shadow">{likesCount}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setCommentModalInstanceKey(entry.instanceKey)}
-                          aria-label="Comment on reel"
-                          className="flex flex-col items-center gap-1 text-white focus-ring"
-                        >
-                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
-                            <MessageCircle className="h-5 w-5" />
-                          </span>
-                          <span className="text-[11px] font-semibold drop-shadow">{comments.length}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => toggleBookmark(entry.feedKey)}
-                          aria-label="Save reel"
-                          className="flex flex-col items-center gap-1 text-white focus-ring"
-                        >
-                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
-                            <Bookmark
-                              className={`h-5 w-5 ${isBookmarked ? "fill-amber-400 text-amber-400" : "text-white"}`}
-                            />
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleShare(entry.reel.title, "/learn")}
-                          aria-label="Share reel"
-                          className="flex flex-col items-center gap-1 text-white focus-ring"
-                        >
-                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
-                            <Share2 className="h-5 w-5" />
-                          </span>
-                        </button>
-                      </div>
-
                       {/* Bottom Creator Overlay */}
-                      <div className="pointer-events-none absolute bottom-12 left-4 right-16 text-white sm:bottom-5">
+                      <div className="pointer-events-none absolute bottom-12 left-4 right-4 text-white sm:bottom-5">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-bold drop-shadow">{entry.reel.mentorName}</span>
                           <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm">
@@ -1608,24 +1636,6 @@ export function PWAHomeFeedClient({
                           <Route className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
                           <span className="truncate">{entry.reel.careerPath}</span>
                         </p>
-                        <div className="pointer-events-auto mt-2.5 flex items-center gap-2">
-                          <Link
-                            href={entry.reel.mentorId ? `/mentors/${entry.reel.mentorId}` : "/mentors"}
-                            className="rounded-full bg-interlink-forest/90 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm transition-colors hover:bg-interlink-forest"
-                          >
-                            {entry.reel.mentorId ? "View Mentor" : "Browse Mentors"}
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setVideoError(false);
-                              setActiveReel(entry.reel);
-                            }}
-                            className="rounded-full bg-black/55 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm transition-colors hover:bg-black/75"
-                          >
-                            Takeaway
-                          </button>
-                        </div>
                       </div>
                     </div>
                   </article>
@@ -1640,6 +1650,43 @@ export function PWAHomeFeedClient({
 
                   return (
                     <article className="overflow-hidden rounded-3xl bg-[#10261b] shadow-[0_14px_34px_rgba(0,0,0,0.32)] transition-colors hover:bg-[#132c1f]">
+                      <FeedCardActionBar
+                        liked={isLiked}
+                        likesCount={likesCount}
+                        commentsCount={comments.length}
+                        bookmarked={isBookmarked}
+                        onLike={() => toggleLike(entry.feedKey)}
+                        onComment={() =>
+                          setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
+                        }
+                        onBookmark={() => toggleBookmark(entry.feedKey)}
+                        onShare={() =>
+                          handleShare(
+                            `${entry.mentor.firstName} ${entry.mentor.lastName} on Interlink`,
+                            `/mentors/${entry.mentor.userId}`,
+                          )
+                        }
+                        likeLabel="Like mentor card"
+                        commentLabel="Discuss mentor"
+                        shareLabel="Share mentor profile"
+                        trailing={
+                          <>
+                            <Link
+                              href={`/mentors/${entry.mentor.userId}`}
+                              className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-white/20"
+                            >
+                              Profile
+                            </Link>
+                            <Link
+                              href={`/mentors/${entry.mentor.userId}#request`}
+                              className="rounded-full bg-interlink-forest px-3 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
+                            >
+                              Connect
+                            </Link>
+                          </>
+                        }
+                      />
+
                       {/* Post Header */}
                       <div className="flex items-center justify-between gap-3 px-4 py-3.5">
                         <Link
@@ -1687,7 +1734,7 @@ export function PWAHomeFeedClient({
                       </div>
 
                       {/* Visual Creator Spotlight Body */}
-                      <div className="mx-4 rounded-2xl bg-[#163425] p-5">
+                      <div className="mx-4 mb-4 rounded-2xl bg-[#163425] p-5">
                         <div className="flex flex-wrap items-center gap-2">
                           {typeof entry.mentor.matchScore === "number" && entry.mentor.matchScore > 0 && (
                             <Badge tone="forest">{entry.mentor.matchScore}% Match</Badge>
@@ -1720,62 +1767,6 @@ export function PWAHomeFeedClient({
                         )}
                       </div>
 
-                      {/* Social Actions + Direct Connect */}
-                      <div className="flex items-center justify-between gap-2 px-4 py-3.5">
-                        <div className="flex items-center gap-4 text-emerald-100/75">
-                          <button
-                            type="button"
-                            onClick={() => toggleLike(entry.feedKey)}
-                            aria-label="Like mentor card"
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-rose-400"
-                          >
-                            <Heart
-                              className={`h-4 w-4 ${isLiked ? "fill-rose-500 text-rose-500" : ""}`}
-                            />
-                            <span>{likesCount}</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
-                            }
-                            aria-label="Discuss mentor"
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-white"
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                            <span>{comments.length}</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleShare(
-                                `${entry.mentor.firstName} ${entry.mentor.lastName} on Interlink`,
-                                `/mentors/${entry.mentor.userId}`,
-                              )
-                            }
-                            aria-label="Share mentor profile"
-                            className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:text-white"
-                          >
-                            <Share2 className="h-4 w-4" />
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/mentors/${entry.mentor.userId}`}
-                            className="rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/20"
-                          >
-                            Profile
-                          </Link>
-                          <Link
-                            href={`/mentors/${entry.mentor.userId}#request`}
-                            className="rounded-full bg-interlink-forest px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
-                          >
-                            Connect
-                          </Link>
-                        </div>
-                      </div>
-
                       {commentsOpen && (
                         <CommentDrawer
                           comments={comments}
@@ -1800,6 +1791,55 @@ export function PWAHomeFeedClient({
 
                   return (
                     <article className="overflow-hidden rounded-3xl bg-[#10261b] shadow-[0_14px_34px_rgba(0,0,0,0.32)] transition-colors hover:bg-[#132c1f]">
+                      <FeedCardActionBar
+                        liked={isLiked}
+                        likesCount={likesCount}
+                        commentsCount={comments.length}
+                        bookmarked={isBookmarked}
+                        onLike={() => toggleLike(entry.feedKey)}
+                        onComment={() =>
+                          setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
+                        }
+                        onBookmark={() => toggleBookmark(entry.feedKey)}
+                        onShare={() => handleShare(entry.event.title, "/learn")}
+                        likeLabel="Like event"
+                        commentLabel="Comment on event"
+                        shareLabel="Share event"
+                        trailing={
+                          isRegistered ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold text-emerald-300">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Reserved
+                            </span>
+                          ) : hasMore ? (
+                            <Link
+                              href={`/events/${entry.event.id}`}
+                              className="rounded-full bg-interlink-forest px-3.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
+                            >
+                              View Details
+                            </Link>
+                          ) : entry.event.ctaUrl ? (
+                            <Link
+                              href={entry.event.ctaUrl}
+                              className="rounded-full bg-interlink-forest px-3.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
+                            >
+                              {entry.event.ctaLabel}
+                            </Link>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRsvpError(null);
+                                setRsvpTarget(entry.event);
+                              }}
+                              className="rounded-full bg-interlink-forest px-3.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
+                            >
+                              {entry.event.ctaLabel}
+                            </button>
+                          )
+                        }
+                      />
+
                       {hasMore ? (
                         <Link href={`/events/${entry.event.id}`} className="group block">
                           <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#0a1911]">
@@ -1880,73 +1920,6 @@ export function PWAHomeFeedClient({
                         >
                           {entry.event.summary}
                         </p>
-
-                        <div className="mt-4 flex items-center justify-between gap-2 pt-2">
-                          <div className="flex items-center gap-4 text-emerald-100/75">
-                            <button
-                              type="button"
-                              onClick={() => toggleLike(entry.feedKey)}
-                              aria-label="Like event"
-                              className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-rose-400"
-                            >
-                              <Heart
-                                className={`h-4 w-4 ${isLiked ? "fill-rose-500 text-rose-500" : ""}`}
-                              />
-                              <span>{likesCount}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
-                              }
-                              aria-label="Comment on event"
-                              className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-white"
-                            >
-                              <MessageCircle className="h-4 w-4" />
-                              <span>{comments.length}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleShare(entry.event.title, "/learn")}
-                              aria-label="Share event"
-                              className="inline-flex items-center gap-1 text-xs font-semibold hover:text-white"
-                            >
-                              <Share2 className="h-4 w-4" />
-                            </button>
-                          </div>
-
-                          {isRegistered ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-3.5 py-1.5 text-xs font-semibold text-emerald-300">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              Reserved
-                            </span>
-                          ) : hasMore ? (
-                            <Link
-                              href={`/events/${entry.event.id}`}
-                              className="rounded-full bg-interlink-forest px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
-                            >
-                              View Details
-                            </Link>
-                          ) : entry.event.ctaUrl ? (
-                            <Link
-                              href={entry.event.ctaUrl}
-                              className="rounded-full bg-interlink-forest px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
-                            >
-                              {entry.event.ctaLabel}
-                            </Link>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setRsvpError(null);
-                                setRsvpTarget(entry.event);
-                              }}
-                              className="rounded-full bg-interlink-forest px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
-                            >
-                              {entry.event.ctaLabel}
-                            </button>
-                          )}
-                        </div>
                       </div>
 
                       {commentsOpen && (
@@ -2065,81 +2038,52 @@ export function PWAHomeFeedClient({
 
                 {/* 7. COMMUNITY POST / DISCUSSION CARD (X / Threads Style) */}
                 {entry.kind === "post" && (
-                  <article className="rounded-3xl bg-[#10261b] p-5 shadow-[0_14px_34px_rgba(0,0,0,0.32)] transition-colors hover:bg-[#132c1f]">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300">
-                          <Compass className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-white">
-                            {entry.post.authorName}
-                          </p>
-                          <p className="text-[11px] text-emerald-100/65">{entry.post.authorRole}</p>
-                        </div>
-                      </div>
-                      <span className="inline-flex rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-100">
-                        {entry.post.topic}
-                      </span>
-                    </div>
+                  <article className="overflow-hidden rounded-3xl bg-[#10261b] shadow-[0_14px_34px_rgba(0,0,0,0.32)] transition-colors hover:bg-[#132c1f]">
+                    <FeedCardActionBar
+                      liked={isLiked}
+                      likesCount={likesCount}
+                      commentsCount={comments.length}
+                      bookmarked={isBookmarked}
+                      onLike={() => toggleLike(entry.feedKey)}
+                      onComment={() =>
+                        setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
+                      }
+                      onBookmark={() => toggleBookmark(entry.feedKey)}
+                      onShare={() => handleShare(entry.post.title, entry.post.href)}
+                      trailing={
+                        <Link
+                          href={entry.post.href}
+                          className="rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold text-emerald-300 transition-colors hover:bg-interlink-forest hover:text-white"
+                        >
+                          {entry.post.ctaLabel} &rarr;
+                        </Link>
+                      }
+                    />
 
-                    <h3 className="mt-3.5 font-display text-base font-semibold leading-snug text-white">
-                      {entry.post.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-emerald-100/75">
-                      {entry.post.body}
-                    </p>
-
-                    <div className="mt-4 flex items-center justify-between gap-2 pt-2">
-                      <div className="flex items-center gap-4 text-emerald-100/75">
-                        <button
-                          type="button"
-                          onClick={() => toggleLike(entry.feedKey)}
-                          aria-label="Like post"
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-rose-400"
-                        >
-                          <Heart
-                            className={`h-4 w-4 ${isLiked ? "fill-rose-500 text-rose-500" : ""}`}
-                          />
-                          <span>{likesCount}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
-                          }
-                          aria-label="Comment on post"
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-white"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          <span>{comments.length}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleBookmark(entry.feedKey)}
-                          aria-label="Bookmark post"
-                          className="inline-flex items-center gap-1 text-xs font-semibold hover:text-emerald-300"
-                        >
-                          <Bookmark
-                            className={`h-4 w-4 ${isBookmarked ? "fill-amber-400 text-amber-400" : ""}`}
-                          />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleShare(entry.post.title, entry.post.href)}
-                          aria-label="Share post"
-                          className="inline-flex items-center gap-1 text-xs font-semibold hover:text-white"
-                        >
-                          <Share2 className="h-4 w-4" />
-                        </button>
+                    <div className="p-5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300">
+                            <Compass className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-white">
+                              {entry.post.authorName}
+                            </p>
+                            <p className="text-[11px] text-emerald-100/65">{entry.post.authorRole}</p>
+                          </div>
+                        </div>
+                        <span className="inline-flex rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-100">
+                          {entry.post.topic}
+                        </span>
                       </div>
 
-                      <Link
-                        href={entry.post.href}
-                        className="rounded-full bg-emerald-400/15 px-3.5 py-1.5 text-xs font-semibold text-emerald-300 transition-colors hover:bg-interlink-forest hover:text-white"
-                      >
-                        {entry.post.ctaLabel} &rarr;
-                      </Link>
+                      <h3 className="mt-3.5 font-display text-base font-semibold leading-snug text-white">
+                        {entry.post.title}
+                      </h3>
+                      <p className="mt-2 text-sm leading-relaxed text-emerald-100/75">
+                        {entry.post.body}
+                      </p>
                     </div>
 
                     {commentsOpen && (

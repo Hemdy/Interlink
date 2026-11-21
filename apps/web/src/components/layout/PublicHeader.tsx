@@ -13,6 +13,7 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useAuthModal } from "@/features/auth/ui/AuthModalProvider";
 import { resetClientSessionAndNavigate } from "@/features/auth/ui/SessionSyncGuard";
 import { isInstalledPWA } from "@/features/pwa/useNavigationMode";
+import { useTopNavScrollVisibility } from "./useTopNavScrollVisibility";
 
 const primaryNavLinks = [
   { label: "Browse Mentors", href: "/mentors" },
@@ -26,6 +27,8 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
   const { openSignIn, openSignUp } = useAuthModal();
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { autoHide: autoHideTopNav, visible: topNavVisible } =
+    useTopNavScrollVisibility(pathname);
 
   async function handleLogout() {
     await fetch("/api/v1/auth/logout", {
@@ -87,7 +90,19 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
   ) : null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-interlink-border bg-interlink-surface/95 shadow-subtle backdrop-blur-sm">
+    <header
+      data-top-nav-hidden={autoHideTopNav && !topNavVisible ? "true" : "false"}
+      aria-hidden={autoHideTopNav && !topNavVisible ? true : undefined}
+      className={`${
+        autoHideTopNav
+          ? `fixed inset-x-0 top-0 z-40 transition-all duration-300 ease-out ${
+              topNavVisible
+                ? "translate-y-0 opacity-100 pointer-events-auto"
+                : "-translate-y-full opacity-0 pointer-events-none"
+            }`
+          : "sticky top-0 z-40"
+      } border-b border-interlink-border bg-interlink-surface/95 shadow-subtle backdrop-blur-sm`}
+    >
       <div className="mx-auto grid h-[72px] max-w-[1360px] grid-cols-2 items-center px-4 sm:px-8 lg:grid-cols-[1fr_auto_1fr] lg:px-10">
         {/* Far Left: Interlink Logo */}
         <div className="flex items-center justify-self-start">

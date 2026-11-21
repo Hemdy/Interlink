@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { PlatformEventItem, PublicMentorSummary } from "@interlink/types";
@@ -8,6 +8,8 @@ import {
   ArrowRight,
   Calendar,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   MapPin,
   Megaphone,
   ShieldCheck,
@@ -18,12 +20,42 @@ import { Badge } from "@/components/ui/Card";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { hasExtendedEventDetails } from "@/features/events/domain/eventDetails";
 
+const MENTORS_PER_VIEW_GROUP = 4;
+
 export function MentorDiscoveryCarousel({
   mentors,
 }: {
   mentors: PublicMentorSummary[];
 }) {
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [activeGroup, setActiveGroup] = useState(0);
+
+  const mentorGroups = useMemo(() => {
+    const groups: PublicMentorSummary[][] = [];
+    for (let i = 0; i < mentors.length; i += MENTORS_PER_VIEW_GROUP) {
+      groups.push(mentors.slice(i, i + MENTORS_PER_VIEW_GROUP));
+    }
+    return groups;
+  }, [mentors]);
+
   if (mentors.length === 0) return null;
+
+  const hasMultipleGroups = mentorGroups.length > 1;
+
+  function handleScrollerScroll() {
+    const el = scrollerRef.current;
+    if (!el || el.clientWidth <= 0) return;
+    const nextIdx = Math.round(el.scrollLeft / el.clientWidth);
+    setActiveGroup(Math.max(0, Math.min(mentorGroups.length - 1, nextIdx)));
+  }
+
+  function scrollToGroup(index: number) {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const clamped = Math.max(0, Math.min(mentorGroups.length - 1, index));
+    el.scrollTo({ left: clamped * el.clientWidth, behavior: "smooth" });
+    setActiveGroup(clamped);
+  }
 
   return (
     <section
@@ -40,68 +72,125 @@ export function MentorDiscoveryCarousel({
               Mentors to Connect With
             </h2>
             <p className="text-[11px] text-emerald-100/70">
-              Swipe to explore practitioners accepting mentees
+              {hasMultipleGroups
+                ? "Swipe horizontally to discover more mentors"
+                : "Practitioners accepting mentees right now"}
             </p>
           </div>
         </div>
-        <Link
-          href="/mentors"
-          className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-300 hover:text-emerald-200 hover:underline"
-        >
-          All <ArrowRight className="h-3 w-3" aria-hidden="true" />
-        </Link>
-      </div>
-
-      <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1">
-        {mentors.slice(0, 4).map((mentor) => {
-          const roleLine = [mentor.currentPosition, mentor.organisation]
-            .filter(Boolean)
-            .join(" · ");
-
-          return (
-            <div
-              key={mentor.userId}
-              className="flex w-[168px] shrink-0 snap-start flex-col items-center justify-between rounded-2xl bg-[#163425] p-3.5 text-center transition-colors hover:bg-[#1c412f] sm:w-[180px]"
-            >
-              <Link
-                href={`/mentors/${mentor.userId}`}
-                className="flex w-full flex-col items-center focus:outline-none"
+        <div className="flex items-center gap-2">
+          {hasMultipleGroups && (
+            <div className="hidden items-center gap-1 sm:flex">
+              <button
+                type="button"
+                onClick={() => scrollToGroup(activeGroup - 1)}
+                disabled={activeGroup === 0}
+                aria-label="Previous mentor group"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 disabled:opacity-35"
               >
-                <div className="relative">
-                  <UserAvatar
-                    src={mentor.profileImage}
-                    firstName={mentor.firstName}
-                    lastName={mentor.lastName}
-                    size="lg"
-                  />
-                  {mentor.verificationStatus === "verified" && (
-                    <span
-                      title="Verified Mentor"
-                      className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm"
-                    >
-                      <ShieldCheck className="h-3 w-3" aria-hidden="true" />
-                    </span>
-                  )}
-                </div>
-
-                <p className="mt-2.5 w-full truncate text-xs font-semibold text-white">
-                  {mentor.firstName} {mentor.lastName}
-                </p>
-                <p className="mt-0.5 line-clamp-2 min-h-[2rem] text-[11px] leading-snug text-emerald-100/70">
-                  {roleLine || "Industry Mentor"}
-                </p>
-              </Link>
-
-              <Link
-                href={`/mentors/${mentor.userId}#request`}
-                className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-interlink-forest px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
+                <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToGroup(activeGroup + 1)}
+                disabled={activeGroup >= mentorGroups.length - 1}
+                aria-label="Next mentor group"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 disabled:opacity-35"
               >
-                Connect
-              </Link>
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
             </div>
-          );
-        })}
+          )}
+          <Link
+            href="/mentors"
+            className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-300 hover:text-emerald-200 hover:underline"
+          >
+            All <ArrowRight className="h-3 w-3" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
+
+      <div
+        ref={scrollerRef}
+        onScroll={handleScrollerScroll}
+        data-mentor-carousel="true"
+        className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-1 scroll-smooth"
+      >
+        {mentorGroups.map((group, groupIdx) => (
+          <div
+            key={`mentor-group-${groupIdx}`}
+            data-mentor-group={groupIdx}
+            className="grid w-full shrink-0 snap-center snap-always grid-cols-2 gap-3 sm:grid-cols-4"
+          >
+            {group.map((mentor) => {
+              const roleLine = [mentor.currentPosition, mentor.organisation]
+                .filter(Boolean)
+                .join(" · ");
+
+              return (
+                <div
+                  key={mentor.userId}
+                  className="flex flex-col items-center justify-between rounded-2xl bg-[#163425] p-3.5 text-center transition-colors hover:bg-[#1c412f]"
+                >
+                  <Link
+                    href={`/mentors/${mentor.userId}`}
+                    className="flex w-full flex-col items-center focus:outline-none"
+                  >
+                    <div className="relative">
+                      <UserAvatar
+                        src={mentor.profileImage}
+                        firstName={mentor.firstName}
+                        lastName={mentor.lastName}
+                        size="lg"
+                      />
+                      {mentor.verificationStatus === "verified" && (
+                        <span
+                          title="Verified Mentor"
+                          className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm"
+                        >
+                          <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="mt-2.5 w-full truncate text-xs font-semibold text-white">
+                      {mentor.firstName} {mentor.lastName}
+                    </p>
+                    <p className="mt-0.5 line-clamp-2 min-h-[2rem] text-[11px] leading-snug text-emerald-100/70">
+                      {roleLine || "Industry Mentor"}
+                    </p>
+                  </Link>
+
+                  <Link
+                    href={`/mentors/${mentor.userId}#request`}
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-interlink-forest px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
+                  >
+                    Connect
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {hasMultipleGroups && (
+        <div className="mt-3 flex items-center justify-center gap-1.5">
+          {mentorGroups.map((_, idx) => (
+            <button
+              key={`dot-${idx}`}
+              type="button"
+              onClick={() => scrollToGroup(idx)}
+              aria-label={`View mentor group ${idx + 1} of ${mentorGroups.length}`}
+              className={`h-1.5 rounded-full transition-all ${
+                activeGroup === idx
+                  ? "w-5 bg-emerald-400"
+                  : "w-1.5 bg-white/25 hover:bg-white/45"
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

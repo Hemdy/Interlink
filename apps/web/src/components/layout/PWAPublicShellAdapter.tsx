@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bell } from "lucide-react";
 import type { SessionUser } from "@interlink/types";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -17,6 +18,7 @@ import {
   useUnreadNotificationsCount,
 } from "@/features/pwa/useNavigationMode";
 import { MobilePWABottomNav, PWAContextSubNav } from "./MobilePWABottomNav";
+import { useTopNavScrollVisibility } from "./useTopNavScrollVisibility";
 
 export function PWAPublicShellAdapter({
   user,
@@ -33,6 +35,9 @@ export function PWAPublicShellAdapter({
   chromeOnly?: boolean;
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const { autoHide: autoHideTopNav, visible: topNavVisible } =
+    useTopNavScrollVisibility(pathname);
   const { useBottomNav } = useNavigationMode();
   const showPWAShell = Boolean(user && useBottomNav);
   const unreadMessages = useUnreadMessagesCount(showPWAShell);
@@ -62,7 +67,15 @@ export function PWAPublicShellAdapter({
   if (chromeOnly) {
     return (
       <>
-        <header className="fixed inset-x-0 top-0 z-40 flex h-[72px] items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm sm:px-8">
+        <header
+          data-top-nav-hidden={autoHideTopNav && !topNavVisible ? "true" : "false"}
+          aria-hidden={autoHideTopNav && !topNavVisible ? true : undefined}
+          className={`fixed inset-x-0 top-0 z-40 flex h-[72px] items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm transition-all duration-300 ease-out sm:px-8 ${
+            autoHideTopNav && !topNavVisible
+              ? "-translate-y-full opacity-0 pointer-events-none"
+              : "translate-y-0 opacity-100 pointer-events-auto"
+          }`}
+        >
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <Link
               href="/profile"
@@ -113,7 +126,19 @@ export function PWAPublicShellAdapter({
   return (
     <div className="min-h-screen bg-interlink-app-bg text-interlink-ink">
       <SessionSyncGuard expectedUserId={user.id} />
-      <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm sm:px-8">
+      <header
+        data-top-nav-hidden={autoHideTopNav && !topNavVisible ? "true" : "false"}
+        aria-hidden={autoHideTopNav && !topNavVisible ? true : undefined}
+        className={`${
+          autoHideTopNav
+            ? `fixed inset-x-0 top-0 z-30 transition-all duration-300 ease-out ${
+                topNavVisible
+                  ? "translate-y-0 opacity-100 pointer-events-auto"
+                  : "-translate-y-full opacity-0 pointer-events-none"
+              }`
+            : "sticky top-0 z-20"
+        } flex h-[68px] items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm sm:px-8`}
+      >
         <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           <Link
             href="/profile"

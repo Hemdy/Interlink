@@ -43,6 +43,7 @@ import {
   PWAContextSubNav,
 } from "@/components/layout/MobilePWABottomNav";
 import { WorkspaceHeaderProvider } from "@/components/layout/WorkspaceHeaderContext";
+import { useTopNavScrollVisibility } from "@/components/layout/useTopNavScrollVisibility";
 
 interface NavItem {
   label: string;
@@ -120,6 +121,8 @@ export function AppShell({
 
   const isMessagesRoute = pathname === "/messages";
   const isHomeFeedRoute = pathname === "/dashboard";
+  const { autoHide: autoHideTopNav, visible: topNavVisible } =
+    useTopNavScrollVisibility(pathname);
 
   const navItems = useMemo(() => getNavItemsForUser(user), [user]);
 
@@ -301,7 +304,19 @@ export function AppShell({
       >
         {!isMessagesRoute && (
           <header
-            className={`sticky top-0 z-20 flex h-[68px] shrink-0 items-center justify-between px-4 backdrop-blur-md sm:px-8 ${
+            data-top-nav-hidden={autoHideTopNav && !topNavVisible ? "true" : "false"}
+            aria-hidden={autoHideTopNav && !topNavVisible ? true : undefined}
+            className={`${
+              autoHideTopNav
+                ? `fixed inset-x-0 top-0 z-30 transition-all duration-300 ease-out ${
+                    useBottomNav ? "" : "lg:left-64"
+                  } ${
+                    topNavVisible
+                      ? "translate-y-0 opacity-100 pointer-events-auto"
+                      : "-translate-y-full opacity-0 pointer-events-none"
+                  }`
+                : "sticky top-0 z-20"
+            } flex h-[68px] shrink-0 items-center justify-between px-4 backdrop-blur-md sm:px-8 ${
               isHomeFeedRoute
                 ? "bg-[#0a1a12]/90"
                 : "border-b border-interlink-border bg-interlink-surface/95 shadow-subtle"
