@@ -1,4 +1,4 @@
-import Link from "next/link";
+// import Link from "next/link";
 import { redirect } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import {
@@ -11,7 +11,7 @@ import {
   userBlocks,
   users,
 } from "@interlink/database";
-import { WorkspacePageActions } from "@/components/layout/WorkspaceHeaderContext";
+// import { WorkspacePageActions } from "@/components/layout/WorkspaceHeaderContext";
 import { listUserPublishedContent } from "@/features/content/infrastructure/postQueries";
 import { listActiveIndustries } from "@/features/discovery/infrastructure/mentorQueries";
 import { ProfileHubClient } from "@/features/profiles/ui/ProfileHubClient";
@@ -92,7 +92,7 @@ export default async function ProfilePage() {
 
   return (
     <>
-      {role === "mentor" && (
+      {/* {role === "mentor" && (
         <WorkspacePageActions>
           <Link
             href={`/mentors/${user.id}`}
@@ -101,7 +101,7 @@ export default async function ProfilePage() {
             Preview Public Profile
           </Link>
         </WorkspacePageActions>
-      )}
+      )} */}
 
       <ProfileHubClient
         user={user}

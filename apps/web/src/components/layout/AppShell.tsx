@@ -321,7 +321,7 @@ export function AppShell({
                     size="sm"
                     className="rounded-full shadow-subtle transition-transform duration-200 group-hover:scale-105"
                   />
-                  <div className="min-w-0">
+                  {/* <div className="min-w-0">
                     <p
                       className={`truncate text-sm font-semibold leading-tight ${
                         isHomeFeedRoute ? "text-white" : "text-interlink-ink"
@@ -336,7 +336,7 @@ export function AppShell({
                     >
                       {user.primaryRole.replace("_", " ")}
                     </p>
-                  </div>
+                  </div> */}
                 </Link>
               ) : (
                 <button
