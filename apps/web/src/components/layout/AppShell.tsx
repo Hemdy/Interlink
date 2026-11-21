@@ -439,11 +439,7 @@ export function AppShell({
         <main
           className={`w-full ${
             isMessagesRoute
-              ? `flex min-h-0 flex-1 flex-col p-0 ${
-                  useBottomNav
-                    ? "pb-[calc(58px+env(safe-area-inset-bottom))]"
-                    : ""
-                }`
+              ? "flex min-h-0 flex-1 flex-col p-0"
               : `mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8 ${
                   useBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))]" : ""
                 }`
@@ -465,8 +461,8 @@ export function AppShell({
         </main>
       </div>
 
-      {/* Fixed Bottom Navigation for Mobile/Tablet/Compact Installed PWA */}
-      {useBottomNav && (
+      {/* Fixed Bottom Navigation for Mobile/Tablet/Compact Installed PWA (hidden inside inbox & conversation views) */}
+      {useBottomNav && !isMessagesRoute && (
         <MobilePWABottomNav
           user={user}
           unreadNotifications={liveUnreadCount}

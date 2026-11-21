@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatDate } from "@interlink/utils";
-import { ChevronRight, Search } from "lucide-react";
+import { ArrowLeft, ChevronRight, Search } from "lucide-react";
 import { EmptyState } from "@/components/ui/Feedback";
 import { useToast } from "@/components/ui/ToastProvider";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -196,6 +196,13 @@ export function MessagesHubClient({
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.12),transparent_48%),radial-gradient(circle_at_88%_78%,rgba(59,104,70,0.08),transparent_54%)] dark:bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.08),transparent_48%),radial-gradient(circle_at_85%_80%,rgba(20,29,25,0.72),transparent_62%)]"
         />
+        <Link
+          href="/dashboard"
+          aria-label="Back to home"
+          className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-ink transition-colors hover:bg-interlink-ink/[0.12] dark:bg-white/[0.08] dark:text-white/90 dark:hover:bg-white/[0.15] lg:hidden"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        </Link>
         <div className="relative z-10 max-w-md text-center">
           <EmptyState
             title="No mentorship conversations yet"
@@ -230,9 +237,18 @@ export function MessagesHubClient({
       >
         <div className="p-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-5">
           <div className="flex items-center justify-between gap-2 pb-3">
-            <h1 className="font-display text-lg font-semibold text-interlink-ink dark:text-white">
-              Messages
-            </h1>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Link
+                href="/dashboard"
+                aria-label="Back to home"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-ink transition-colors hover:bg-interlink-ink/[0.12] dark:bg-white/[0.08] dark:text-white/90 dark:hover:bg-white/[0.15] lg:hidden"
+              >
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <h1 className="font-display text-lg font-semibold text-interlink-ink dark:text-white">
+                Messages
+              </h1>
+            </div>
             <span className="rounded-full bg-interlink-ink/[0.07] px-2.5 py-0.5 text-[11px] font-medium text-interlink-muted dark:bg-white/[0.10] dark:text-emerald-100/80">
               {threads.length} {threads.length === 1 ? "chat" : "chats"}
             </span>

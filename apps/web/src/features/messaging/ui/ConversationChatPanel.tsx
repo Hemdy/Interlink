@@ -8,6 +8,7 @@ import {
   ArrowUp,
   Check,
   Copy,
+  CornerUpRight,
   CornerUpLeft,
   ExternalLink,
   Eye,
@@ -427,7 +428,7 @@ export function ConversationChatPanel({
                 <h2 className="truncate font-display text-sm font-semibold text-interlink-ink dark:text-white sm:text-base">
                   {partnerFullName}
                 </h2>
-                <p className="flex items-center gap-1.5 text-[11px] text-interlink-muted dark:text-white/60">
+                {/* <p className="flex items-center gap-1.5 text-[11px] text-interlink-muted dark:text-white/60">
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${
                       mentorshipStatus === "active"
@@ -439,7 +440,7 @@ export function ConversationChatPanel({
                     aria-hidden="true"
                   />
                   <span className="capitalize">{mentorshipStatus} mentorship</span>
-                </p>
+                </p> */}
               </div>
             </div>
 
@@ -537,7 +538,7 @@ export function ConversationChatPanel({
                           title="Reply to message"
                           className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-muted transition-colors hover:bg-interlink-ink/[0.12] hover:text-interlink-ink dark:bg-white/[0.08] dark:text-white/80 dark:hover:bg-white/[0.16] dark:hover:text-white"
                         >
-                          <CornerUpLeft className="h-3 w-3" aria-hidden="true" />
+                          <CornerUpRight className="h-3 w-3" aria-hidden="true" />
                         </button>
                         <button
                           type="button"
@@ -681,7 +682,7 @@ export function ConversationChatPanel({
       </div>
 
       {/* Floating Glass Multi-Row Composer (Anchored cleanly at bottom) */}
-      <div className="relative z-10 shrink-0 px-3 pb-3 pt-1 sm:px-5 sm:pb-4">
+      <div className="relative z-10 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 sm:px-5 sm:pb-4">
         <form
           onSubmit={handleFormSubmit}
           className="rounded-[20px] bg-interlink-surface/95 p-3 shadow-[0_8px_28px_rgba(32,43,60,0.08)] backdrop-blur-xl dark:bg-[#19241f]/95 dark:shadow-[0_12px_36px_rgba(0,0,0,0.42)] sm:p-3.5"
@@ -798,7 +799,7 @@ export function ConversationChatPanel({
           </div>
         </form>
 
-        <p className="mt-2 text-center text-[11px] text-interlink-muted dark:text-white/40">
+        <p className="mt-2 px-1 text-left text-[11px] text-interlink-muted dark:text-white/40 sm:text-center">
           Never share passwords, banking PINs, or sensitive identity documents in messages.
         </p>
       </div>
