@@ -22,7 +22,6 @@ import {
   Plus,
   Settings,
   ShieldCheck,
-  SlidersHorizontal,
   Trash2,
   X,
 } from "lucide-react";
@@ -43,7 +42,8 @@ import { CreatePostModal } from "@/features/dashboard/ui/CreatePostModal";
 import { ProfileEditorClient } from "@/features/profiles/ui/ProfileEditorClient";
 import { ProfileSettingsPanel } from "@/features/profiles/ui/ProfileSettingsPanel";
 
-type ProfileTab = "posts" | "videos" | "articles" | "edit" | "settings";
+type ContentTab = "posts" | "videos" | "articles";
+type ProfilePanel = "content" | "edit" | "settings";
 
 interface ProfileHubClientProps {
   user: SessionUser;
@@ -122,7 +122,9 @@ export function ProfileHubClient({
   membershipTier = "free",
 }: ProfileHubClientProps) {
   const { pushToast } = useToast();
-  const [activeTab, setActiveTab] = useState<ProfileTab>("posts");
+  const [activePanel, setActivePanel] = useState<ProfilePanel>("content");
+  const [contentTab, setContentTab] = useState<ContentTab>("posts");
+  const [profileImage, setProfileImage] = useState<string | null>(user.profileImage ?? null);
   const [posts, setPosts] = useState<CommunityPostItem[]>(initialPosts);
   const [videos, setVideos] = useState<UserPublishedReelItem[]>(initialVideos);
   const [articles, setArticles] = useState<UserPublishedArticleItem[]>(initialArticles);
@@ -168,7 +170,7 @@ export function ProfileHubClient({
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
     if (tabParam === "settings" || window.location.hash === "#cat-notifications") {
-      setActiveTab("settings");
+      setActivePanel("settings");
       if (window.location.hash) {
         const targetId = window.location.hash.slice(1);
         window.setTimeout(() => {
@@ -179,7 +181,7 @@ export function ProfileHubClient({
     }
 
     if (window.location.hash === "#availability" || tabParam === "edit") {
-      setActiveTab("edit");
+      setActivePanel("edit");
       if (window.location.hash === "#availability") {
         window.setTimeout(() => {
           document.getElementById("availability")?.scrollIntoView({ behavior: "smooth" });
@@ -373,9 +375,9 @@ export function ProfileHubClient({
   }
 
   const tabs: Array<{
-    id: ProfileTab;
+    id: ContentTab;
     label: string;
-    count?: number;
+    count: number;
     icon: React.ComponentType<{ className?: string }>;
   }> = [
     { id: "posts", label: "Posts", count: posts.length, icon: LayoutGrid },
@@ -391,21 +393,19 @@ export function ProfileHubClient({
       count: articlePosts.length + articles.length,
       icon: FileText,
     },
-    { id: "edit", label: "Edit", icon: SlidersHorizontal },
-    { id: "settings", label: "Settings", icon: Settings },
   ];
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       {/* TikTok + Instagram Inspired Profile Header Card */}
       <Card elevated className="overflow-hidden p-5 sm:p-7">
-        <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:gap-7 sm:text-left">
-          {/* Gradient-Ringed Avatar */}
-          <div className="relative shrink-0">
+        <div className="flex flex-col items-center text-center">
+          {/* 1. Profile / Display Picture */}
+          <div className="relative shrink-0" data-profile-card-avatar="true">
             <div className="rounded-full bg-gradient-to-tr from-interlink-gold via-interlink-forest to-emerald-400 p-[3px] shadow-card">
               <div className="rounded-full border-[3px] border-interlink-surface bg-interlink-surface">
                 <UserAvatar
-                  src={user.profileImage}
+                  src={profileImage}
                   firstName={user.firstName}
                   lastName={user.lastName}
                   size="lg"
@@ -423,30 +423,39 @@ export function ProfileHubClient({
             )}
           </div>
 
-          <div className="mt-4 min-w-0 flex-1 sm:mt-0">
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-              <h1 className="font-display text-xl font-bold tracking-tight text-interlink-ink sm:text-2xl">
-                {user.firstName} {user.lastName}
-              </h1>
-              <Badge tone="forest" className="capitalize">
-                {role}
-              </Badge>
-              <Badge tone={membershipTier === "free" ? "neutral" : "gold"} className="capitalize">
-                {membershipTier === "free" ? "Free" : `Interlink ${membershipTier}`}
-              </Badge>
-            </div>
+          {/* 2. Role (Mentor) & Subscription Badges directly below profile picture */}
+          <div
+            data-profile-card-badges="true"
+            className="mt-3 flex flex-wrap items-center justify-center gap-2"
+          >
+            <Badge tone="forest" className="capitalize">
+              {role}
+            </Badge>
+            <Badge tone={membershipTier === "free" ? "neutral" : "gold"} className="capitalize">
+              {membershipTier === "free" ? "Free" : `Interlink ${membershipTier}`}
+            </Badge>
+          </div>
 
-            <p className="mt-0.5 text-xs font-medium text-interlink-muted">{handleText}</p>
+          {/* 3. User's Name directly below the badges */}
+          <h1
+            data-profile-card-name="true"
+            className="mt-2 font-display text-xl font-bold tracking-tight text-interlink-ink sm:text-2xl"
+          >
+            {user.firstName} {user.lastName}
+          </h1>
+
+          <div className="mt-0.5 w-full max-w-xl min-w-0">
+            <p className="text-xs font-medium text-interlink-muted">{handleText}</p>
             <p className="mt-1.5 text-sm font-medium text-interlink-ink/90">{headline}</p>
 
             {bioText && (
-              <p className="mt-1.5 line-clamp-2 max-w-xl text-xs leading-relaxed text-interlink-muted">
+              <p className="mx-auto mt-1.5 line-clamp-2 max-w-xl text-xs leading-relaxed text-interlink-muted">
                 {bioText}
               </p>
             )}
 
             {/* IG / TikTok 4-Metric Row */}
-            <div className="mt-4 grid max-w-md grid-cols-4 divide-x divide-interlink-border/70 rounded-2xl border border-interlink-border/70 bg-interlink-app-bg/50 py-2.5 text-center">
+            <div className="mx-auto mt-4 grid max-w-md grid-cols-4 rounded-2xl bg-interlink-app-bg/70 py-2.5 text-center shadow-subtle">
               <div className="px-2">
                 <p className="font-display text-base font-bold text-interlink-ink">
                   {posts.length}
@@ -474,7 +483,7 @@ export function ProfileHubClient({
             </div>
 
             {/* Action Pills */}
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
               <Button
                 type="button"
                 size="sm"
@@ -482,72 +491,94 @@ export function ProfileHubClient({
               >
                 <Plus className="h-4 w-4" /> Create Post
               </Button>
+              {activePanel !== "content" && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setActivePanel("content")}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" aria-hidden="true" />
+                  View Content
+                </Button>
+              )}
               <Button
                 type="button"
                 size="sm"
-                variant={activeTab === "edit" ? "primary" : "outline"}
-                onClick={() => setActiveTab(activeTab === "edit" ? "posts" : "edit")}
+                variant={activePanel === "edit" ? "primary" : "outline"}
+                aria-expanded={activePanel === "edit"}
+                onClick={() =>
+                  setActivePanel((prev) => (prev === "edit" ? "content" : "edit"))
+                }
               >
-                <Pencil className="h-3.5 w-3.5" />
-                {activeTab === "edit" ? "View Content" : "Edit Profile"}
+                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                Edit Profile
               </Button>
               {role === "mentor" && (
                 <Link
                   href={`/mentors/${user.id}`}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-interlink-border bg-interlink-surface px-3.5 text-xs font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full bg-interlink-app-bg px-3.5 text-xs font-semibold text-interlink-ink transition-colors hover:bg-interlink-forest/10 hover:text-interlink-forest"
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                   Public View
                 </Link>
               )}
               <button
                 type="button"
-                onClick={() => setActiveTab(activeTab === "settings" ? "posts" : "settings")}
+                onClick={() =>
+                  setActivePanel((prev) => (prev === "settings" ? "content" : "settings"))
+                }
                 aria-label="Account Settings"
-                aria-pressed={activeTab === "settings"}
-                className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
-                  activeTab === "settings"
-                    ? "border-interlink-forest bg-interlink-forest text-white shadow-subtle"
-                    : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+                aria-expanded={activePanel === "settings"}
+                aria-pressed={activePanel === "settings"}
+                className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-colors ${
+                  activePanel === "settings"
+                    ? "bg-interlink-forest text-white shadow-subtle"
+                    : "bg-interlink-app-bg text-interlink-ink hover:bg-interlink-forest/10 hover:text-interlink-forest"
                 }`}
               >
-                <Settings className="h-4 w-4" />
+                <Settings className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Settings</span>
               </button>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* IG / TikTok Underline Icon Tab Bar */}
-      <div className="grid grid-cols-5 rounded-t-2xl border-b border-interlink-border bg-interlink-surface/80 backdrop-blur-sm">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const active = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center justify-center gap-1 border-b-2 px-1 py-3 text-[11px] font-semibold transition-colors sm:gap-1.5 sm:text-xs ${
-                active
-                  ? "border-interlink-forest text-interlink-forest"
-                  : "border-transparent text-interlink-muted hover:text-interlink-ink"
-              }`}
-            >
-              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">{tab.label}</span>
-              {typeof tab.count === "number" && (
-                <span className="hidden rounded-full bg-interlink-app-bg px-1.5 py-0.5 text-[10px] sm:inline">
+      {/* Content Tabs Bar (Shown when viewing profile content) */}
+      {activePanel === "content" && (
+        <div className="grid grid-cols-3 rounded-2xl bg-interlink-surface p-1 shadow-subtle">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const active = contentTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setContentTab(tab.id)}
+                className={`flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-semibold transition-colors ${
+                  active
+                    ? "bg-interlink-forest text-white shadow-subtle"
+                    : "text-interlink-muted hover:text-interlink-ink"
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">{tab.label}</span>
+                <span
+                  className={`hidden rounded-full px-1.5 py-0.5 text-[10px] sm:inline ${
+                    active ? "bg-white/20 text-white" : "bg-interlink-app-bg text-interlink-muted"
+                  }`}
+                >
                   {tab.count}
                 </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* TAB 1: ALL POSTS (IG/TikTok Visual Grid) */}
-      {activeTab === "posts" && (
+      {activePanel === "content" && contentTab === "posts" && (
         posts.length === 0 ? (
           <Card className="p-8 text-center">
             <LayoutGrid className="mx-auto h-7 w-7 text-interlink-muted" />
@@ -566,7 +597,7 @@ export function ProfileHubClient({
             {posts.map((post) => (
               <div
                 key={post.id}
-                className="group relative flex flex-col overflow-hidden rounded-2xl border border-interlink-border/80 bg-interlink-surface shadow-subtle transition-shadow hover:shadow-card"
+                className="group relative flex flex-col overflow-hidden rounded-2xl bg-interlink-surface shadow-subtle transition-shadow hover:shadow-card"
               >
                 <button
                   type="button"
@@ -662,7 +693,7 @@ export function ProfileHubClient({
       )}
 
       {/* TAB 2: VIDEOS */}
-      {activeTab === "videos" && (
+      {activePanel === "content" && contentTab === "videos" && (
         videoPosts.length === 0 && videos.length === 0 ? (
           <Card className="p-8 text-center">
             <Film className="mx-auto h-7 w-7 text-interlink-muted" />
@@ -678,7 +709,7 @@ export function ProfileHubClient({
             {videoPosts.map((post) => (
               <div
                 key={`vp-${post.id}`}
-                className="overflow-hidden rounded-2xl border border-interlink-border bg-interlink-surface shadow-subtle"
+                className="overflow-hidden rounded-2xl bg-interlink-surface shadow-subtle"
               >
                 <button
                   type="button"
@@ -739,7 +770,7 @@ export function ProfileHubClient({
             {videos.map((reel) => (
               <div
                 key={`reel-${reel.id}`}
-                className="overflow-hidden rounded-2xl border border-interlink-border bg-interlink-surface shadow-subtle"
+                className="overflow-hidden rounded-2xl bg-interlink-surface shadow-subtle"
               >
                 <button
                   type="button"
@@ -795,7 +826,7 @@ export function ProfileHubClient({
       )}
 
       {/* TAB 3: ARTICLES & RESOURCES */}
-      {activeTab === "articles" && (
+      {activePanel === "content" && contentTab === "articles" && (
         articlePosts.length === 0 && articles.length === 0 ? (
           <Card className="p-8 text-center">
             <Bookmark className="mx-auto h-7 w-7 text-interlink-muted" />
@@ -912,34 +943,39 @@ export function ProfileHubClient({
         )
       )}
 
-      {/* TAB 4: FULL PROFILE DETAILS EDITOR */}
-      {activeTab === "edit" && (
-        <ProfileEditorClient
-          role={role}
-          industries={industries}
-          initialMentor={initialMentor}
-          initialMentee={initialMentee}
-          initialSlots={initialSlots}
-          userFirstName={user.firstName}
-          userLastName={user.lastName}
-          initialProfileImage={user.profileImage}
-        />
+      {/* EXPANDABLE SECTION: FULL PROFILE DETAILS EDITOR */}
+      {activePanel === "edit" && (
+        <div className="animate-hero-up">
+          <ProfileEditorClient
+            role={role}
+            industries={industries}
+            initialMentor={initialMentor}
+            initialMentee={initialMentee}
+            initialSlots={initialSlots}
+            userFirstName={user.firstName}
+            userLastName={user.lastName}
+            initialProfileImage={profileImage}
+            onProfileImageChange={(nextUrl) => setProfileImage(nextUrl)}
+          />
+        </div>
       )}
 
-      {/* TAB 5: CONSOLIDATED ACCOUNT SETTINGS, MEMBERSHIP & UPDATES */}
-      {activeTab === "settings" && (
-        <ProfileSettingsPanel
-          user={user}
-          blockedUsers={blockedUsers}
-          unreadNotifications={unreadNotifications}
-          membershipTier={membershipTier}
-          onOpenAvailability={() => {
-            setActiveTab("edit");
-            window.setTimeout(() => {
-              document.getElementById("availability")?.scrollIntoView({ behavior: "smooth" });
-            }, 120);
-          }}
-        />
+      {/* EXPANDABLE SECTION: CONSOLIDATED ACCOUNT SETTINGS, MEMBERSHIP & UPDATES */}
+      {activePanel === "settings" && (
+        <div className="animate-hero-up">
+          <ProfileSettingsPanel
+            user={user}
+            blockedUsers={blockedUsers}
+            unreadNotifications={unreadNotifications}
+            membershipTier={membershipTier}
+            onOpenAvailability={() => {
+              setActivePanel("edit");
+              window.setTimeout(() => {
+                document.getElementById("availability")?.scrollIntoView({ behavior: "smooth" });
+              }, 120);
+            }}
+          />
+        </div>
       )}
 
       {/* Create Post Modal */}
@@ -948,7 +984,8 @@ export function ProfileHubClient({
         onClose={() => setCreateOpen(false)}
         onCreated={(createdPost) => {
           setPosts((prev) => [createdPost, ...prev]);
-          setActiveTab("posts");
+          setActivePanel("content");
+          setContentTab("posts");
         }}
       />
 

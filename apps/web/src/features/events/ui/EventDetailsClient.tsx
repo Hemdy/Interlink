@@ -126,7 +126,7 @@ export function EventDetailsClient({
             </span>
           </div>
 
-          <div className="rounded-2xl border border-interlink-border/70 bg-interlink-app-bg/40 p-4">
+          <div className="rounded-2xl bg-interlink-app-bg/70 p-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-interlink-forest">
               About This{" "}
               {event.category === "promotion"
@@ -156,7 +156,7 @@ export function EventDetailsClient({
               </Link>
             </div>
           ) : registered ? (
-            <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200">
+            <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-interlink-forest" aria-hidden="true" />
               <span>Your spot is reserved for {event.title}.</span>
             </div>

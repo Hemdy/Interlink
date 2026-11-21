@@ -10,8 +10,7 @@ import {
 import { MentorDirectoryClient } from "@/features/discovery/ui/MentorDirectoryClient";
 import { getCurrentUser } from "@/lib/auth/session";
 
-async function MentorDirectorySection() {
-  const user = await getCurrentUser();
+async function MentorDirectorySection({ user }: { user: Awaited<ReturnType<typeof getCurrentUser>> }) {
   const [{ mentors }, industryList] = await Promise.all([
     listPublicMentors({ limit: 24, viewerUserId: user?.id ?? null }),
     listActiveIndustries(),
@@ -29,9 +28,11 @@ async function MentorDirectorySection() {
   );
 }
 
-export default function MentorsDirectoryPage() {
+export default async function MentorsDirectoryPage() {
+  const user = await getCurrentUser();
+
   return (
-    <PublicShell>
+    <PublicShell user={user}>
       <InteractiveMatteHero paddingClassName="py-12 sm:py-14">
         <div className="mx-auto max-w-[1360px] px-6 sm:px-10">
           <div className="animate-hero-up">
@@ -51,7 +52,7 @@ export default function MentorsDirectoryPage() {
       <section className="bg-interlink-app-bg py-10">
         <div className="mx-auto max-w-[1360px] px-6 sm:px-10">
           <Suspense fallback={<MentorDirectoryContentSkeleton />}>
-            <MentorDirectorySection />
+            <MentorDirectorySection user={user} />
           </Suspense>
         </div>
       </section>

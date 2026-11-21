@@ -306,6 +306,7 @@ export const updateSessionSchema = z.object({
 export const sendMessageSchema = z.object({
   content: z.string().trim().min(1, "Message cannot be empty.").max(4000),
   attachmentUrl: mediaReferenceSchema.optional().nullable().or(z.literal("")),
+  replyToMessageId: uuidSchema.optional().nullable(),
 });
 
 export const createResourceSchema = z.object({

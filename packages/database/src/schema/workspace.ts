@@ -100,6 +100,7 @@ export const messages = pgTable("messages", {
   senderId: uuid("sender_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  replyToMessageId: uuid("reply_to_message_id"),
   content: text("content").notNull(),
   attachmentUrl: text("attachment_url"),
   readAt: timestamp("read_at", { withTimezone: true }),

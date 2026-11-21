@@ -26,12 +26,14 @@ export function ProfileEditorClient({
   userFirstName = "",
   userLastName = "",
   initialProfileImage = null,
+  onProfileImageChange,
 }: {
   role: "mentor" | "mentee";
   industries: IndustryOption[];
   userFirstName?: string;
   userLastName?: string;
   initialProfileImage?: string | null;
+  onProfileImageChange?: (url: string | null) => void;
   initialMentor?: {
     biography: string;
     currentPosition: string;
@@ -309,38 +311,39 @@ export function ProfileEditorClient({
     <div className="mx-auto max-w-4xl space-y-6">
       {/* Header Overview Card */}
       <Card className="bg-gradient-to-br from-interlink-forest/[0.06] via-interlink-surface to-interlink-surface">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <AvatarUploadCard
-            firstName={userFirstName}
-            lastName={userLastName}
-            initialProfileImage={initialProfileImage}
-            compact
-          />
-
-          <div className="w-full sm:max-w-[240px]">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-interlink-muted">Profile strength</span>
-              <span className="font-semibold text-interlink-forest">{completionPct}%</span>
+        <AvatarUploadCard
+          firstName={userFirstName}
+          lastName={userLastName}
+          initialProfileImage={initialProfileImage}
+          onUploaded={(newUrl) => onProfileImageChange?.(newUrl)}
+          onRemoved={() => onProfileImageChange?.(null)}
+          compact
+          besideSlot={
+            <div className="w-full max-w-sm">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-interlink-muted">Profile strength</span>
+                <span className="font-semibold text-interlink-forest">{completionPct}%</span>
+              </div>
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-interlink-app-bg">
+                <div
+                  className="h-full rounded-full bg-interlink-forest transition-all duration-300"
+                  style={{ width: `${Math.min(100, Math.max(8, completionPct))}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-[11px] capitalize text-interlink-muted">
+                {role} profile &middot;{" "}
+                {visibility === "public"
+                  ? "Public"
+                  : visibility === "members_only"
+                    ? "Members only"
+                    : "Private"}
+              </p>
             </div>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-interlink-app-bg">
-              <div
-                className="h-full rounded-full bg-interlink-forest transition-all duration-300"
-                style={{ width: `${Math.min(100, Math.max(8, completionPct))}%` }}
-              />
-            </div>
-            <p className="mt-1.5 text-[11px] capitalize text-interlink-muted">
-              {role} profile &middot;{" "}
-              {visibility === "public"
-                ? "Public"
-                : visibility === "members_only"
-                  ? "Members only"
-                  : "Private"}
-            </p>
-          </div>
-        </div>
+          }
+        />
 
         {/* Category Jump Pills */}
-        <div className="no-scrollbar mt-5 flex items-center gap-2 overflow-x-auto border-t border-interlink-border/60 pt-4">
+        <div className="no-scrollbar mt-4 flex items-center gap-2 overflow-x-auto pt-1">
           {[
             { label: "Identity", href: "#profile-identity" },
             { label: role === "mentor" ? "Story & Approach" : "Goals & Story", href: "#profile-story" },
@@ -351,7 +354,7 @@ export function ProfileEditorClient({
             <a
               key={tab.href}
               href={tab.href}
-              className="shrink-0 rounded-full border border-interlink-border bg-interlink-surface px-3.5 py-1.5 text-xs font-medium text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+              className="shrink-0 rounded-full bg-interlink-app-bg px-3.5 py-1.5 text-xs font-medium text-interlink-ink transition-colors hover:bg-interlink-forest/10 hover:text-interlink-forest"
             >
               {tab.label}
             </a>
@@ -657,7 +660,7 @@ export function ProfileEditorClient({
                   onChange={(e) => setQualifications(e.target.value)}
                 />
 
-                <div className="rounded-2xl border border-interlink-border bg-interlink-surface p-4">
+                <div className="rounded-2xl bg-interlink-surface p-4 shadow-subtle">
                   <p className="text-xs font-semibold text-interlink-ink">
                     Verification Credential (Optional)
                   </p>

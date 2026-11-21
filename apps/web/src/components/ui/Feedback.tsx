@@ -20,7 +20,7 @@ export function ErrorAlert({
   return (
     <div
       role="alert"
-      className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-200"
+      className="flex items-start gap-3 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200"
     >
       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
       <div>
@@ -43,7 +43,7 @@ export function EmptyState({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-interlink-border bg-interlink-surface px-6 py-10 text-center shadow-subtle">
+    <div className="flex flex-col items-center justify-center rounded-2xl bg-interlink-surface px-6 py-10 text-center shadow-subtle">
       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-interlink-forest/10 text-interlink-forest">
         {icon ?? <Inbox className="h-5 w-5" aria-hidden="true" />}
       </div>

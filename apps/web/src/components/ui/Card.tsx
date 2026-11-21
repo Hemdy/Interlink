@@ -14,7 +14,7 @@ export function Card({
 }: CardProps) {
   return (
     <div
-      className={`rounded-2xl border border-interlink-border/80 bg-interlink-surface text-interlink-ink transition-all duration-200 ${
+      className={`rounded-2xl bg-interlink-surface text-interlink-ink transition-all duration-200 ${
         elevated ? "shadow-elevated" : "shadow-subtle"
       } ${padded ? "p-5 sm:p-6" : ""} ${className}`}
       {...props}

@@ -9,12 +9,10 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { postJson } from "@/lib/api/client";
 import {
   AuthBottomCard,
-  AuthDivider,
   AuthModalCard,
   AuthPillInput,
   AuthSubmitButton,
 } from "./AuthShell";
-import { GoogleAuthButton } from "./GoogleAuthButton";
 import { resetClientSessionAndNavigate } from "./SessionSyncGuard";
 
 export type AuthModalView = "sign-in" | "sign-up" | "forgot-password" | null;
@@ -284,21 +282,7 @@ export default function AuthModalsLazy({
             </div>
           )}
 
-          <div className="mt-4">
-            <GoogleAuthButton
-              variant="pill"
-              role={role}
-              label={`Sign up as ${role === "mentor" ? "Mentor" : "Mentee"} with Google`}
-              onSuccess={() => {
-                closeAuthModal();
-                resetClientSessionAndNavigate("/dashboard");
-              }}
-            />
-          </div>
-
-          <AuthDivider label="or register with email" />
-
-          <form onSubmit={handleRegister} className="space-y-3">
+          <form onSubmit={handleRegister} className="mt-5 space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <AuthPillInput
                 icon={User}
@@ -366,44 +350,19 @@ export default function AuthModalsLazy({
             />
           </form>
 
-          <p className="mt-5 text-center text-[11px] leading-relaxed text-interlink-muted">
-            By clicking Sign Up, you agree to our{" "}
-            <Link
-              href="/legal/terms"
-              onClick={closeAuthModal}
-              className="font-medium text-interlink-forest hover:underline"
+          <p className="mt-7 text-center text-xs text-interlink-muted">
+            Already have an account?{" "}
+            <button
+              type="button"
+              onClick={() => {
+                resetMessages();
+                setView("sign-in");
+              }}
+              className="font-semibold text-interlink-forest hover:underline"
             >
-              Terms and Condition
-            </Link>
-            . Learn how we process your data in our{" "}
-            <Link
-              href="/legal/privacy"
-              onClick={closeAuthModal}
-              className="font-medium text-interlink-forest hover:underline"
-            >
-              Privacy Policy
-            </Link>{" "}
-            and{" "}
-            <Link
-              href="/legal/cookies"
-              onClick={closeAuthModal}
-              className="font-medium text-interlink-forest hover:underline"
-            >
-              Cookie Policy
-            </Link>
-            .
+              Sign in.
+            </button>
           </p>
-
-          <AuthBottomCard
-            icon={LogIn}
-            title="Already have an account?"
-            description="Sign in to access your mentorship workspace"
-            ctaLabel="Sign In"
-            onCtaClick={() => {
-              resetMessages();
-              setView("sign-in");
-            }}
-          />
         </AuthModalCard>
       </Modal>
 

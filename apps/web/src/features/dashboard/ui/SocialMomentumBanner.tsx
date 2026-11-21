@@ -86,7 +86,7 @@ export function SocialMomentumBanner({
           : "Keep your momentum going with regular check-ins and sessions.";
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-interlink-border/80 bg-gradient-to-br from-interlink-surface via-interlink-surface to-interlink-forest/[0.06] p-5 shadow-elevated sm:p-6">
+    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-interlink-surface via-interlink-surface to-interlink-forest/[0.06] p-5 shadow-elevated sm:p-6">
       <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
         <div className="min-w-0 flex-1 space-y-3">
           <div className="flex flex-wrap items-center gap-2">

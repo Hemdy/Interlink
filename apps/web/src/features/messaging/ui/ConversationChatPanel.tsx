@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { formatDateTime } from "@interlink/utils";
 import {
@@ -14,7 +14,6 @@ import {
   FileText,
   Loader2,
   Paperclip,
-  SlidersHorizontal,
   X,
 } from "lucide-react";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -32,16 +31,11 @@ export interface ChatParticipant {
 export interface ChatMessageItem {
   id: string;
   senderId: string;
+  replyToMessageId?: string | null;
   content: string;
   attachmentUrl: string | null;
   createdAt: string;
 }
-
-const DEFAULT_PROMPT_CHIPS = [
-  { id: "agenda", label: "session agenda", text: "Hi! Could we align on our agenda for our next mentorship session? " },
-  { id: "checkin", label: "goal check-in", text: "Quick goal check-in: here is what I completed this week — " },
-  { id: "feedback", label: "ask feedback", text: "Would love your feedback when you have a moment: " },
-];
 
 type AttachmentKind = "image" | "video" | "document";
 
@@ -80,7 +74,11 @@ export function ConversationChatPanel({
   mentorshipId: string;
   mentorshipStatus: string;
   messages: ChatMessageItem[];
-  onSendMessage: (content: string, attachmentUrl?: string | null) => Promise<boolean>;
+  onSendMessage: (
+    content: string,
+    attachmentUrl?: string | null,
+    replyToMessageId?: string | null,
+  ) => Promise<boolean>;
   sending?: boolean;
   loadingMessages?: boolean;
   onBack?: () => void;
@@ -97,12 +95,15 @@ export function ConversationChatPanel({
     url: string;
     kind: AttachmentKind;
   } | null>(null);
-  const [showPromptChips, setShowPromptChips] = useState(true);
-  const [dismissedChips, setDismissedChips] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [replyToMessage, setReplyToMessage] = useState<ChatMessageItem | null>(null);
+  const [highlightedJumpId, setHighlightedJumpId] = useState<string | null>(null);
 
   const listRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const messageNodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const touchStartRef = useRef<{ id: string; x: number; y: number } | null>(null);
 
   const isTerminated = mentorshipStatus === "terminated";
   const hasOptimistic = messages.some((m) => m.id.startsWith("temp-msg-"));
@@ -111,6 +112,22 @@ export function ConversationChatPanel({
     !isTerminated &&
     !sending &&
     (messageText.trim().length > 0 || attachmentUrl.trim().length > 0);
+
+  const messagesById = useMemo(
+    () => new Map(messages.map((m) => [m.id, m])),
+    [messages],
+  );
+
+  const selectedMessage = useMemo(
+    () => (selectedMessageId ? messagesById.get(selectedMessageId) ?? null : null),
+    [messagesById, selectedMessageId],
+  );
+
+  useEffect(() => {
+    setSelectedMessageId(null);
+    setReplyToMessage(null);
+    setHighlightedJumpId(null);
+  }, [conversationId]);
 
   useEffect(() => {
     const el = listRef.current;
@@ -134,15 +151,22 @@ export function ConversationChatPanel({
 
     const prevText = messageText;
     const prevAttachment = attachmentUrl;
+    const prevReplyTo = replyToMessage;
+    const replyTargetId =
+      prevReplyTo && !prevReplyTo.id.startsWith("temp-msg-") ? prevReplyTo.id : null;
+
     setMessageText("");
     setAttachmentUrl("");
     setShowAttachmentInput(false);
     setAttachmentDropzoneKey((k) => k + 1);
+    setReplyToMessage(null);
+    setSelectedMessageId(null);
 
-    const ok = await onSendMessage(trimmed, cleanedAttachment);
+    const ok = await onSendMessage(trimmed, cleanedAttachment, replyTargetId);
     if (!ok) {
       setMessageText(prevText);
       setAttachmentUrl(prevAttachment);
+      setReplyToMessage(prevReplyTo);
       if (prevAttachment) setShowAttachmentInput(true);
     }
   }
@@ -153,6 +177,11 @@ export function ConversationChatPanel({
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Escape" && replyToMessage) {
+      e.preventDefault();
+      setReplyToMessage(null);
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       void submitCurrentMessage();
@@ -171,17 +200,68 @@ export function ConversationChatPanel({
     }
   }
 
-  function handleQuote(msg: ChatMessageItem) {
-    const snippet = msg.content.trim().slice(0, 80);
-    const quoteLine = `Re: "${snippet}${msg.content.trim().length > 80 ? "..." : ""}"\n`;
-    setMessageText((prev) => (prev ? `${quoteLine}${prev}` : quoteLine));
-    textareaRef.current?.focus();
+  function startReplyToMessage(msg: ChatMessageItem) {
+    if (isTerminated || !conversationId) return;
+    setReplyToMessage(msg);
+    setSelectedMessageId(null);
+    window.requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
   }
 
-  const visibleChips = DEFAULT_PROMPT_CHIPS.filter((c) => !dismissedChips.includes(c.id));
+  function toggleMessageSelection(msg: ChatMessageItem) {
+    setSelectedMessageId((prev) => (prev === msg.id ? null : msg.id));
+  }
+
+  function jumpToMessage(targetId: string) {
+    const node = messageNodeRefs.current[targetId];
+    if (!node) return;
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedJumpId(targetId);
+    window.setTimeout(() => {
+      setHighlightedJumpId((prev) => (prev === targetId ? null : prev));
+    }, 1500);
+  }
+
   const partnerFullName = partner
     ? `${partner.firstName} ${partner.lastName}`.trim()
     : "Mentorship Partner";
+
+  function formatSenderLabel(senderId: string) {
+    if (senderId === currentUser.id) return "You";
+    return partnerFullName;
+  }
+
+  function renderQuotedReference(msg: ChatMessageItem, mine: boolean) {
+    if (!msg.replyToMessageId) return null;
+    const parentMsg = messagesById.get(msg.replyToMessageId);
+    const parentAuthor = parentMsg ? formatSenderLabel(parentMsg.senderId) : "Replied message";
+    const parentText = parentMsg
+      ? parentMsg.content.trim() || (parentMsg.attachmentUrl ? "Shared attachment" : "")
+      : "Original message unavailable";
+
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (parentMsg) jumpToMessage(parentMsg.id);
+        }}
+        className={`mb-2 block w-full rounded-xl border-l-[3px] border-interlink-forest px-2.5 py-1.5 text-left transition-colors dark:border-emerald-400 ${
+          mine
+            ? "bg-interlink-app-bg/90 hover:bg-interlink-app-bg dark:bg-[#0f1613]/75 dark:hover:bg-[#0f1613]"
+            : "bg-white/75 hover:bg-white dark:bg-[#0f1613]/70 dark:hover:bg-[#0f1613]"
+        }`}
+      >
+        <p className="truncate text-[11px] font-semibold text-interlink-forest dark:text-emerald-300">
+          {parentAuthor}
+        </p>
+        <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-interlink-muted dark:text-white/65">
+          {parentText}
+        </p>
+      </button>
+    );
+  }
 
   function renderAttachmentBubble(url: string) {
     const kind = detectAttachmentKind(url);
@@ -248,77 +328,131 @@ export function ConversationChatPanel({
       className={`relative flex min-h-0 flex-col overflow-hidden ${
         transparentCanvas
           ? ""
-          : "rounded-3xl bg-[#f6f8f7] shadow-elevated ring-1 ring-interlink-border/75 dark:bg-[#0e1011] dark:ring-white/[0.08]"
+          : "rounded-3xl bg-[#f6f8f7] shadow-subtle dark:bg-[#0f1613]"
       } text-interlink-ink dark:text-white ${className}`}
     >
-      {/* Theme-Adaptive Subtle Warm Ambient Radial Backdrop (No Green Clash) */}
+      {/* Theme-Adaptive Subtle Mentee-Aligned Dark Green Radial Backdrop */}
       {!transparentCanvas && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.14),transparent_48%),radial-gradient(circle_at_88%_78%,rgba(32,43,60,0.04),transparent_52%)] dark:bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.18),transparent_44%),radial-gradient(circle_at_85%_80%,rgba(255,255,255,0.02),transparent_50%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.12),transparent_48%),radial-gradient(circle_at_88%_78%,rgba(59,104,70,0.08),transparent_54%)] dark:bg-[radial-gradient(circle_at_12%_18%,rgba(200,159,93,0.08),transparent_48%),radial-gradient(circle_at_85%_80%,rgba(20,29,25,0.72),transparent_62%)]"
         />
       )}
 
-      {/* Compact Frosted Header */}
-      <header className="relative z-10 flex shrink-0 items-center justify-between gap-3 border-b border-interlink-border/60 bg-interlink-surface/75 px-4 py-3 backdrop-blur-md dark:border-white/[0.07] dark:bg-white/[0.02] sm:px-5">
-        <div className="flex min-w-0 items-center gap-3">
-          {onBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              aria-label="Back to conversations"
-              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-ink transition-colors hover:bg-interlink-ink/[0.12] dark:bg-white/[0.08] dark:text-white/90 dark:hover:bg-white/[0.15] ${
-                alwaysShowBack ? "" : "lg:hidden"
-              }`}
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            </button>
-          )}
+      {/* Compact Borderless Conversation Partner / Selection Action Bar */}
+      <header className="relative z-10 flex min-h-[60px] shrink-0 items-center justify-between gap-3 bg-interlink-surface/75 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-md dark:bg-[#141d19]/85 sm:px-5">
+        {selectedMessage ? (
+          <>
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedMessageId(null)}
+                aria-label="Clear selected message"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-interlink-ink/[0.07] text-interlink-ink transition-colors hover:bg-interlink-ink/[0.14] dark:bg-white/[0.08] dark:text-white dark:hover:bg-white/[0.16]"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+              <div className="min-w-0">
+                <p className="truncate font-display text-sm font-semibold text-interlink-ink dark:text-white">
+                  1 selected
+                </p>
+                <p className="truncate text-[11px] text-interlink-muted dark:text-white/60">
+                  {formatSenderLabel(selectedMessage.senderId)} &middot; tap Reply to quote
+                </p>
+              </div>
+            </div>
 
-          <div className="relative shrink-0">
-            <UserAvatar
-              src={partner?.profileImage}
-              firstName={partner?.firstName ?? "P"}
-              lastName={partner?.lastName ?? ""}
-              size="sm"
-              className="border-interlink-border dark:border-white/15"
-            />
-            {mentorshipStatus === "active" && (
-              <span
-                className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-interlink-surface bg-emerald-500 dark:border-[#0e1011] dark:bg-emerald-400"
-                aria-hidden="true"
-              />
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => startReplyToMessage(selectedMessage)}
+                disabled={isTerminated}
+                aria-label="Reply to selected message"
+                className="inline-flex items-center gap-1.5 rounded-full bg-interlink-forest px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover disabled:opacity-50"
+              >
+                <CornerUpLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Reply</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void handleCopy(selectedMessage);
+                  setSelectedMessageId(null);
+                }}
+                aria-label="Copy selected message"
+                title="Copy message"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-interlink-ink/[0.07] text-interlink-ink transition-colors hover:bg-interlink-ink/[0.14] dark:bg-white/[0.08] dark:text-white dark:hover:bg-white/[0.16]"
+              >
+                {copiedId === selectedMessage.id ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" aria-hidden="true" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                )}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex min-w-0 items-center gap-3">
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  aria-label="Back to conversations"
+                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-ink transition-colors hover:bg-interlink-ink/[0.12] dark:bg-white/[0.08] dark:text-white/90 dark:hover:bg-white/[0.15] ${
+                    alwaysShowBack ? "" : "lg:hidden"
+                  }`}
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                </button>
+              )}
+
+              <div className="relative shrink-0">
+                <UserAvatar
+                  src={partner?.profileImage}
+                  firstName={partner?.firstName ?? "P"}
+                  lastName={partner?.lastName ?? ""}
+                  size="sm"
+                  className="border-interlink-border dark:border-white/15"
+                />
+                {mentorshipStatus === "active" && (
+                  <span
+                    className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-interlink-surface bg-emerald-500 dark:border-[#0f1613] dark:bg-emerald-400"
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="truncate font-display text-sm font-semibold text-interlink-ink dark:text-white sm:text-base">
+                  {partnerFullName}
+                </h2>
+                <p className="flex items-center gap-1.5 text-[11px] text-interlink-muted dark:text-white/60">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      mentorshipStatus === "active"
+                        ? "bg-emerald-500 dark:bg-emerald-400"
+                        : mentorshipStatus === "completed"
+                          ? "bg-sky-500 dark:bg-sky-400"
+                          : "bg-amber-500 dark:bg-amber-400"
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <span className="capitalize">{mentorshipStatus} mentorship</span>
+                </p>
+              </div>
+            </div>
+
+            {showWorkspaceLink && (
+              <Link
+                href={`/mentorships/${mentorshipId}`}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-interlink-surface px-3 py-1.5 text-xs font-medium text-interlink-ink transition-colors hover:text-interlink-forest dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.14] dark:hover:text-white"
+              >
+                <span>Workspace</span>
+                <ExternalLink className="h-3 w-3" aria-hidden="true" />
+              </Link>
             )}
-          </div>
-
-          <div className="min-w-0">
-            <h2 className="truncate font-display text-sm font-semibold text-interlink-ink dark:text-white sm:text-base">
-              {partnerFullName}
-            </h2>
-            <p className="flex items-center gap-1.5 text-[11px] text-interlink-muted dark:text-white/60">
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  mentorshipStatus === "active"
-                    ? "bg-emerald-500 dark:bg-emerald-400"
-                    : mentorshipStatus === "completed"
-                      ? "bg-sky-500 dark:bg-sky-400"
-                      : "bg-amber-500 dark:bg-amber-400"
-                }`}
-                aria-hidden="true"
-              />
-              <span className="capitalize">{mentorshipStatus} mentorship</span>
-            </p>
-          </div>
-        </div>
-
-        {showWorkspaceLink && (
-          <Link
-            href={`/mentorships/${mentorshipId}`}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-interlink-border/80 bg-interlink-surface px-3 py-1.5 text-xs font-medium text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest dark:border-white/12 dark:bg-white/[0.06] dark:text-white/85 dark:hover:bg-white/[0.14] dark:hover:text-white"
-          >
-            <span>Workspace</span>
-            <ExternalLink className="h-3 w-3" aria-hidden="true" />
-          </Link>
+          </>
         )}
       </header>
 
@@ -351,19 +485,95 @@ export function ConversationChatPanel({
           messages.map((msg) => {
             const mine = msg.senderId === currentUser.id;
             const isTemp = msg.id.startsWith("temp-msg-");
+            const isSelected = selectedMessageId === msg.id;
+            const isJumpTarget = highlightedJumpId === msg.id;
+
+            const rowHighlightClass =
+              isSelected || isJumpTarget
+                ? "-mx-2 rounded-2xl bg-interlink-forest/12 px-2 py-1.5 dark:bg-emerald-500/15"
+                : "";
+
+            const touchHandlers = {
+              onTouchStart: (e: React.TouchEvent) => {
+                const t = e.touches[0];
+                if (t) touchStartRef.current = { id: msg.id, x: t.clientX, y: t.clientY };
+              },
+              onTouchEnd: (e: React.TouchEvent) => {
+                const start = touchStartRef.current;
+                const t = e.changedTouches[0];
+                touchStartRef.current = null;
+                if (!start || !t || start.id !== msg.id) return;
+                const dx = t.clientX - start.x;
+                const dy = Math.abs(t.clientY - start.y);
+                if (dx >= 48 && dy < 40) {
+                  startReplyToMessage(msg);
+                }
+              },
+            };
 
             if (mine) {
               return (
                 <div
                   key={msg.id}
-                  className="group/msg flex items-start justify-end gap-2.5 sm:gap-3"
+                  ref={(el) => {
+                    messageNodeRefs.current[msg.id] = el;
+                  }}
+                  {...touchHandlers}
+                  onClick={() => toggleMessageSelection(msg)}
+                  onDoubleClick={() => startReplyToMessage(msg)}
+                  data-message-selected={isSelected ? "true" : "false"}
+                  className={`group/msg flex cursor-pointer items-start justify-end gap-2.5 transition-colors sm:gap-3 ${rowHighlightClass}`}
                 >
-                  <div className="flex max-w-[78%] flex-col items-end sm:max-w-[68%]">
-                    <div className="rounded-2xl border border-interlink-border/75 bg-white px-4 py-2.5 text-[14px] leading-relaxed text-interlink-ink shadow-subtle backdrop-blur-md dark:border-white/[0.09] dark:bg-white/[0.11] dark:text-white/95">
-                      <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                  <div className="flex max-w-[82%] flex-col items-end sm:max-w-[72%]">
+                    <div className="flex items-start gap-2">
+                      <div className="flex flex-col gap-1 pt-0.5 opacity-60 transition-opacity group-hover/msg:opacity-100">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startReplyToMessage(msg);
+                          }}
+                          aria-label="Reply to message"
+                          title="Reply to message"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-muted transition-colors hover:bg-interlink-ink/[0.12] hover:text-interlink-ink dark:bg-white/[0.08] dark:text-white/80 dark:hover:bg-white/[0.16] dark:hover:text-white"
+                        >
+                          <CornerUpLeft className="h-3 w-3" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleCopy(msg);
+                          }}
+                          aria-label="Copy message"
+                          title="Copy message"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-muted transition-colors hover:bg-interlink-ink/[0.12] hover:text-interlink-ink dark:bg-white/[0.08] dark:text-white/80 dark:hover:bg-white/[0.16] dark:hover:text-white"
+                        >
+                          {copiedId === msg.id ? (
+                            <Check className="h-3 w-3 text-emerald-500 dark:text-emerald-400" aria-hidden="true" />
+                          ) : (
+                            <Copy className="h-3 w-3" aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
+
+                      <div
+                        className={`rounded-2xl bg-white px-4 py-2.5 text-[14px] leading-relaxed text-interlink-ink shadow-subtle backdrop-blur-md transition-shadow dark:bg-[#19241f] dark:text-white/95 ${
+                          isSelected
+                            ? "ring-2 ring-interlink-forest/50 dark:ring-emerald-400/50"
+                            : ""
+                        }`}
+                      >
+                        {renderQuotedReference(msg, true)}
+                        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                      </div>
                     </div>
 
-                    {msg.attachmentUrl && renderAttachmentBubble(msg.attachmentUrl)}
+                    {msg.attachmentUrl && (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        {renderAttachmentBubble(msg.attachmentUrl)}
+                      </div>
+                    )}
 
                     <span className="mt-1 px-1 text-[10px] text-interlink-muted dark:text-white/40">
                       {isTemp ? "Sending..." : formatDateTime(msg.createdAt)}
@@ -384,7 +594,14 @@ export function ConversationChatPanel({
             return (
               <div
                 key={msg.id}
-                className="group/msg flex items-start justify-start gap-2.5 sm:gap-3"
+                ref={(el) => {
+                  messageNodeRefs.current[msg.id] = el;
+                }}
+                {...touchHandlers}
+                onClick={() => toggleMessageSelection(msg)}
+                onDoubleClick={() => startReplyToMessage(msg)}
+                data-message-selected={isSelected ? "true" : "false"}
+                className={`group/msg flex cursor-pointer items-start justify-start gap-2.5 transition-colors sm:gap-3 ${rowHighlightClass}`}
               >
                 <UserAvatar
                   src={partner?.profileImage}
@@ -394,9 +611,16 @@ export function ConversationChatPanel({
                   className="mt-0.5 shrink-0 border-interlink-border dark:border-white/20 dark:bg-black/60"
                 />
 
-                <div className="flex max-w-[78%] flex-col items-start sm:max-w-[68%]">
+                <div className="flex max-w-[82%] flex-col items-start sm:max-w-[72%]">
                   <div className="flex items-start gap-2">
-                    <div className="rounded-2xl border border-interlink-border/80 bg-[#edf1ee] px-4 py-2.5 text-[14px] leading-relaxed text-interlink-ink shadow-subtle backdrop-blur-md dark:border-white/[0.08] dark:bg-[#141719]/90 dark:text-white/95">
+                    <div
+                      className={`rounded-2xl bg-[#edf1ee] px-4 py-2.5 text-[14px] leading-relaxed text-interlink-ink shadow-subtle backdrop-blur-md transition-shadow dark:bg-[#141d19]/95 dark:text-white/95 ${
+                        isSelected
+                          ? "ring-2 ring-interlink-forest/50 dark:ring-emerald-400/50"
+                          : ""
+                      }`}
+                    >
+                      {renderQuotedReference(msg, false)}
                       <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                     </div>
 
@@ -404,7 +628,10 @@ export function ConversationChatPanel({
                     <div className="flex flex-col gap-1 pt-0.5 opacity-60 transition-opacity group-hover/msg:opacity-100">
                       <button
                         type="button"
-                        onClick={() => void handleCopy(msg)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleCopy(msg);
+                        }}
                         aria-label="Copy message"
                         title="Copy message"
                         className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-muted transition-colors hover:bg-interlink-ink/[0.12] hover:text-interlink-ink dark:bg-white/[0.08] dark:text-white/80 dark:hover:bg-white/[0.16] dark:hover:text-white"
@@ -417,7 +644,10 @@ export function ConversationChatPanel({
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleQuote(msg)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startReplyToMessage(msg);
+                        }}
                         aria-label="Reply to message"
                         title="Reply to message"
                         className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-muted transition-colors hover:bg-interlink-ink/[0.12] hover:text-interlink-ink dark:bg-white/[0.08] dark:text-white/80 dark:hover:bg-white/[0.16] dark:hover:text-white"
@@ -427,7 +657,11 @@ export function ConversationChatPanel({
                     </div>
                   </div>
 
-                  {msg.attachmentUrl && renderAttachmentBubble(msg.attachmentUrl)}
+                  {msg.attachmentUrl && (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      {renderAttachmentBubble(msg.attachmentUrl)}
+                    </div>
+                  )}
 
                   <span className="mt-1 px-1 text-[10px] text-interlink-muted dark:text-white/40">
                     {formatDateTime(msg.createdAt)}
@@ -450,8 +684,35 @@ export function ConversationChatPanel({
       <div className="relative z-10 shrink-0 px-3 pb-3 pt-1 sm:px-5 sm:pb-4">
         <form
           onSubmit={handleFormSubmit}
-          className="rounded-[20px] border border-interlink-border/90 bg-interlink-surface/95 p-3 shadow-[0_8px_28px_rgba(32,43,60,0.08)] backdrop-blur-xl dark:border-white/[0.10] dark:bg-white/[0.06] dark:shadow-[0_12px_36px_rgba(0,0,0,0.38)] sm:p-3.5"
+          className="rounded-[20px] bg-interlink-surface/95 p-3 shadow-[0_8px_28px_rgba(32,43,60,0.08)] backdrop-blur-xl dark:bg-[#19241f]/95 dark:shadow-[0_12px_36px_rgba(0,0,0,0.42)] sm:p-3.5"
         >
+          {replyToMessage && (
+            <div
+              role="region"
+              aria-label="Replying to message"
+              className="mb-2.5 flex items-start justify-between gap-2.5 rounded-xl border-l-[3px] border-interlink-forest bg-interlink-app-bg px-3 py-2 dark:border-emerald-400 dark:bg-[#141d19]"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-interlink-forest dark:text-emerald-300">
+                  Replying to {formatSenderLabel(replyToMessage.senderId)}
+                </p>
+                <p className="mt-0.5 line-clamp-2 text-xs text-interlink-muted dark:text-white/70">
+                  {replyToMessage.content.trim() ||
+                    (replyToMessage.attachmentUrl ? "Shared attachment" : "")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReplyToMessage(null)}
+                aria-label="Cancel reply"
+                title="Cancel reply"
+                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-interlink-ink/[0.06] text-interlink-muted transition-colors hover:bg-interlink-ink/[0.12] hover:text-interlink-ink dark:bg-white/[0.08] dark:text-white/70 dark:hover:bg-white/[0.16] dark:hover:text-white"
+              >
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          )}
+
           {showAttachmentInput && (
             <div className="mb-3">
               <div className="mb-1.5 flex items-center justify-between px-0.5">
@@ -501,7 +762,7 @@ export function ConversationChatPanel({
           />
 
           <div className="mt-2.5 flex items-center justify-between gap-2">
-            <div className="no-scrollbar flex min-w-0 items-center gap-1.5 overflow-x-auto">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setShowAttachmentInput((prev) => !prev)}
@@ -516,47 +777,6 @@ export function ConversationChatPanel({
               >
                 <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
-
-              <button
-                type="button"
-                onClick={() => setShowPromptChips((prev) => !prev)}
-                aria-label="Toggle quick message prompts"
-                title="Quick prompts"
-                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                  showPromptChips
-                    ? "border-interlink-forest/40 bg-interlink-forest/10 text-interlink-forest dark:border-white/20 dark:bg-white/[0.12] dark:text-white"
-                    : "border-interlink-border bg-interlink-app-bg text-interlink-muted hover:bg-interlink-border/30 hover:text-interlink-ink dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.14] dark:hover:text-white"
-                }`}
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-
-              {showPromptChips &&
-                visibleChips.map((chip) => (
-                  <span
-                    key={chip.id}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-full border border-interlink-border/80 bg-interlink-app-bg px-2.5 py-1 text-[11px] font-medium text-interlink-ink/85 transition-colors hover:border-interlink-forest/50 hover:text-interlink-ink dark:border-white/10 dark:bg-white/[0.07] dark:text-white/80 dark:hover:bg-white/[0.14] dark:hover:text-white"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMessageText((prev) => (prev ? `${prev} ${chip.text}` : chip.text));
-                        textareaRef.current?.focus();
-                      }}
-                      className="focus:outline-none"
-                    >
-                      {chip.label}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDismissedChips((prev) => [...prev, chip.id])}
-                      aria-label={`Dismiss ${chip.label}`}
-                      className="text-interlink-muted hover:text-interlink-ink dark:text-white/45 dark:hover:text-white"
-                    >
-                      <X className="h-2.5 w-2.5" aria-hidden="true" />
-                    </button>
-                  </span>
-                ))}
             </div>
 
             <button

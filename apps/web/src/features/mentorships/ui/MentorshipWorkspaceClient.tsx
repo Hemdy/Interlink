@@ -77,6 +77,7 @@ interface SessionItem {
 interface MessageItem {
   id: string;
   senderId: string;
+  replyToMessageId?: string | null;
   content: string;
   attachmentUrl: string | null;
   createdAt: string;
@@ -539,7 +540,11 @@ export function MentorshipWorkspaceClient({
     }
   }
 
-  async function sendMessage(content: string, attachmentUrl?: string | null): Promise<boolean> {
+  async function sendMessage(
+    content: string,
+    attachmentUrl?: string | null,
+    replyToMessageId?: string | null,
+  ): Promise<boolean> {
     const trimmed = content.trim();
     if (!conversationId || !trimmed) return false;
 
@@ -547,6 +552,7 @@ export function MentorshipWorkspaceClient({
     const optimisticMsg: MessageItem = {
       id: tempId,
       senderId: currentUserId,
+      replyToMessageId: replyToMessageId ?? null,
       content: trimmed,
       attachmentUrl: attachmentUrl ?? null,
       createdAt: new Date().toISOString(),
@@ -561,6 +567,7 @@ export function MentorshipWorkspaceClient({
         body: JSON.stringify({
           content: trimmed,
           ...(attachmentUrl ? { attachmentUrl } : {}),
+          ...(replyToMessageId ? { replyToMessageId } : {}),
         }),
       });
       const json = (await res.json()) as {

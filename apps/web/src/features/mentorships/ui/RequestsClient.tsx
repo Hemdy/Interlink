@@ -1,15 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Clock, HelpCircle, MessageSquare, X } from "lucide-react";
+import {
+  Calendar,
+  Check,
+  Clock,
+  HelpCircle,
+  Inbox,
+  MessageSquare,
+  Send,
+  Sparkles,
+  Wallet,
+  X,
+} from "lucide-react";
 import { Badge, Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/Feedback";
 import { Textarea } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 
 interface RequestItem {
   id: string;
@@ -27,8 +39,18 @@ interface RequestItem {
   status: string;
   mentorNotes: string | null;
   createdAt: string;
-  mentee: { id: string; firstName: string; lastName: string } | null;
-  mentor: { id: string; firstName: string; lastName: string } | null;
+  mentee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    profileImage?: string | null;
+  } | null;
+  mentor: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    profileImage?: string | null;
+  } | null;
 }
 
 interface TransactionItem {
@@ -45,8 +67,18 @@ interface TransactionItem {
   status: string;
   createdAt: string;
   settledAt: string | null;
-  mentor: { id: string; firstName: string; lastName: string } | null;
-  mentee: { id: string; firstName: string; lastName: string } | null;
+  mentor: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    profileImage?: string | null;
+  } | null;
+  mentee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    profileImage?: string | null;
+  } | null;
 }
 
 function daysAgo(dateIso: string): string {
@@ -81,8 +113,31 @@ export function RequestsClient({
   const [notes, setNotes] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const incoming = requests.filter((r) => r.mentorId === currentUserId);
-  const outgoing = requests.filter((r) => r.menteeId === currentUserId);
+  const incoming = useMemo(
+    () => requests.filter((r) => r.mentorId === currentUserId),
+    [currentUserId, requests],
+  );
+  const outgoing = useMemo(
+    () => requests.filter((r) => r.menteeId === currentUserId),
+    [currentUserId, requests],
+  );
+  const pendingIncomingCount = useMemo(
+    () => incoming.filter((r) => ["pending", "info_requested"].includes(r.status)).length,
+    [incoming],
+  );
+
+  const [activeTab, setActiveTab] = useState<"incoming" | "outgoing" | "ledger">(() =>
+    incoming.length > 0 ? "incoming" : outgoing.length > 0 ? "outgoing" : "incoming",
+  );
+  const [incomingStatusFilter, setIncomingStatusFilter] = useState<"all" | "pending">("all");
+
+  const visibleIncoming = useMemo(
+    () =>
+      incomingStatusFilter === "pending"
+        ? incoming.filter((r) => ["pending", "info_requested"].includes(r.status))
+        : incoming,
+    [incoming, incomingStatusFilter],
+  );
 
   async function handleAccept(requestId: string, initialGreeting?: string | null) {
     setBusyId(requestId);
@@ -237,179 +292,341 @@ export function RequestsClient({
     .reduce((sum, t) => sum + t.platformFeeNgn, 0);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6">
+      {/* Top Overview & Segmented Filter Tabs */}
+      <Card className="p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="font-display text-xl font-semibold text-interlink-ink">
+              Mentorship Requests
+            </h1>
+            <p className="mt-0.5 text-xs text-interlink-muted">
+              Review incoming mentee applications, track sent requests, and manage bookings.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-interlink-forest/10 px-3 py-1 text-xs font-semibold text-interlink-forest dark:bg-interlink-forest/20 dark:text-emerald-300">
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              {pendingIncomingCount} awaiting review
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-interlink-app-bg px-3 py-1 text-xs font-medium text-interlink-muted">
+              {outgoing.length} sent
+            </span>
+          </div>
+        </div>
+
+        <div className="no-scrollbar mt-5 flex items-center gap-2 overflow-x-auto pb-0.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab("incoming")}
+            className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+              activeTab === "incoming"
+                ? "bg-interlink-forest text-white shadow-subtle"
+                : "bg-interlink-app-bg text-interlink-muted hover:text-interlink-ink"
+            }`}
+          >
+            <Inbox className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Incoming ({incoming.length})</span>
+            {pendingIncomingCount > 0 && (
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+                  activeTab === "incoming"
+                    ? "bg-white text-interlink-forest"
+                    : "bg-interlink-forest text-white"
+                }`}
+              >
+                {pendingIncomingCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("outgoing")}
+            className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+              activeTab === "outgoing"
+                ? "bg-interlink-forest text-white shadow-subtle"
+                : "bg-interlink-app-bg text-interlink-muted hover:text-interlink-ink"
+            }`}
+          >
+            <Send className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>My Sent ({outgoing.length})</span>
+          </button>
+
+          {transactions.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("ledger")}
+              className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+                activeTab === "ledger"
+                  ? "bg-interlink-forest text-white shadow-subtle"
+                  : "bg-interlink-app-bg text-interlink-muted hover:text-interlink-ink"
+              }`}
+            >
+              <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Bookings &amp; Ledger ({transactions.length})</span>
+            </button>
+          )}
+        </div>
+      </Card>
+
       {/* Incoming Mentor Queue */}
-      <section>
-        <h2 className="font-display text-lg font-semibold text-interlink-ink">
-          Incoming Mentorship Requests ({incoming.length})
-        </h2>
-        {incoming.length === 0 ? (
-          <div className="mt-3">
+      {activeTab === "incoming" && (
+        <section className="space-y-4">
+          {incoming.length > 0 && pendingIncomingCount > 0 && pendingIncomingCount < incoming.length && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIncomingStatusFilter("all")}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                  incomingStatusFilter === "all"
+                    ? "bg-interlink-ink text-interlink-surface"
+                    : "bg-interlink-surface text-interlink-muted shadow-subtle hover:text-interlink-ink"
+                }`}
+              >
+                All ({incoming.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setIncomingStatusFilter("pending")}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                  incomingStatusFilter === "pending"
+                    ? "bg-interlink-ink text-interlink-surface"
+                    : "bg-interlink-surface text-interlink-muted shadow-subtle hover:text-interlink-ink"
+                }`}
+              >
+                Needs Action ({pendingIncomingCount})
+              </button>
+            </div>
+          )}
+
+          {visibleIncoming.length === 0 ? (
             <EmptyState
               title="No incoming mentorship requests"
               description="Requests submitted by mentees will appear here with their career objectives and expected outcomes."
             />
-          </div>
-        ) : (
-          <div className="mt-4 space-y-4">
-            {incoming.map((req) => (
-              <Card key={req.id}>
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2.5">
-                      <h3 className="text-base font-semibold text-interlink-ink">
-                        {req.mentee
-                          ? `${req.mentee.firstName} ${req.mentee.lastName}`
-                          : "Mentee"}
-                      </h3>
-                      <Badge tone={statusTone(req.status)}>
-                        {req.status.replace(/_/g, " ")}
-                      </Badge>
-                      {typeof req.agreedAmountNgn === "number" && req.agreedAmountNgn > 0 && (
-                        <Badge tone="gold">
-                          ₦{req.agreedAmountNgn.toLocaleString("en-NG")} &middot;{" "}
-                          {(req.billingCadence ?? "paid").replace("_", " ")}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="mt-1 inline-flex items-center gap-1 text-xs text-interlink-muted">
-                      <Clock className="h-3.5 w-3.5" /> Submitted {daysAgo(req.createdAt)} &middot;{" "}
-                      {req.preferredDuration} &middot; {req.sessionPreference}
-                      {req.selectedSlotSummary ? ` · Slot: ${req.selectedSlotSummary}` : ""}
-                    </p>
-                  </div>
+          ) : (
+            <div className="space-y-4">
+              {visibleIncoming.map((req) => {
+                const menteeName = req.mentee
+                  ? `${req.mentee.firstName} ${req.mentee.lastName}`
+                  : "Mentee";
+                const isActionable = ["pending", "info_requested"].includes(req.status);
 
-                  {["pending", "info_requested"].includes(req.status) && (
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        loading={busyId === req.id}
-                        onClick={() => {
-                          setWelcomeMessage(DEFAULT_WELCOME_MESSAGE);
-                          setAcceptModalTarget(req);
-                        }}
-                      >
-                        <Check className="h-3.5 w-3.5" /> Accept
-                      </Button>
-                      {req.status === "pending" && (
+                return (
+                  <Card key={req.id} className="space-y-5 p-5 sm:p-6">
+                    {/* Card Header: Avatar, Identity, Metadata Pills, Status */}
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="flex min-w-0 items-start gap-3.5">
+                        <UserAvatar
+                          src={req.mentee?.profileImage}
+                          firstName={req.mentee?.firstName ?? "M"}
+                          lastName={req.mentee?.lastName ?? ""}
+                          size="md"
+                        />
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="font-display text-base font-semibold text-interlink-ink sm:text-lg">
+                              {menteeName}
+                            </h2>
+                            <Badge tone={statusTone(req.status)}>
+                              {req.status.replace(/_/g, " ")}
+                            </Badge>
+                            {typeof req.agreedAmountNgn === "number" && req.agreedAmountNgn > 0 && (
+                              <Badge tone="gold">
+                                ₦{req.agreedAmountNgn.toLocaleString("en-NG")} &middot;{" "}
+                                {(req.billingCadence ?? "paid").replace("_", " ")}
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-interlink-muted">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-interlink-app-bg px-2.5 py-0.5 font-medium">
+                              <Clock className="h-3 w-3 text-interlink-forest" aria-hidden="true" />
+                              {daysAgo(req.createdAt)}
+                            </span>
+                            <span className="rounded-full bg-interlink-app-bg px-2.5 py-0.5 font-medium">
+                              {req.preferredDuration}
+                            </span>
+                            <span className="rounded-full bg-interlink-app-bg px-2.5 py-0.5 font-medium">
+                              {req.sessionPreference}
+                            </span>
+                            {req.selectedSlotSummary && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-interlink-forest/10 px-2.5 py-0.5 font-medium text-interlink-forest dark:bg-interlink-forest/20 dark:text-emerald-300">
+                                <Calendar className="h-3 w-3" aria-hidden="true" />
+                                {req.selectedSlotSummary}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Structured Borderless Highlights */}
+                    <dl className="grid grid-cols-1 gap-3 text-xs md:grid-cols-2">
+                      <div className="rounded-xl bg-interlink-app-bg p-3.5">
+                        <dt className="text-[11px] font-semibold uppercase tracking-wider text-interlink-forest dark:text-emerald-300">
+                          Career Objective
+                        </dt>
+                        <dd className="mt-1.5 text-sm leading-relaxed text-interlink-ink">
+                          {req.careerObjective}
+                        </dd>
+                      </div>
+                      <div className="rounded-xl bg-interlink-app-bg p-3.5">
+                        <dt className="text-[11px] font-semibold uppercase tracking-wider text-interlink-forest dark:text-emerald-300">
+                          Expected Outcomes
+                        </dt>
+                        <dd className="mt-1.5 text-sm leading-relaxed text-interlink-ink">
+                          {req.expectedOutcome}
+                        </dd>
+                      </div>
+                      <div className="rounded-xl bg-interlink-app-bg p-3.5 md:col-span-2">
+                        <dt className="text-[11px] font-semibold uppercase tracking-wider text-interlink-muted">
+                          Introduction
+                        </dt>
+                        <dd className="mt-1.5 text-sm leading-relaxed text-interlink-ink/90">
+                          {req.introductionMessage}
+                        </dd>
+                      </div>
+                      <div className="rounded-xl bg-interlink-app-bg p-3.5 md:col-span-2">
+                        <dt className="text-[11px] font-semibold uppercase tracking-wider text-interlink-muted">
+                          Why They Selected You
+                        </dt>
+                        <dd className="mt-1.5 text-sm leading-relaxed text-interlink-ink/90">
+                          {req.reasonForSelection}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    {req.mentorNotes && (
+                      <div className="rounded-xl bg-amber-50 p-3.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                        <span className="font-semibold">Your Note:</span> {req.mentorNotes}
+                      </div>
+                    )}
+
+                    {/* Action Bar */}
+                    {isActionable && (
+                      <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setActionModal({ requestId: req.id, action: "request-info" })}
+                          onClick={() => setActionModal({ requestId: req.id, action: "reject" })}
                         >
-                          <HelpCircle className="h-3.5 w-3.5" /> Request Info
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
+                          Decline
                         </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setActionModal({ requestId: req.id, action: "reject" })}
-                      >
-                        <X className="h-3.5 w-3.5" /> Decline
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                <dl className="mt-4 grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 text-xs md:grid-cols-2">
-                  <div>
-                    <dt className="font-semibold text-slate-600">Career Objective</dt>
-                    <dd className="mt-0.5 text-interlink-ink">{req.careerObjective}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-semibold text-slate-600">Expected Outcomes</dt>
-                    <dd className="mt-0.5 text-interlink-ink">{req.expectedOutcome}</dd>
-                  </div>
-                  <div className="md:col-span-2">
-                    <dt className="font-semibold text-slate-600">Introduction</dt>
-                    <dd className="mt-0.5 text-slate-700">{req.introductionMessage}</dd>
-                  </div>
-                  <div className="md:col-span-2">
-                    <dt className="font-semibold text-slate-600">Why They Selected You</dt>
-                    <dd className="mt-0.5 text-slate-700">{req.reasonForSelection}</dd>
-                  </div>
-                </dl>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
+                        {req.status === "pending" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setActionModal({ requestId: req.id, action: "request-info" })}
+                          >
+                            <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                            Request Info
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          loading={busyId === req.id}
+                          onClick={() => {
+                            setWelcomeMessage(DEFAULT_WELCOME_MESSAGE);
+                            setAcceptModalTarget(req);
+                          }}
+                        >
+                          <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                          Accept &amp; Connect
+                        </Button>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Outgoing Mentee Requests */}
-      <section>
-        <h2 className="font-display text-lg font-semibold text-interlink-ink">
-          My Sent Requests ({outgoing.length})
-        </h2>
-        {outgoing.length === 0 ? (
-          <div className="mt-3">
+      {activeTab === "outgoing" && (
+        <section className="space-y-4">
+          {outgoing.length === 0 ? (
             <EmptyState
               title="No sent mentorship requests"
               description="Browse the mentor directory to submit a structured mentorship request."
               action={
                 <Link
                   href="/mentors"
-                  className="rounded-[2px] bg-interlink-forest px-5 py-2 text-xs font-medium text-white"
+                  className="inline-flex items-center rounded-full bg-interlink-forest px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
                 >
                   Find a Mentor
                 </Link>
               }
             />
-          </div>
-        ) : (
-          <div className="mt-4 space-y-4">
-            {outgoing.map((req) => (
-              <Card key={req.id}>
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2.5">
-                      <Link
-                        href={`/mentors/${req.mentorId}`}
-                        className="text-base font-semibold text-interlink-ink hover:text-interlink-forest"
-                      >
-                        {req.mentor
-                          ? `${req.mentor.firstName} ${req.mentor.lastName}`
-                          : "Mentor"}
-                      </Link>
-                      <Badge tone={statusTone(req.status)}>
-                        {req.status.replace(/_/g, " ")}
-                      </Badge>
-                      {typeof req.agreedAmountNgn === "number" && req.agreedAmountNgn > 0 && (
-                        <Badge tone="gold">
-                          ₦{req.agreedAmountNgn.toLocaleString("en-NG")}
-                        </Badge>
-                      )}
+          ) : (
+            <div className="space-y-4">
+              {outgoing.map((req) => (
+                <Card key={req.id} className="space-y-3 p-5 sm:p-6">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <UserAvatar
+                        src={req.mentor?.profileImage}
+                        firstName={req.mentor?.firstName ?? "M"}
+                        lastName={req.mentor?.lastName ?? ""}
+                        size="md"
+                      />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link
+                            href={`/mentors/${req.mentorId}`}
+                            className="font-display text-base font-semibold text-interlink-ink hover:text-interlink-forest"
+                          >
+                            {req.mentor
+                              ? `${req.mentor.firstName} ${req.mentor.lastName}`
+                              : "Mentor"}
+                          </Link>
+                          <Badge tone={statusTone(req.status)}>
+                            {req.status.replace(/_/g, " ")}
+                          </Badge>
+                          {typeof req.agreedAmountNgn === "number" && req.agreedAmountNgn > 0 && (
+                            <Badge tone="gold">
+                              ₦{req.agreedAmountNgn.toLocaleString("en-NG")}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="mt-1 text-xs text-interlink-muted">
+                          Sent {daysAgo(req.createdAt)} &middot; {req.careerObjective}
+                        </p>
+                      </div>
                     </div>
-                    <p className="mt-1 text-xs text-interlink-muted">
-                      Sent {daysAgo(req.createdAt)} &middot; Objective: {req.careerObjective}
-                    </p>
+
+                    {["pending", "info_requested"].includes(req.status) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        loading={busyId === req.id}
+                        onClick={() => handleCancel(req.id)}
+                      >
+                        Withdraw Request
+                      </Button>
+                    )}
                   </div>
 
-                  {["pending", "info_requested"].includes(req.status) && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      loading={busyId === req.id}
-                      onClick={() => handleCancel(req.id)}
-                    >
-                      Withdraw Request
-                    </Button>
+                  {req.mentorNotes && (
+                    <div className="rounded-xl bg-amber-50 p-3.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                      <span className="font-semibold">Mentor Note:</span> {req.mentorNotes}
+                    </div>
                   )}
-                </div>
-
-                {req.mentorNotes && (
-                  <div className="mt-3 rounded-[2px] border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                    <span className="font-semibold">Mentor Note:</span> {req.mentorNotes}
-                  </div>
-                )}
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Paid Mentorship Bookings & 85% / 15% Commission Ledger */}
-      {transactions.length > 0 && (
-        <section>
+      {activeTab === "ledger" && transactions.length > 0 && (
+        <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="font-display text-lg font-semibold text-interlink-ink">
@@ -431,7 +648,7 @@ export function RequestsClient({
             )}
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="space-y-3">
             {transactions.map((tx) => {
               const isMentee = tx.menteeId === currentUserId;
               const partnerName = isMentee
@@ -558,7 +775,7 @@ export function RequestsClient({
           </div>
 
           {acceptModalTarget && (
-            <div className="mt-4 rounded-[2px] border border-interlink-border bg-interlink-app-bg/60 p-3 text-xs">
+            <div className="mt-4 rounded-xl bg-interlink-app-bg p-3.5 text-xs">
               <p className="font-semibold text-interlink-ink">Mentee Career Objective:</p>
               <p className="mt-0.5 text-interlink-muted">{acceptModalTarget.careerObjective}</p>
             </div>

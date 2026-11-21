@@ -271,10 +271,10 @@ export function NotificationsClient({
                       </div>
                     );
 
-                    const baseCardClass = `block w-full rounded-2xl border px-3.5 py-3 text-left transition-colors focus-ring ${
+                    const baseCardClass = `block w-full rounded-2xl px-3.5 py-3 text-left transition-all focus-ring ${
                       n.isRead
-                        ? "border-interlink-border/60 bg-interlink-surface hover:border-interlink-forest/40"
-                        : "border-interlink-forest/25 bg-interlink-surface shadow-subtle hover:border-interlink-forest/55"
+                        ? "bg-interlink-surface/85 hover:bg-interlink-surface"
+                        : "bg-interlink-surface shadow-subtle hover:shadow-card"
                     }`;
 
                     if (n.actionUrl) {

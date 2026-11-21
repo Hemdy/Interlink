@@ -299,83 +299,91 @@ export function AppShell({
             : "min-h-[100dvh]"
         } ${useBottomNav ? "" : "lg:pl-64"}`}
       >
-        <header
-          className={`sticky top-0 z-20 flex h-[68px] shrink-0 items-center justify-between px-4 backdrop-blur-md sm:px-8 ${
-            isHomeFeedRoute
-              ? "bg-[#0a1a12]/90"
-              : "border-b border-interlink-border bg-interlink-surface/95 shadow-subtle"
-          }`}
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            {useBottomNav ? (
-              <Link
-                href="/profile"
-                aria-label={`View ${user.firstName} ${user.lastName}'s profile`}
-                className="group flex min-w-0 items-center gap-2.5 rounded-full py-1 pr-2 transition-colors focus-ring"
-              >
-                <UserAvatar
-                  src={user.profileImage}
-                  firstName={user.firstName}
-                  lastName={user.lastName}
-                  size="sm"
-                  className="rounded-full shadow-subtle transition-transform duration-200 group-hover:scale-105"
-                />
-                <div className="min-w-0">
-                  <p
-                    className={`truncate text-sm font-semibold leading-tight ${
-                      isHomeFeedRoute ? "text-white" : "text-interlink-ink"
-                    }`}
-                  >
-                    {user.firstName} {user.lastName}
-                  </p>
-                  <p
-                    className={`truncate text-[11px] capitalize leading-tight ${
-                      isHomeFeedRoute ? "text-emerald-300" : "text-interlink-forest"
-                    }`}
-                  >
-                    {user.primaryRole.replace("_", " ")}
-                  </p>
-                </div>
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(true)}
-                className={`rounded-full p-2 lg:hidden ${
-                  isHomeFeedRoute
-                    ? "text-emerald-100 hover:bg-white/10"
-                    : "text-interlink-muted hover:bg-interlink-app-bg"
-                }`}
-                aria-label="Open navigation"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2.5">
-            {actions ?? headerActions}
-            <ThemeToggle />
-            <Link
-              href="/notifications"
-              className={`relative inline-flex h-9 w-9 items-center justify-center rounded-full shadow-subtle transition-colors ${
-                isHomeFeedRoute
-                  ? "bg-white/10 text-white hover:bg-white/20"
-                  : "border border-interlink-border bg-interlink-surface text-interlink-ink hover:border-interlink-forest hover:text-interlink-forest"
-              }`}
-              aria-label="Notifications"
-            >
-              <Bell className="h-4 w-4" />
-              {liveUnreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-interlink-forest px-1 text-[10px] font-bold text-white">
-                  {liveUnreadCount}
-                </span>
+        {!isMessagesRoute && (
+          <header
+            className={`sticky top-0 z-20 flex h-[68px] shrink-0 items-center justify-between px-4 backdrop-blur-md sm:px-8 ${
+              isHomeFeedRoute
+                ? "bg-[#0a1a12]/90"
+                : "border-b border-interlink-border bg-interlink-surface/95 shadow-subtle"
+            }`}
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              {useBottomNav ? (
+                <Link
+                  href="/profile"
+                  aria-label={`View ${user.firstName} ${user.lastName}'s profile`}
+                  className="group flex min-w-0 items-center gap-2.5 rounded-full py-1 pr-2 transition-colors focus-ring"
+                >
+                  <UserAvatar
+                    src={user.profileImage}
+                    firstName={user.firstName}
+                    lastName={user.lastName}
+                    size="sm"
+                    className="rounded-full shadow-subtle transition-transform duration-200 group-hover:scale-105"
+                  />
+                  <div className="min-w-0">
+                    <p
+                      className={`truncate text-sm font-semibold leading-tight ${
+                        isHomeFeedRoute ? "text-white" : "text-interlink-ink"
+                      }`}
+                    >
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p
+                      className={`truncate text-[11px] capitalize leading-tight ${
+                        isHomeFeedRoute ? "text-emerald-300" : "text-interlink-forest"
+                      }`}
+                    >
+                      {user.primaryRole.replace("_", " ")}
+                    </p>
+                  </div>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  className={`rounded-full p-2 lg:hidden ${
+                    isHomeFeedRoute
+                      ? "text-emerald-100 hover:bg-white/10"
+                      : "text-interlink-muted hover:bg-interlink-app-bg"
+                  }`}
+                  aria-label="Open navigation"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
               )}
-            </Link>
-          </div>
-        </header>
+            </div>
 
-        {!user.onboardingCompleted && (
+            <div className="flex shrink-0 items-center gap-2.5">
+              {actions ?? headerActions}
+              <ThemeToggle
+                className={
+                  isHomeFeedRoute
+                    ? "border-0 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    : ""
+                }
+              />
+              <Link
+                href="/notifications"
+                className={`relative inline-flex h-9 w-9 items-center justify-center rounded-full shadow-subtle transition-colors ${
+                  isHomeFeedRoute
+                    ? "bg-white/10 text-white hover:bg-white/20"
+                    : "border border-interlink-border bg-interlink-surface text-interlink-ink hover:border-interlink-forest hover:text-interlink-forest"
+                }`}
+                aria-label="Notifications"
+              >
+                <Bell className="h-4 w-4" />
+                {liveUnreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-interlink-forest px-1 text-[10px] font-bold text-white">
+                    {liveUnreadCount}
+                  </span>
+                )}
+              </Link>
+            </div>
+          </header>
+        )}
+
+        {!isMessagesRoute && !user.onboardingCompleted && (
           <div
             className={`shrink-0 px-4 py-2.5 text-xs sm:px-8 ${
               isHomeFeedRoute
@@ -414,14 +422,14 @@ export function AppShell({
         )}
 
         <main
-          className={`mx-auto w-full max-w-7xl ${
+          className={`w-full ${
             isMessagesRoute
-              ? `flex min-h-0 flex-1 flex-col p-0 sm:px-8 sm:py-8 ${
+              ? `flex min-h-0 flex-1 flex-col p-0 ${
                   useBottomNav
-                    ? "pb-[calc(59px+env(safe-area-inset-bottom))] sm:pb-[calc(59px+env(safe-area-inset-bottom))] lg:pb-8"
+                    ? "pb-[calc(58px+env(safe-area-inset-bottom))]"
                     : ""
                 }`
-              : `px-4 py-6 sm:px-8 sm:py-8 ${
+              : `mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8 ${
                   useBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))]" : ""
                 }`
           }`}

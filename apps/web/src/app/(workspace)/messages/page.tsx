@@ -92,6 +92,7 @@ export default async function MessagesPage({
           ? {
               id: lastMessage.id,
               senderId: lastMessage.senderId,
+              replyToMessageId: lastMessage.replyToMessageId ?? null,
               content: lastMessage.content,
               attachmentUrl: lastMessage.attachmentUrl,
               createdAt: lastMessage.createdAt.toISOString(),
@@ -119,6 +120,7 @@ export default async function MessagesPage({
     initialMessagesByConversation[matchedThread.conversationId] = initialRows.map((m) => ({
       id: m.id,
       senderId: m.senderId,
+      replyToMessageId: m.replyToMessageId ?? null,
       content: m.content,
       attachmentUrl: m.attachmentUrl,
       createdAt: m.createdAt.toISOString(),

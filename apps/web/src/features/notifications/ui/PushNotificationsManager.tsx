@@ -402,7 +402,7 @@ export function PushNotificationsManager({
       {error && <ErrorAlert message={error} />}
 
       {iosNeedsInstall && (
-        <div className="rounded-2xl border border-amber-300/70 bg-amber-50 p-3.5 text-xs text-amber-950 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="rounded-2xl bg-amber-50 p-3.5 text-xs text-amber-950 dark:bg-amber-950/30 dark:text-amber-200">
           <p className="font-semibold">Install Interlink to Home Screen on iOS</p>
           <p className="mt-1 leading-relaxed">
             Apple iOS supports Web Push notifications only inside installed Home Screen apps
@@ -414,14 +414,14 @@ export function PushNotificationsManager({
       )}
 
       {!iosNeedsInstall && !supported && (
-        <div className="rounded-2xl border border-interlink-border bg-interlink-app-bg/50 p-3.5 text-xs text-interlink-muted">
+        <div className="rounded-2xl bg-interlink-app-bg/70 p-3.5 text-xs text-interlink-muted">
           This browser does not support Web Push APIs. Open Interlink in Chrome, Edge, Firefox, or
           an installed Android/iOS PWA to enable background push notifications.
         </div>
       )}
 
       {permission === "denied" && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-900 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+        <div className="rounded-2xl bg-red-50 p-3.5 text-xs text-red-900 dark:bg-red-950/30 dark:text-red-200">
           Notifications are currently blocked for this site. Open your browser or device site
           settings for Interlink and set <strong>Notifications</strong> to <strong>Allow</strong>,
           then reload this page.
@@ -430,7 +430,7 @@ export function PushNotificationsManager({
 
       {/* Registered Devices */}
       {devices.length > 0 && (
-        <div className="space-y-2 border-t border-interlink-border/60 pt-4">
+        <div className="space-y-2 pt-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-interlink-muted">
             Connected Devices ({devices.length})
           </p>
@@ -440,7 +440,7 @@ export function PushNotificationsManager({
               return (
                 <li
                   key={device.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-interlink-border/80 bg-interlink-app-bg/40 px-3.5 py-2.5 text-xs"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-interlink-app-bg/70 px-3.5 py-2.5 text-xs"
                 >
                   <div className="flex items-center gap-2.5">
                     {device.platform === "android" || device.platform === "ios" ? (
@@ -482,11 +482,11 @@ export function PushNotificationsManager({
       )}
 
       {/* Notification Preferences */}
-      <div className="space-y-2.5 border-t border-interlink-border/60 pt-4">
+      <div className="space-y-2.5 pt-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-interlink-muted">
           Notifications
         </p>
-        <div className="divide-y divide-interlink-border/60 rounded-2xl border border-interlink-border/80 bg-interlink-app-bg/30">
+        <div className="divide-y divide-interlink-border/40 rounded-2xl bg-interlink-app-bg/55">
           {PREF_CONFIG.map((item) => {
             const pref = prefsMap[item.type] ?? {
               notificationType: item.type,

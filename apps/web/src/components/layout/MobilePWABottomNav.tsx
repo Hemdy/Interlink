@@ -198,16 +198,10 @@ export const MobilePWABottomNav = React.memo(function MobilePWABottomNav({
     },
   ];
 
-  const isHomeRoute = pathname === "/dashboard";
-
   return (
     <nav
       aria-label="Primary dashboard navigation"
-      className={`fixed inset-x-0 bottom-0 z-40 pb-[env(safe-area-inset-bottom)] backdrop-blur-md transition-colors ${
-        isHomeRoute
-          ? "bg-[#08150e]/95 shadow-[0_-12px_28px_rgba(0,0,0,0.45)]"
-          : "border-t border-interlink-border bg-interlink-surface/95 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]"
-      }`}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-interlink-border bg-interlink-surface/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(0,0,0,0.04)] backdrop-blur-md transition-colors"
     >
       <div className="mx-auto grid max-w-2xl grid-cols-5 items-stretch">
         {tabs.map((tab) => {
@@ -217,40 +211,26 @@ export const MobilePWABottomNav = React.memo(function MobilePWABottomNav({
               key={tab.id}
               href={tab.href}
               className={`relative flex min-h-[58px] flex-col items-center justify-center gap-1 px-1 py-1.5 transition-colors ${
-                isHomeRoute
-                  ? tab.active
-                    ? "text-emerald-300"
-                    : "text-emerald-100/65 hover:text-white"
-                  : tab.active
-                    ? "text-interlink-forest"
-                    : "text-interlink-muted hover:text-interlink-ink"
+                tab.active
+                  ? "text-interlink-forest"
+                  : "text-interlink-muted hover:text-interlink-ink"
               }`}
             >
               {tab.active && (
                 <span
                   aria-hidden="true"
-                  className={`absolute top-0 h-[2.5px] w-8 rounded-b-full ${
-                    isHomeRoute ? "bg-emerald-400" : "bg-interlink-forest"
-                  }`}
+                  className="absolute top-0 h-[2.5px] w-8 rounded-b-full bg-interlink-forest"
                 />
               )}
 
               <span
                 className={`relative flex h-7 w-11 items-center justify-center rounded-full transition-colors ${
-                  tab.active
-                    ? isHomeRoute
-                      ? "bg-emerald-400/15"
-                      : "bg-interlink-forest/12"
-                    : ""
+                  tab.active ? "bg-interlink-forest/12" : ""
                 }`}
               >
                 <Icon className="h-5 w-5" aria-hidden="true" />
                 {tab.badge > 0 && (
-                  <span
-                    className={`absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-interlink-forest px-1 text-[10px] font-bold leading-none text-white ${
-                      isHomeRoute ? "ring-2 ring-[#08150e]" : "ring-2 ring-interlink-surface"
-                    }`}
-                  >
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-interlink-forest px-1 text-[10px] font-bold leading-none text-white ring-2 ring-interlink-surface">
                     {tab.badge > 99 ? "99+" : tab.badge}
                   </span>
                 )}

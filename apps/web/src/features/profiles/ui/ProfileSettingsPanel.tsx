@@ -313,7 +313,7 @@ export function ProfileSettingsPanel({
             );
 
             const className =
-              "flex w-full items-center justify-between gap-3 rounded-2xl border border-interlink-border bg-interlink-surface px-4 py-3 text-left shadow-subtle transition-colors hover:border-interlink-forest/60 hover:bg-interlink-app-bg/50";
+              "flex w-full items-center justify-between gap-3 rounded-2xl bg-interlink-surface px-4 py-3 text-left shadow-subtle transition-all hover:bg-interlink-app-bg/70 hover:shadow-card";
 
             return item.href ? (
               <Link key={item.label} href={item.href} className={className}>

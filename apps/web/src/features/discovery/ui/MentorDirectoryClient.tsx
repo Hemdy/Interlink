@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   GitCompareArrows,
+  Loader2,
   Plus,
   RotateCcw,
   Search,
@@ -23,7 +24,7 @@ import { MentorCardGridSkeleton } from "@/components/layout/PageSkeletons";
 import { Badge, Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/Feedback";
-import { Input, Select } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
 import { resolveAvatarSrc, UserAvatar } from "@/components/ui/UserAvatar";
@@ -253,7 +254,7 @@ export function MentorDirectoryClient({
             {recommendedMentors.slice(0, 3).map((mentor) => (
               <Card
                 key={mentor.userId}
-                className="min-w-[270px] shrink-0 snap-start border-interlink-forest/35 bg-gradient-to-br from-interlink-surface to-interlink-forest/[0.04] p-5 shadow-subtle hover:-translate-y-0.5 hover:border-interlink-forest md:min-w-0"
+                className="min-w-[270px] shrink-0 snap-start bg-gradient-to-br from-interlink-surface to-interlink-forest/[0.04] p-5 shadow-subtle hover:-translate-y-0.5 hover:shadow-card md:min-w-0"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-0">
@@ -282,7 +283,7 @@ export function MentorDirectoryClient({
                     {mentor.matchReasons[0]}
                   </p>
                 )}
-                <div className="mt-4 flex items-center justify-between gap-2 border-t border-interlink-border/50 pt-3">
+                <div className="mt-4 flex items-center justify-between gap-2 pt-2">
                   <Link
                     href={`/mentors/${mentor.userId}`}
                     className="inline-flex items-center gap-1 rounded-full bg-interlink-forest/10 px-3.5 py-1.5 text-xs font-semibold text-interlink-forest transition-colors hover:bg-interlink-forest hover:text-white"
@@ -302,17 +303,23 @@ export function MentorDirectoryClient({
         </section>
       )}
 
-      {/* Search & Filter Panel */}
-      <Card>
-        <form onSubmit={handleSearchSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-            <div className="relative md:col-span-7">
-              <Input
+      {/* Compact Borderless Search & Filter Card */}
+      <Card className="p-4 sm:p-5">
+        <form onSubmit={handleSearchSubmit} className="space-y-3">
+          {/* Single-Line Search Input + Inline Search Icon Button + Filters Control */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex min-w-0 flex-1 items-center rounded-full bg-interlink-app-bg focus-within:ring-2 focus-within:ring-interlink-forest/45">
+              <input
+                type="search"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search by name, role, skill, or organisation..."
+                placeholder="Search mentors, skills, or roles..."
                 aria-label="Search mentors"
+                className={`h-10 w-full min-w-0 rounded-full bg-transparent pl-4 text-[16px] text-interlink-ink placeholder:text-interlink-muted focus:outline-none sm:text-sm ${
+                  q.trim() ? "pr-20" : "pr-11"
+                }`}
               />
+
               {q.trim() && (
                 <button
                   type="button"
@@ -320,45 +327,52 @@ export function MentorDirectoryClient({
                     setQ("");
                     void executeFilter({ q: "" });
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-interlink-muted hover:text-interlink-ink"
+                  className="absolute right-11 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-interlink-muted transition-colors hover:bg-interlink-surface hover:text-interlink-ink"
                   aria-label="Clear search input"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               )}
-            </div>
 
-            <div className="md:col-span-3">
-              <Button
-                type="button"
-                variant={filtersOpen || activeFilterCount > 0 ? "secondary" : "outline"}
-                onClick={() => setFiltersOpen((prev) => !prev)}
-                className="flex w-full items-center justify-between gap-2 py-2.5 px-3.5 border-interlink-border shadow-subtle hover:border-interlink-forest"
-                aria-expanded={filtersOpen}
-                aria-controls="browse-mentors-filter-panel"
+              <button
+                type="submit"
+                disabled={loading}
+                aria-label="Search"
+                title="Search"
+                className="absolute right-1 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-interlink-forest text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover disabled:opacity-60"
               >
-                <span className="inline-flex items-center gap-2">
-                  <SlidersHorizontal className="h-4 w-4 text-interlink-forest" />
-                  <span className="font-medium text-interlink-ink">Filters</span>
-                  {activeFilterCount > 0 && (
-                    <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-interlink-forest px-1.5 text-[11px] font-bold text-white">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </span>
-                {filtersOpen ? (
-                  <ChevronUp className="h-4 w-4 text-interlink-muted transition-transform" />
+                {loading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-interlink-muted transition-transform" />
+                  <Search className="h-3.5 w-3.5" aria-hidden="true" />
                 )}
-              </Button>
+              </button>
             </div>
 
-            <div className="md:col-span-2">
-              <Button type="submit" loading={loading} className="w-full py-2.5 font-semibold">
-                <Search className="h-4 w-4" /> Search
-              </Button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((prev) => !prev)}
+              aria-expanded={filtersOpen}
+              aria-controls="browse-mentors-filter-panel"
+              className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-colors ${
+                filtersOpen || activeFilterCount > 0
+                  ? "bg-interlink-forest/15 text-interlink-forest dark:bg-interlink-forest/25 dark:text-emerald-300"
+                  : "bg-interlink-app-bg text-interlink-ink hover:bg-interlink-forest/10"
+              }`}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-interlink-forest px-1 text-[10px] font-bold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+              {filtersOpen ? (
+                <ChevronUp className="h-3.5 w-3.5 text-interlink-muted transition-transform" aria-hidden="true" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5 text-interlink-muted transition-transform" aria-hidden="true" />
+              )}
+            </button>
           </div>
 
           {/* Smooth Collapsible Filter Panel */}
@@ -366,141 +380,143 @@ export function MentorDirectoryClient({
             id="browse-mentors-filter-panel"
             className={`grid transition-all duration-300 ease-in-out ${
               filtersOpen
-                ? "grid-rows-[1fr] opacity-100 border-t border-interlink-border/60 pt-4"
+                ? "grid-rows-[1fr] pt-2 opacity-100"
                 : "grid-rows-[0fr] opacity-0"
             }`}
           >
             <div className="overflow-hidden">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-interlink-muted">
-                    Industry
-                  </label>
-                  <Select
-                    aria-label="Industry"
-                    value={industryId}
-                    onChange={(e) => handleIndustryChange(e.target.value)}
-                  >
-                    <option value="">All Industries</option>
-                    {industries.map((ind) => (
-                      <option key={ind.id} value={ind.id}>
-                        {ind.name}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
+              <div className="rounded-2xl bg-interlink-app-bg/70 p-3.5 sm:p-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-interlink-muted">
+                      Industry
+                    </label>
+                    <Select
+                      aria-label="Industry"
+                      value={industryId}
+                      onChange={(e) => handleIndustryChange(e.target.value)}
+                    >
+                      <option value="">All Industries</option>
+                      {industries.map((ind) => (
+                        <option key={ind.id} value={ind.id}>
+                          {ind.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
 
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-interlink-muted">
-                    Session Format
-                  </label>
-                  <Select
-                    aria-label="Session format"
-                    value={sessionPreference}
-                    onChange={(e) => handleSessionPreferenceChange(e.target.value)}
-                  >
-                    <option value="">Any Format</option>
-                    <option value="online">Online</option>
-                    <option value="in_person">In-Person</option>
-                    <option value="hybrid">Hybrid</option>
-                  </Select>
-                </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-interlink-muted">
+                      Session Format
+                    </label>
+                    <Select
+                      aria-label="Session format"
+                      value={sessionPreference}
+                      onChange={(e) => handleSessionPreferenceChange(e.target.value)}
+                    >
+                      <option value="">Any Format</option>
+                      <option value="online">Online</option>
+                      <option value="in_person">In-Person</option>
+                      <option value="hybrid">Hybrid</option>
+                    </Select>
+                  </div>
 
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-interlink-muted">
-                    Availability
-                  </label>
-                  <Select
-                    aria-label="Availability status"
-                    value={availability}
-                    onChange={(e) => handleAvailabilityChange(e.target.value)}
-                  >
-                    <option value="">Any Availability</option>
-                    <option value="accepting">Accepting Mentees</option>
-                    <option value="paused">Paused</option>
-                  </Select>
-                </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-interlink-muted">
+                      Availability
+                    </label>
+                    <Select
+                      aria-label="Availability status"
+                      value={availability}
+                      onChange={(e) => handleAvailabilityChange(e.target.value)}
+                    >
+                      <option value="">Any Availability</option>
+                      <option value="accepting">Accepting Mentees</option>
+                      <option value="paused">Paused</option>
+                    </Select>
+                  </div>
 
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-interlink-muted">
-                    Experience Level
-                  </label>
-                  <Select
-                    aria-label="Minimum experience"
-                    value={minExperience}
-                    onChange={(e) => handleExperienceChange(e.target.value)}
-                  >
-                    <option value="">Any Experience</option>
-                    <option value="1">1+ Years</option>
-                    <option value="3">3+ Years</option>
-                    <option value="5">5+ Years</option>
-                    <option value="8">8+ Years</option>
-                    <option value="10">10+ Years</option>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-t border-interlink-border/40 pt-3.5">
-                <div className="flex flex-wrap items-center gap-4">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-[2px] border border-interlink-border bg-interlink-app-bg/50 px-3 py-1.5 text-xs font-medium text-interlink-ink transition-colors hover:border-interlink-forest">
-                    <input
-                      type="checkbox"
-                      checked={verifiedOnly}
-                      onChange={(e) => handleVerifiedChange(e.target.checked)}
-                      className="h-3.5 w-3.5 accent-interlink-forest"
-                    />
-                    <ShieldCheck className="h-3.5 w-3.5 text-interlink-forest" />
-                    Verified Mentors Only
-                  </label>
-
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-interlink-muted whitespace-nowrap">Sort:</span>
-                    <div className="w-44">
-                      <Select
-                        size="sm"
-                        aria-label="Sort results"
-                        value={sort}
-                        onChange={(e) =>
-                          handleSortChange(e.target.value as "relevant" | "experience" | "newest")
-                        }
-                      >
-                        <option value="relevant">Most Relevant</option>
-                        <option value="experience">Most Experienced</option>
-                        <option value="newest">Recently Updated</option>
-                      </Select>
-                    </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-interlink-muted">
+                      Experience Level
+                    </label>
+                    <Select
+                      aria-label="Minimum experience"
+                      value={minExperience}
+                      onChange={(e) => handleExperienceChange(e.target.value)}
+                    >
+                      <option value="">Any Experience</option>
+                      <option value="1">1+ Years</option>
+                      <option value="3">3+ Years</option>
+                      <option value="5">5+ Years</option>
+                      <option value="8">8+ Years</option>
+                      <option value="10">10+ Years</option>
+                    </Select>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  {compareIds.length >= 2 && (
-                    <Button size="sm" variant="outline" onClick={() => setCompareOpen(true)}>
-                      <GitCompareArrows className="h-3.5 w-3.5" /> Compare ({compareIds.length})
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 pt-1">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-interlink-surface px-3 py-1.5 text-xs font-medium text-interlink-ink shadow-subtle">
+                      <input
+                        type="checkbox"
+                        checked={verifiedOnly}
+                        onChange={(e) => handleVerifiedChange(e.target.checked)}
+                        className="h-3.5 w-3.5 accent-interlink-forest"
+                      />
+                      <ShieldCheck className="h-3.5 w-3.5 text-interlink-forest" />
+                      Verified Mentors Only
+                    </label>
+
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="whitespace-nowrap text-interlink-muted">Sort:</span>
+                      <div className="w-40">
+                        <Select
+                          size="sm"
+                          aria-label="Sort results"
+                          value={sort}
+                          onChange={(e) =>
+                            handleSortChange(e.target.value as "relevant" | "experience" | "newest")
+                          }
+                        >
+                          <option value="relevant">Most Relevant</option>
+                          <option value="experience">Most Experienced</option>
+                          <option value="newest">Recently Updated</option>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {compareIds.length >= 2 && (
+                      <Button size="sm" variant="outline" onClick={() => setCompareOpen(true)}>
+                        <GitCompareArrows className="h-3.5 w-3.5" /> Compare ({compareIds.length})
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={clearFilters}
+                      className="text-xs text-interlink-muted hover:text-interlink-ink"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" /> Reset all
                     </Button>
-                  )}
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={clearFilters}
-                    className="text-xs text-interlink-muted hover:text-interlink-ink"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" /> Reset all
-                  </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Industry & Trust Pill Strip */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {/* Horizontal Scrollable Industry & Filter Chips */}
+          <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-0.5">
             <button
               type="button"
               onClick={() => handleIndustryChange("")}
-              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                 industryId === ""
-                  ? "border-interlink-forest bg-interlink-forest text-white shadow-subtle"
-                  : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+                  ? "bg-interlink-forest text-white shadow-subtle"
+                  : "bg-interlink-app-bg text-interlink-muted hover:text-interlink-ink"
               }`}
             >
               All Industries
@@ -508,10 +524,10 @@ export function MentorDirectoryClient({
             <button
               type="button"
               onClick={() => handleVerifiedChange(!verifiedOnly)}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+              className={`inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                 verifiedOnly
-                  ? "border-interlink-forest bg-interlink-forest/15 text-interlink-forest"
-                  : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+                  ? "bg-interlink-forest/15 text-interlink-forest dark:bg-interlink-forest/25 dark:text-emerald-300"
+                  : "bg-interlink-app-bg text-interlink-muted hover:text-interlink-ink"
               }`}
             >
               <ShieldCheck className="h-3.5 w-3.5" />
@@ -520,10 +536,10 @@ export function MentorDirectoryClient({
             <button
               type="button"
               onClick={() => handlePricingChange(pricingFilter === "free" ? "all" : "free")}
-              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                 pricingFilter === "free"
-                  ? "border-interlink-forest bg-interlink-forest/15 text-interlink-forest"
-                  : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+                  ? "bg-interlink-forest/15 text-interlink-forest dark:bg-interlink-forest/25 dark:text-emerald-300"
+                  : "bg-interlink-app-bg text-interlink-muted hover:text-interlink-ink"
               }`}
             >
               Free Available
@@ -531,10 +547,10 @@ export function MentorDirectoryClient({
             <button
               type="button"
               onClick={() => handlePricingChange(pricingFilter === "paid" ? "all" : "paid")}
-              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                 pricingFilter === "paid"
-                  ? "border-interlink-forest bg-interlink-forest/15 text-interlink-forest"
-                  : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+                  ? "bg-interlink-forest/15 text-interlink-forest dark:bg-interlink-forest/25 dark:text-emerald-300"
+                  : "bg-interlink-app-bg text-interlink-muted hover:text-interlink-ink"
               }`}
             >
               Paid Packages
@@ -544,10 +560,10 @@ export function MentorDirectoryClient({
                 key={ind.id}
                 type="button"
                 onClick={() => handleIndustryChange(industryId === ind.id ? "" : ind.id)}
-                className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                   industryId === ind.id
-                    ? "border-interlink-forest bg-interlink-forest text-white shadow-subtle"
-                    : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+                    ? "bg-interlink-forest text-white shadow-subtle"
+                    : "bg-interlink-app-bg text-interlink-muted hover:text-interlink-ink"
                 }`}
               >
                 {ind.name}
@@ -555,14 +571,14 @@ export function MentorDirectoryClient({
             ))}
           </div>
 
-          {/* Active Filter Chips & Results Count */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-interlink-border/40 pt-3 text-xs text-interlink-muted">
+          {/* Compact Results Count & Active Filter Tags */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5 text-xs text-interlink-muted">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="mr-1 font-semibold text-interlink-ink">
                 {mentors.length} {mentors.length === 1 ? "mentor" : "mentors"} found
               </span>
               {q.trim() && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full bg-interlink-app-bg px-2.5 py-0.5 text-xs text-interlink-ink">
                   Search: &ldquo;{q.trim()}&rdquo;
                   <button
                     type="button"
@@ -578,7 +594,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {industryId && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full bg-interlink-app-bg px-2.5 py-0.5 text-xs text-interlink-ink">
                   {industries.find((i) => i.id === industryId)?.name ?? "Industry"}
                   <button
                     type="button"
@@ -591,7 +607,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {sessionPreference && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full bg-interlink-app-bg px-2.5 py-0.5 text-xs text-interlink-ink">
                   Format: {sessionPreference.replace("_", " ")}
                   <button
                     type="button"
@@ -604,7 +620,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {availability && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full bg-interlink-app-bg px-2.5 py-0.5 text-xs text-interlink-ink">
                   {availability === "accepting" ? "Accepting Mentees" : "Paused"}
                   <button
                     type="button"
@@ -617,7 +633,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {minExperience && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full bg-interlink-app-bg px-2.5 py-0.5 text-xs text-interlink-ink">
                   {minExperience}+ yrs exp
                   <button
                     type="button"
@@ -630,7 +646,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {verifiedOnly && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full bg-interlink-app-bg px-2.5 py-0.5 text-xs text-interlink-ink">
                   Verified Only
                   <button
                     type="button"
@@ -643,7 +659,7 @@ export function MentorDirectoryClient({
                 </span>
               )}
               {sort !== "relevant" && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1 text-xs text-interlink-ink shadow-subtle">
+                <span className="inline-flex items-center gap-1 rounded-full bg-interlink-app-bg px-2.5 py-0.5 text-xs text-interlink-ink">
                   Sort: {sort === "experience" ? "Most Experienced" : "Recently Updated"}
                   <button
                     type="button"
@@ -913,7 +929,7 @@ export function MentorDirectoryClient({
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             {comparedMentors.map((m) => (
-              <div key={m.userId} className="rounded-2xl border border-interlink-border bg-interlink-app-bg/40 p-4">
+              <div key={m.userId} className="rounded-2xl bg-interlink-app-bg/70 p-4">
                 <h3 className="font-semibold text-interlink-ink">
                   {m.firstName} {m.lastName}
                 </h3>

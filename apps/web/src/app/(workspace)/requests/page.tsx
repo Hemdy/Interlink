@@ -57,7 +57,12 @@ export default async function RequestsPage() {
   const relatedUsers =
     userIds.length > 0
       ? await db
-          .select({ id: users.id, firstName: users.firstName, lastName: users.lastName })
+          .select({
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            profileImage: users.profileImage,
+          })
           .from(users)
           .where(inArray(users.id, userIds))
       : [];

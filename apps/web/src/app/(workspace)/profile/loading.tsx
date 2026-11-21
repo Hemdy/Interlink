@@ -1,1 +1,1 @@
-export { ProfileEditorSkeleton as default } from "@/components/layout/PageSkeletons";
+export { ProfileHubSkeleton as default } from "@/components/layout/PageSkeletons";

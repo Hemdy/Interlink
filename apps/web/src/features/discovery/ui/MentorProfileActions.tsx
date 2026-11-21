@@ -267,7 +267,7 @@ export function MentorProfileActions({
 
           <form onSubmit={handleSubmitRequest} className="mt-5 space-y-4">
             {availablePackages.length > 0 && (
-              <div className="space-y-2 rounded-2xl border border-interlink-border bg-interlink-app-bg/60 p-3.5">
+              <div className="space-y-2 rounded-2xl bg-interlink-app-bg/70 p-3.5">
                 <Select
                   label="Mentorship Package"
                   value={billingCadence}

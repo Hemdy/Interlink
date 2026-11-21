@@ -102,12 +102,31 @@ export async function POST(
   const parsed = await parseBody(request, sendMessageSchema);
   if (parsed.error) return parsed.error;
 
+  let validReplyToMessageId: string | null = null;
+  if (parsed.data.replyToMessageId) {
+    const [replyTarget] = await db
+      .select({ id: messages.id })
+      .from(messages)
+      .where(
+        and(
+          eq(messages.id, parsed.data.replyToMessageId),
+          eq(messages.conversationId, id),
+        ),
+      )
+      .limit(1);
+    if (!replyTarget) {
+      return apiError("Replied message was not found in this conversation.", 404);
+    }
+    validReplyToMessageId = replyTarget.id;
+  }
+
   const now = new Date();
   const [msg] = await db
     .insert(messages)
     .values({
       conversationId: id,
       senderId: user.id,
+      replyToMessageId: validReplyToMessageId,
       content: parsed.data.content,
       attachmentUrl: parsed.data.attachmentUrl || null,
     })
