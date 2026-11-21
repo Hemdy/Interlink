@@ -3,7 +3,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDateTime } from "@interlink/utils";
-import type { CommunityPostType, MentorshipPricingMode, SessionUser } from "@interlink/types";
+import type {
+  CommunityPostType,
+  MembershipTier,
+  MentorshipPricingMode,
+  SessionUser,
+} from "@interlink/types";
 import {
   Bookmark,
   ExternalLink,
@@ -36,8 +41,9 @@ import type {
 } from "@/features/content/infrastructure/postQueries";
 import { CreatePostModal } from "@/features/dashboard/ui/CreatePostModal";
 import { ProfileEditorClient } from "@/features/profiles/ui/ProfileEditorClient";
+import { ProfileSettingsPanel } from "@/features/profiles/ui/ProfileSettingsPanel";
 
-type ProfileTab = "posts" | "videos" | "articles" | "edit";
+type ProfileTab = "posts" | "videos" | "articles" | "edit" | "settings";
 
 interface ProfileHubClientProps {
   user: SessionUser;
@@ -96,6 +102,9 @@ interface ProfileHubClientProps {
   initialPosts: CommunityPostItem[];
   initialVideos: UserPublishedReelItem[];
   initialArticles: UserPublishedArticleItem[];
+  blockedUsers?: Array<{ blockedUserId: string; firstName: string; lastName: string }>;
+  unreadNotifications?: number;
+  membershipTier?: MembershipTier;
 }
 
 export function ProfileHubClient({
@@ -108,6 +117,9 @@ export function ProfileHubClient({
   initialPosts,
   initialVideos,
   initialArticles,
+  blockedUsers = [],
+  unreadNotifications = 0,
+  membershipTier = "free",
 }: ProfileHubClientProps) {
   const { pushToast } = useToast();
   const [activeTab, setActiveTab] = useState<ProfileTab>("posts");
@@ -150,19 +162,28 @@ export function ProfileHubClient({
   } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Respect #availability or ?tab=edit anchors
+  // Respect ?tab=settings, ?tab=edit, #availability, or #cat-notifications anchors
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    if (
-      window.location.hash === "#availability" ||
-      params.get("tab") === "edit"
-    ) {
+    const tabParam = params.get("tab");
+    if (tabParam === "settings" || window.location.hash === "#cat-notifications") {
+      setActiveTab("settings");
+      if (window.location.hash) {
+        const targetId = window.location.hash.slice(1);
+        window.setTimeout(() => {
+          document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth" });
+        }, 160);
+      }
+      return;
+    }
+
+    if (window.location.hash === "#availability" || tabParam === "edit") {
       setActiveTab("edit");
       if (window.location.hash === "#availability") {
         window.setTimeout(() => {
           document.getElementById("availability")?.scrollIntoView({ behavior: "smooth" });
-        }, 150);
+        }, 160);
       }
     }
   }, []);
@@ -370,7 +391,8 @@ export function ProfileHubClient({
       count: articlePosts.length + articles.length,
       icon: FileText,
     },
-    { id: "edit", label: "Edit Profile", icon: SlidersHorizontal },
+    { id: "edit", label: "Edit", icon: SlidersHorizontal },
+    { id: "settings", label: "Settings", icon: Settings },
   ];
 
   return (
@@ -408,6 +430,9 @@ export function ProfileHubClient({
               </h1>
               <Badge tone="forest" className="capitalize">
                 {role}
+              </Badge>
+              <Badge tone={membershipTier === "free" ? "neutral" : "gold"} className="capitalize">
+                {membershipTier === "free" ? "Free" : `Interlink ${membershipTier}`}
               </Badge>
             </div>
 
@@ -475,20 +500,26 @@ export function ProfileHubClient({
                   Public View
                 </Link>
               )}
-              <Link
-                href="/account"
+              <button
+                type="button"
+                onClick={() => setActiveTab(activeTab === "settings" ? "posts" : "settings")}
                 aria-label="Account Settings"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-interlink-border bg-interlink-surface text-interlink-muted transition-colors hover:border-interlink-forest hover:text-interlink-ink"
+                aria-pressed={activeTab === "settings"}
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
+                  activeTab === "settings"
+                    ? "border-interlink-forest bg-interlink-forest text-white shadow-subtle"
+                    : "border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest hover:text-interlink-ink"
+                }`}
               >
                 <Settings className="h-4 w-4" />
-              </Link>
+              </button>
             </div>
           </div>
         </div>
       </Card>
 
       {/* IG / TikTok Underline Icon Tab Bar */}
-      <div className="grid grid-cols-4 border-b border-interlink-border bg-interlink-surface/80 backdrop-blur-sm rounded-t-2xl">
+      <div className="grid grid-cols-5 rounded-t-2xl border-b border-interlink-border bg-interlink-surface/80 backdrop-blur-sm">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -497,7 +528,7 @@ export function ProfileHubClient({
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center justify-center gap-1.5 border-b-2 py-3 text-xs font-semibold transition-colors ${
+              className={`flex items-center justify-center gap-1 border-b-2 px-1 py-3 text-[11px] font-semibold transition-colors sm:gap-1.5 sm:text-xs ${
                 active
                   ? "border-interlink-forest text-interlink-forest"
                   : "border-transparent text-interlink-muted hover:text-interlink-ink"
@@ -892,6 +923,22 @@ export function ProfileHubClient({
           userFirstName={user.firstName}
           userLastName={user.lastName}
           initialProfileImage={user.profileImage}
+        />
+      )}
+
+      {/* TAB 5: CONSOLIDATED ACCOUNT SETTINGS, MEMBERSHIP & UPDATES */}
+      {activeTab === "settings" && (
+        <ProfileSettingsPanel
+          user={user}
+          blockedUsers={blockedUsers}
+          unreadNotifications={unreadNotifications}
+          membershipTier={membershipTier}
+          onOpenAvailability={() => {
+            setActiveTab("edit");
+            window.setTimeout(() => {
+              document.getElementById("availability")?.scrollIntoView({ behavior: "smooth" });
+            }, 120);
+          }}
         />
       )}
 

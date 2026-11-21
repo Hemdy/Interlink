@@ -15,7 +15,6 @@ import {
   LogOut,
   Menu,
   MessageSquare,
-  Settings,
   ShieldCheck,
   Target,
   UserCircle,
@@ -64,7 +63,7 @@ function getNavItemsForUser(user: SessionUser): NavItem[] {
       { label: "Messages", href: "/messages", icon: MessageSquare },
       { label: "Resources", href: "/learn", icon: BookOpen },
       { label: "Notifications", href: "/notifications", icon: Bell },
-      { label: "Account", href: "/account", icon: Settings },
+      { label: "My Profile", href: "/profile", icon: UserCircle },
     ];
   }
 
@@ -79,7 +78,6 @@ function getNavItemsForUser(user: SessionUser): NavItem[] {
       { label: "Resources", href: "/learn", icon: BookOpen },
       { label: "Notifications", href: "/notifications", icon: Bell },
       { label: "My Profile", href: "/profile", icon: UserCircle },
-      { label: "Account", href: "/account", icon: Settings },
     ];
   }
 
@@ -95,7 +93,6 @@ function getNavItemsForUser(user: SessionUser): NavItem[] {
     { label: "Resources", href: "/learn", icon: BookOpen },
     { label: "Notifications", href: "/notifications", icon: Bell },
     { label: "My Profile", href: "/profile", icon: UserCircle },
-    { label: "Account", href: "/account", icon: Settings },
   ];
 }
 
@@ -122,6 +119,7 @@ export function AppShell({
   const liveUnreadCount = useUnreadNotificationsCount(true, unreadCount);
 
   const isMessagesRoute = pathname === "/messages";
+  const isHomeFeedRoute = pathname === "/dashboard";
 
   const navItems = useMemo(() => getNavItemsForUser(user), [user]);
 
@@ -135,23 +133,41 @@ export function AppShell({
   }, [isStandalone]);
 
   const SidebarContent = (
-    <div className="flex h-full flex-col justify-between bg-interlink-surface text-interlink-ink">
+    <div
+      className={`flex h-full flex-col justify-between ${
+        isHomeFeedRoute
+          ? "bg-[#0c2016] text-[#edf6f1]"
+          : "bg-interlink-surface text-interlink-ink"
+      }`}
+    >
       <div>
-        <div className="flex h-[68px] items-center justify-between border-b border-interlink-border px-5">
+        <div
+          className={`flex h-[68px] items-center justify-between px-5 ${
+            isHomeFeedRoute ? "" : "border-b border-interlink-border"
+          }`}
+        >
           <Link href={isStandalone ? "/dashboard" : "/"} className="focus-ring rounded-[2px]">
-            <InterlinkLogo variant="compact" />
+            <InterlinkLogo variant="compact" inverted={isHomeFeedRoute} />
           </Link>
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
-            className="rounded-[2px] p-1 text-interlink-muted hover:bg-interlink-app-bg lg:hidden"
+            className={`rounded-[2px] p-1 lg:hidden ${
+              isHomeFeedRoute
+                ? "text-emerald-200 hover:bg-white/10"
+                : "text-interlink-muted hover:bg-interlink-app-bg"
+            }`}
             aria-label="Close navigation"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex items-center gap-3 border-b border-interlink-border/60 px-5 py-3.5">
+        <div
+          className={`flex items-center gap-3 px-5 py-3.5 ${
+            isHomeFeedRoute ? "bg-white/[0.03]" : "border-b border-interlink-border/60"
+          }`}
+        >
           <UserAvatar
             src={user.profileImage}
             firstName={user.firstName}
@@ -159,10 +175,18 @@ export function AppShell({
             size="sm"
           />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-interlink-ink">
+            <p
+              className={`truncate text-sm font-semibold ${
+                isHomeFeedRoute ? "text-white" : "text-interlink-ink"
+              }`}
+            >
               {user.firstName} {user.lastName}
             </p>
-            <p className="mt-0.5 text-xs capitalize text-interlink-forest">
+            <p
+              className={`mt-0.5 text-xs capitalize ${
+                isHomeFeedRoute ? "text-emerald-300" : "text-interlink-forest"
+              }`}
+            >
               {user.primaryRole.replace("_", " ")}
             </p>
           </div>
@@ -184,7 +208,9 @@ export function AppShell({
                 className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm transition-colors ${
                   active
                     ? "bg-interlink-forest font-semibold text-white shadow-subtle"
-                    : "text-interlink-ink/85 hover:bg-interlink-app-bg hover:text-interlink-ink"
+                    : isHomeFeedRoute
+                      ? "text-emerald-100/80 hover:bg-white/10 hover:text-white"
+                      : "text-interlink-ink/85 hover:bg-interlink-app-bg hover:text-interlink-ink"
                 }`}
               >
                 <span className="flex items-center gap-2.5">
@@ -208,11 +234,15 @@ export function AppShell({
         </nav>
       </div>
 
-      <div className="border-t border-interlink-border p-3">
+      <div className={`p-3 ${isHomeFeedRoute ? "" : "border-t border-interlink-border"}`}>
         <button
           type="button"
           onClick={handleSignOut}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium text-interlink-muted transition-colors hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+          className={`flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
+            isHomeFeedRoute
+              ? "text-emerald-200/75 hover:bg-red-500/20 hover:text-red-200"
+              : "text-interlink-muted hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+          }`}
         >
           <LogOut className="h-4 w-4" aria-hidden="true" />
           <span>Sign Out</span>
@@ -222,10 +252,22 @@ export function AppShell({
   );
 
   return (
-    <div className="min-h-screen bg-interlink-app-bg text-interlink-ink">
+    <div
+      className={`min-h-screen transition-colors ${
+        isHomeFeedRoute
+          ? "bg-[#0a1a12] text-[#edf6f1]"
+          : "bg-interlink-app-bg text-interlink-ink"
+      }`}
+    >
       {/* Desktop fixed sidebar (hidden when PWA bottom nav mode is active) */}
       {!useBottomNav && (
-        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-interlink-border bg-interlink-surface lg:block">
+        <aside
+          className={`fixed inset-y-0 left-0 z-30 hidden w-64 lg:block ${
+            isHomeFeedRoute
+              ? "bg-[#0c2016]"
+              : "border-r border-interlink-border bg-interlink-surface"
+          }`}
+        >
           {SidebarContent}
         </aside>
       )}
@@ -237,7 +279,11 @@ export function AppShell({
           onClick={() => setSidebarOpen(false)}
         >
           <aside
-            className="h-full w-72 border-r border-interlink-border bg-interlink-surface shadow-xl"
+            className={`h-full w-72 shadow-xl ${
+              isHomeFeedRoute
+                ? "bg-[#0c2016]"
+                : "border-r border-interlink-border bg-interlink-surface"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             {SidebarContent}
@@ -253,7 +299,13 @@ export function AppShell({
             : "min-h-[100dvh]"
         } ${useBottomNav ? "" : "lg:pl-64"}`}
       >
-        <header className="sticky top-0 z-20 flex h-[68px] shrink-0 items-center justify-between border-b border-interlink-border bg-interlink-surface/95 px-4 shadow-subtle backdrop-blur-sm sm:px-8">
+        <header
+          className={`sticky top-0 z-20 flex h-[68px] shrink-0 items-center justify-between px-4 backdrop-blur-md sm:px-8 ${
+            isHomeFeedRoute
+              ? "bg-[#0a1a12]/90"
+              : "border-b border-interlink-border bg-interlink-surface/95 shadow-subtle"
+          }`}
+        >
           <div className="flex min-w-0 items-center gap-3">
             {useBottomNav ? (
               <Link
@@ -266,13 +318,21 @@ export function AppShell({
                   firstName={user.firstName}
                   lastName={user.lastName}
                   size="sm"
-                  className="rounded-full border-interlink-forest/25 shadow-subtle transition-transform duration-200 group-hover:scale-105"
+                  className="rounded-full shadow-subtle transition-transform duration-200 group-hover:scale-105"
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold leading-tight text-interlink-ink">
+                  <p
+                    className={`truncate text-sm font-semibold leading-tight ${
+                      isHomeFeedRoute ? "text-white" : "text-interlink-ink"
+                    }`}
+                  >
                     {user.firstName} {user.lastName}
                   </p>
-                  <p className="truncate text-[11px] capitalize leading-tight text-interlink-forest">
+                  <p
+                    className={`truncate text-[11px] capitalize leading-tight ${
+                      isHomeFeedRoute ? "text-emerald-300" : "text-interlink-forest"
+                    }`}
+                  >
                     {user.primaryRole.replace("_", " ")}
                   </p>
                 </div>
@@ -281,7 +341,11 @@ export function AppShell({
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
-                className="rounded-full p-2 text-interlink-muted hover:bg-interlink-app-bg lg:hidden"
+                className={`rounded-full p-2 lg:hidden ${
+                  isHomeFeedRoute
+                    ? "text-emerald-100 hover:bg-white/10"
+                    : "text-interlink-muted hover:bg-interlink-app-bg"
+                }`}
                 aria-label="Open navigation"
               >
                 <Menu className="h-5 w-5" />
@@ -294,7 +358,11 @@ export function AppShell({
             <ThemeToggle />
             <Link
               href="/notifications"
-              className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-interlink-border bg-interlink-surface text-interlink-ink shadow-subtle transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+              className={`relative inline-flex h-9 w-9 items-center justify-center rounded-full shadow-subtle transition-colors ${
+                isHomeFeedRoute
+                  ? "bg-white/10 text-white hover:bg-white/20"
+                  : "border border-interlink-border bg-interlink-surface text-interlink-ink hover:border-interlink-forest hover:text-interlink-forest"
+              }`}
               aria-label="Notifications"
             >
               <Bell className="h-4 w-4" />
@@ -308,7 +376,13 @@ export function AppShell({
         </header>
 
         {!user.onboardingCompleted && (
-          <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-200 sm:px-8">
+          <div
+            className={`shrink-0 px-4 py-2.5 text-xs sm:px-8 ${
+              isHomeFeedRoute
+                ? "bg-[#152f21] text-amber-200"
+                : "border-b border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-200"
+            }`}
+          >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span>
                 Your profile setup is incomplete. Complete your profile details so{" "}
@@ -319,14 +393,18 @@ export function AppShell({
               <div className="flex items-center gap-3">
                 <Link
                   href="/profile"
-                  className="font-semibold text-interlink-forest hover:underline"
+                  className={`font-semibold hover:underline ${
+                    isHomeFeedRoute ? "text-emerald-300" : "text-interlink-forest"
+                  }`}
                 >
                   Edit Profile &rarr;
                 </Link>
                 <span className="text-amber-400 dark:text-amber-600">·</span>
                 <Link
                   href="/onboarding"
-                  className="font-semibold text-interlink-forest hover:underline"
+                  className={`font-semibold hover:underline ${
+                    isHomeFeedRoute ? "text-emerald-300" : "text-interlink-forest"
+                  }`}
                 >
                   Setup Wizard &rarr;
                 </Link>

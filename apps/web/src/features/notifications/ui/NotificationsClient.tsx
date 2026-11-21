@@ -211,7 +211,7 @@ export function NotificationsClient({
         </h1>
 
         <Link
-          href="/account#cat-notifications"
+          href="/profile?tab=settings#cat-notifications"
           aria-label="Notification preferences"
           className="inline-flex h-9 w-9 items-center justify-center rounded-full text-interlink-ink transition-colors hover:bg-interlink-surface focus-ring"
         >

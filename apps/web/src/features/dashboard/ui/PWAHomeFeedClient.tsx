@@ -47,7 +47,13 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import type { CommunityPostItem } from "@/features/content/infrastructure/postQueries";
 import { CreatePostModal } from "@/features/dashboard/ui/CreatePostModal";
+import {
+  EventsPromotionsCarousel,
+  MentorDiscoveryCarousel,
+} from "@/features/dashboard/ui/FeedDiscoveryCarousels";
 import { useFeedVideoAutoplay } from "@/features/dashboard/ui/useFeedVideoAutoplay";
+import { hasExtendedEventDetails } from "@/features/events/domain/eventDetails";
+import { useNavigationMode } from "@/features/pwa/useNavigationMode";
 import { postJson } from "@/lib/api/client";
 
 export interface FeedSessionItem {
@@ -91,6 +97,8 @@ type FeedFilter = "all" | "mentors" | "reels" | "events" | "sessions" | "posts";
 type FeedEntry =
   | { kind: "community_post"; feedKey: string; post: CommunityPostItem; initialLikes: number; initialComments: FeedComment[] }
   | { kind: "reel"; feedKey: string; reel: MentorReelItem; initialLikes: number; initialComments: FeedComment[] }
+  | { kind: "mentor_carousel"; feedKey: string; mentors: PublicMentorSummary[] }
+  | { kind: "events_carousel"; feedKey: string; events: PlatformEventItem[] }
   | { kind: "mentor"; feedKey: string; mentor: PublicMentorSummary; initialLikes: number; initialComments: FeedComment[] }
   | { kind: "event"; feedKey: string; event: PlatformEventItem; initialLikes: number; initialComments: FeedComment[] }
   | { kind: "session"; feedKey: string; session: FeedSessionItem; initialLikes: number; initialComments: FeedComment[] }
@@ -139,7 +147,7 @@ const DEFAULT_COMMUNITY_POSTS: FeedPostItem[] = [
   },
 ];
 
-const BATCH_SIZE = 6;
+const BATCH_SIZE = 12;
 
 export function PWAHomeFeedClient({
   user,
@@ -172,8 +180,10 @@ export function PWAHomeFeedClient({
   const [feedCycles, setFeedCycles] = useState(1);
 
   // Community Posts state (real persisted public posts + Create Post modal)
+  const { useBottomNav } = useNavigationMode();
   const [livePosts, setLivePosts] = useState<CommunityPostItem[]>(communityPosts);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [showFloatingCreate, setShowFloatingCreate] = useState(false);
   const [highlightedPostId, setHighlightedPostId] = useState<string | null>(null);
   const [previewPostMedia, setPreviewPostMedia] = useState<{
     url: string;
@@ -192,6 +202,7 @@ export function PWAHomeFeedClient({
   });
   const [bookmarkedIds, setBookmarkedIds] = useState<Record<string, boolean>>({});
   const [openCommentKey, setOpenCommentKey] = useState<string | null>(null);
+  const [commentModalInstanceKey, setCommentModalInstanceKey] = useState<string | null>(null);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [userComments, setUserComments] = useState<Record<string, FeedComment[]>>({});
 
@@ -208,6 +219,16 @@ export function PWAHomeFeedClient({
   const [rsvpError, setRsvpError] = useState<string | null>(null);
 
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  // Show floating bottom-right "+" Create Post button only once user scrolls past top of feed
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowFloatingCreate(window.scrollY > 40);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Restore lightweight local social state (likes/bookmarks/comments) scoped to user
   useEffect(() => {
@@ -261,89 +282,86 @@ export function PWAHomeFeedClient({
     [sharedPosts],
   );
 
-  // Build rich interleaved base feed deck (community posts first, then varied media, creators, events, sessions)
-  const baseDeck = useMemo<FeedEntry[]>(() => {
-    const deck: FeedEntry[] = [];
+  // Build rich feed decks: TikTok/Reels cadence for "For You" + dedicated tab streams
+  const filteredBase = useMemo<FeedEntry[]>(() => {
+    const mapCommunityPost = (cPost: CommunityPostItem, suffix = ""): FeedEntry => ({
+      kind: "community_post",
+      feedKey: `community-${cPost.id}${suffix}`,
+      post: cPost,
+      initialLikes: cPost.likesCount,
+      initialComments: cPost.comments.map((c) => ({
+        id: c.id,
+        authorId: c.authorId,
+        author: c.authorName,
+        text: c.content,
+        timeLabel: formatDateTime(c.createdAt),
+      })),
+    });
 
-    // Highlighted deep-linked post (if any) + newest community posts appear right at the top
+    const mapReel = (reel: MentorReelItem, idx: number, suffix = ""): FeedEntry => ({
+      kind: "reel",
+      feedKey: `reel-${reel.id}${suffix}`,
+      reel,
+      initialLikes: 28 + idx * 11,
+      initialComments: [
+        {
+          id: `seed-r-${idx}`,
+          author: "Community Member",
+          text: `The "${reel.careerPath}" breakdown makes this path much clearer.`,
+          timeLabel: "2h ago",
+        },
+      ],
+    });
+
     const orderedCommunity = [...livePosts].sort((a, b) => {
       if (highlightedPostId && a.id === highlightedPostId) return -1;
       if (highlightedPostId && b.id === highlightedPostId) return 1;
       return 0;
     });
 
-    const maxLen = Math.max(
-      orderedCommunity.length,
-      reels.length,
-      allMentors.length,
-      events.length,
-      allPosts.length,
-      upcomingSessions.length,
-      pendingRequests.length,
-      activeGoals.length,
-      1,
+    const videoCommunity = orderedCommunity.filter(
+      (p) => p.mediaType === "video" && Boolean(p.mediaUrl),
+    );
+    const nonVideoCommunity = orderedCommunity.filter(
+      (p) => p.mediaType !== "video" || !p.mediaUrl,
     );
 
-    for (let i = 0; i < maxLen; i++) {
-      if (i < pendingRequests.length && role === "mentor") {
-        const req = pendingRequests[i]!;
-        deck.push({
-          kind: "request",
-          feedKey: `req-${req.id}`,
-          request: req,
-          initialLikes: 0,
-          initialComments: [],
-        });
+    const videoPoolCount = videoCommunity.length + reels.length;
+    const takeVideoAt = (rawIndex: number, suffix = ""): FeedEntry | null => {
+      if (videoPoolCount === 0) return null;
+      const idx = rawIndex % videoPoolCount;
+      if (idx < videoCommunity.length) {
+        return mapCommunityPost(videoCommunity[idx]!, suffix);
       }
+      const reelIdx = idx - videoCommunity.length;
+      return mapReel(reels[reelIdx]!, reelIdx, suffix);
+    };
 
-      if (i < orderedCommunity.length) {
-        const cPost = orderedCommunity[i]!;
-        deck.push({
-          kind: "community_post",
-          feedKey: `community-${cPost.id}`,
-          post: cPost,
-          initialLikes: cPost.likesCount,
-          initialComments: cPost.comments.map((c) => ({
-            id: c.id,
-            author: c.authorName,
-            text: c.content,
-            timeLabel: formatDateTime(c.createdAt),
-          })),
-        });
+    if (filter === "reels") {
+      const list: FeedEntry[] = [];
+      for (let i = 0; i < videoPoolCount; i++) {
+        const entry = takeVideoAt(i);
+        if (entry) list.push(entry);
       }
+      return list;
+    }
 
-      if (i < reels.length) {
-        const reel = reels[i]!;
-        deck.push({
-          kind: "reel",
-          feedKey: `reel-${reel.id}`,
-          reel,
-          initialLikes: 28 + i * 11,
-          initialComments: [
-            {
-              id: `seed-r-${i}`,
-              author: "Community Member",
-              text: `The "${reel.careerPath}" breakdown makes this path much clearer.`,
-              timeLabel: "2h ago",
-            },
-          ],
-        });
+    if (filter === "mentors") {
+      const list: FeedEntry[] = [];
+      if (role === "mentor") {
+        for (const req of pendingRequests) {
+          list.push({
+            kind: "request",
+            feedKey: `req-${req.id}`,
+            request: req,
+            initialLikes: 0,
+            initialComments: [],
+          });
+        }
       }
-
-      if (i < upcomingSessions.length) {
-        const session = upcomingSessions[i]!;
-        deck.push({
-          kind: "session",
-          feedKey: `session-${session.id}`,
-          session,
-          initialLikes: 0,
-          initialComments: [],
-        });
-      }
-
-      if (i < allMentors.length) {
+      for (let i = 0; i < allMentors.length; i++) {
         const mentor = allMentors[i]!;
-        deck.push({
+        list.push({
           kind: "mentor",
           feedKey: `mentor-${mentor.userId}`,
           mentor,
@@ -351,28 +369,36 @@ export function PWAHomeFeedClient({
           initialComments: [],
         });
       }
+      return list;
+    }
 
-      if (i < events.length) {
-        const event = events[i]!;
-        deck.push({
-          kind: "event",
-          feedKey: `event-${event.id}`,
-          event,
-          initialLikes: (event.registrationCount ?? 12) + 9,
-          initialComments: [
-            {
-              id: `seed-e-${i}`,
-              author: "Tobi A.",
-              text: "Reserved my spot — excited for the live Q&A.",
-              timeLabel: "5h ago",
-            },
-          ],
-        });
-      }
+    if (filter === "events") {
+      return events.map((event, i) => ({
+        kind: "event",
+        feedKey: `event-${event.id}`,
+        event,
+        initialLikes: (event.registrationCount ?? 12) + 9,
+        initialComments: [
+          {
+            id: `seed-e-${i}`,
+            author: "Tobi A.",
+            text: "Reserved my spot — excited for the live Q&A.",
+            timeLabel: "5h ago",
+          },
+        ],
+      }));
+    }
 
-      if (i < activeGoals.length) {
-        const goal = activeGoals[i]!;
-        deck.push({
+    if (filter === "sessions") {
+      const list: FeedEntry[] = upcomingSessions.map((session) => ({
+        kind: "session",
+        feedKey: `session-${session.id}`,
+        session,
+        initialLikes: 0,
+        initialComments: [],
+      }));
+      for (const goal of activeGoals) {
+        list.push({
           kind: "goal",
           feedKey: `goal-${goal.id}`,
           goal,
@@ -380,17 +406,73 @@ export function PWAHomeFeedClient({
           initialComments: [],
         });
       }
+      return list;
+    }
 
-      if (i < allPosts.length) {
-        const post = allPosts[i]!;
-        deck.push({
-          kind: "post",
+    if (filter === "posts") {
+      return [
+        ...orderedCommunity.map((p) => mapCommunityPost(p)),
+        ...allPosts.map((post, i) => ({
+          kind: "post" as const,
           feedKey: `post-${post.id}`,
           post,
           initialLikes: 14 + i * 6,
           initialComments: [],
-        });
-      }
+        })),
+      ];
+    }
+
+    // "all" (For You): TikTok/Instagram Reels cadence
+    // Optional pinned highlighted post (?post= deep link or newly published post),
+    // then 4 videos -> Mentor Discovery (4 cards) -> 5 videos -> Events & Promotions -> repeat
+    const deck: FeedEntry[] = [];
+    const highlightedNonVideo = highlightedPostId
+      ? nonVideoCommunity.find((p) => p.id === highlightedPostId)
+      : undefined;
+
+    if (highlightedNonVideo) {
+      deck.push(mapCommunityPost(highlightedNonVideo));
+    }
+
+    const usedFeedKeys = new Set<string>();
+    const pushUniqueVideo = (rawIdx: number) => {
+      if (videoPoolCount === 0) return;
+      const baseEntry = takeVideoAt(rawIdx);
+      if (!baseEntry) return;
+      const key = usedFeedKeys.has(baseEntry.feedKey)
+        ? `${baseEntry.feedKey}-s${rawIdx}`
+        : baseEntry.feedKey;
+      usedFeedKeys.add(key);
+      deck.push({ ...baseEntry, feedKey: key });
+    };
+
+    for (let i = 0; i < 4; i++) {
+      pushUniqueVideo(i);
+    }
+
+    if (allMentors.length > 0) {
+      deck.push({
+        kind: "mentor_carousel",
+        feedKey: "mentor-discovery-1",
+        mentors: allMentors.slice(0, 4),
+      });
+    }
+
+    for (let i = 4; i < 9; i++) {
+      pushUniqueVideo(i);
+    }
+
+    if (events.length > 0) {
+      deck.push({
+        kind: "events_carousel",
+        feedKey: "events-promotions-1",
+        events,
+      });
+    }
+
+    for (const cPost of nonVideoCommunity) {
+      if (highlightedNonVideo && cPost.id === highlightedNonVideo.id) continue;
+      deck.push(mapCommunityPost(cPost));
     }
 
     return deck;
@@ -399,6 +481,7 @@ export function PWAHomeFeedClient({
     allMentors,
     allPosts,
     events,
+    filter,
     highlightedPostId,
     livePosts,
     pendingRequests,
@@ -407,15 +490,6 @@ export function PWAHomeFeedClient({
     upcomingSessions,
   ]);
 
-  const filteredBase = useMemo(() => {
-    if (filter === "all") return baseDeck;
-    if (filter === "mentors") return baseDeck.filter((e) => e.kind === "mentor" || e.kind === "request");
-    if (filter === "reels") return baseDeck.filter((e) => e.kind === "reel");
-    if (filter === "events") return baseDeck.filter((e) => e.kind === "event");
-    if (filter === "sessions") return baseDeck.filter((e) => e.kind === "session" || e.kind === "goal");
-    return baseDeck.filter((e) => e.kind === "community_post" || e.kind === "post");
-  }, [baseDeck, filter]);
-
   // Repeat discovery stream cleanly across cycles so infinite scroll keeps flowing
   const feedItems = useMemo(() => {
     if (filteredBase.length === 0) return [];
@@ -423,6 +497,20 @@ export function PWAHomeFeedClient({
     for (let cycle = 0; cycle < feedCycles; cycle++) {
       for (let idx = 0; idx < filteredBase.length; idx++) {
         const entry = filteredBase[idx]!;
+        if (entry.kind === "mentor_carousel" && allMentors.length > 0) {
+          const offset = (cycle * 4) % allMentors.length;
+          const rotated = Array.from(
+            { length: Math.min(4, allMentors.length) },
+            (_, k) => allMentors[(offset + k) % allMentors.length]!,
+          );
+          expanded.push({
+            ...entry,
+            mentors: rotated,
+            instanceKey: `${entry.feedKey}-c${cycle}`,
+            cycle,
+          });
+          continue;
+        }
         expanded.push({
           ...entry,
           instanceKey: `${entry.feedKey}-c${cycle}`,
@@ -431,7 +519,7 @@ export function PWAHomeFeedClient({
       }
     }
     return expanded;
-  }, [feedCycles, filteredBase]);
+  }, [allMentors, feedCycles, filteredBase]);
 
   const displayedItems = useMemo(
     () => feedItems.slice(0, visibleCount),
@@ -804,7 +892,7 @@ export function PWAHomeFeedClient({
   ];
 
   return (
-    <div className="mx-auto max-w-[680px] space-y-5">
+    <div className="mx-auto max-w-[680px] space-y-5 pb-4 text-[#edf6f1]">
       {/* Top Story / Discovery Rail (Create Post profile icon first on far left) */}
       <div className="no-scrollbar flex items-center gap-3.5 overflow-x-auto pb-1">
         <button
@@ -813,8 +901,8 @@ export function PWAHomeFeedClient({
           aria-label="Create Post"
           className="group flex w-[68px] shrink-0 flex-col items-center gap-1.5 text-center focus-ring"
         >
-          <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-interlink-forest/30 via-interlink-gold/40 to-emerald-400/50 p-[2px] shadow-subtle transition-transform group-hover:scale-105">
-            <div className="rounded-full border-2 border-interlink-surface bg-interlink-surface">
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-500/70 via-interlink-gold/60 to-emerald-300/80 p-[2px] shadow-subtle transition-transform group-hover:scale-105">
+            <div className="rounded-full bg-[#0a1a12] p-[2px]">
               <UserAvatar
                 src={user.profileImage}
                 firstName={user.firstName}
@@ -823,11 +911,11 @@ export function PWAHomeFeedClient({
                 className="border-0"
               />
             </div>
-            <span className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full border-2 border-interlink-surface bg-interlink-forest text-white shadow-sm">
+            <span className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-interlink-forest text-white shadow-sm">
               <Plus className="h-3 w-3 stroke-[2.75]" aria-hidden="true" />
             </span>
           </div>
-          <span className="w-full truncate text-[11px] font-semibold text-interlink-ink">
+          <span className="w-full truncate text-[11px] font-semibold text-emerald-50">
             Create Post
           </span>
         </button>
@@ -842,21 +930,21 @@ export function PWAHomeFeedClient({
               }}
               className="group flex w-[68px] shrink-0 flex-col items-center gap-1.5 text-center focus-ring"
             >
-              <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-interlink-gold via-interlink-forest to-emerald-400 p-[2px] shadow-subtle transition-transform group-hover:scale-105">
-                <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-interlink-surface bg-black">
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-interlink-gold via-emerald-500 to-emerald-300 p-[2px] shadow-subtle transition-transform group-hover:scale-105">
+                <div className="relative h-full w-full overflow-hidden rounded-full bg-[#07130d] p-[2px]">
                   <Image
                     src={reel.posterImageUrl || "/images/mentor-spotlight.jpg"}
                     alt={reel.mentorName}
                     fill
                     sizes="56px"
-                    className="object-cover opacity-90"
+                    className="rounded-full object-cover opacity-90"
                   />
                   <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-white">
                     <Play className="ml-0.5 h-4 w-4 fill-current" />
                   </span>
                 </div>
               </div>
-              <span className="w-full truncate text-[11px] font-medium text-interlink-ink">
+              <span className="w-full truncate text-[11px] font-medium text-emerald-100/90">
                 {reel.mentorName.split(" ")[0]}
               </span>
             </button>
@@ -868,8 +956,8 @@ export function PWAHomeFeedClient({
               href={`/mentors/${mentor.userId}`}
               className="group flex w-[68px] shrink-0 flex-col items-center gap-1.5 text-center focus-ring"
             >
-              <div className="relative rounded-full bg-gradient-to-tr from-interlink-forest to-emerald-400 p-[2px] transition-transform group-hover:scale-105">
-                <div className="rounded-full border-2 border-interlink-surface bg-interlink-surface">
+              <div className="relative rounded-full bg-gradient-to-tr from-emerald-500 to-emerald-300 p-[2px] transition-transform group-hover:scale-105">
+                <div className="rounded-full bg-[#0a1a12] p-[2px]">
                   <UserAvatar
                     src={mentor.profileImage}
                     firstName={mentor.firstName}
@@ -879,10 +967,10 @@ export function PWAHomeFeedClient({
                   />
                 </div>
                 {mentor.availabilityStatus === "accepting" && (
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-interlink-surface bg-emerald-500" />
+                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-400 shadow-sm" />
                 )}
               </div>
-              <span className="w-full truncate text-[11px] font-medium text-interlink-ink">
+              <span className="w-full truncate text-[11px] font-medium text-emerald-100/90">
                 {mentor.firstName}
               </span>
             </Link>
@@ -890,7 +978,7 @@ export function PWAHomeFeedClient({
       </div>
 
       {/* Sticky Feed Category Filter Pills */}
-      <div className="no-scrollbar sticky top-[68px] z-10 -mx-4 flex items-center gap-2 overflow-x-auto bg-interlink-app-bg/92 px-4 py-2.5 backdrop-blur-md sm:mx-0 sm:px-0">
+      <div className="no-scrollbar sticky top-[68px] z-10 -mx-4 flex items-center gap-2 overflow-x-auto bg-[#0a1a12]/90 px-4 py-2.5 backdrop-blur-md sm:mx-0 sm:px-0">
         {filterChips.map((chip) => {
           const active = filter === chip.id;
           return (
@@ -901,7 +989,7 @@ export function PWAHomeFeedClient({
               className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition-all active:scale-[0.97] ${
                 active
                   ? "bg-interlink-forest text-white shadow-subtle"
-                  : "border border-interlink-border bg-interlink-surface text-interlink-muted hover:border-interlink-forest/50 hover:text-interlink-ink"
+                  : "bg-[#122a1d] text-emerald-100/80 hover:bg-[#193828] hover:text-white"
               }`}
             >
               {chip.label}
@@ -912,29 +1000,31 @@ export function PWAHomeFeedClient({
 
       {/* Empty Filter State */}
       {displayedItems.length === 0 ? (
-        <div className="rounded-3xl border border-interlink-border bg-interlink-surface p-8 text-center shadow-subtle">
-          <Sparkles className="mx-auto h-7 w-7 text-interlink-forest" />
-          <h2 className="mt-3 font-display text-base font-semibold text-interlink-ink">
+        <div className="rounded-3xl bg-[#10261b] p-8 text-center shadow-[0_14px_34px_rgba(0,0,0,0.32)]">
+          <Sparkles className="mx-auto h-7 w-7 text-emerald-300" />
+          <h2 className="mt-3 font-display text-base font-semibold text-white">
             Nothing here yet
           </h2>
-          <p className="mt-1 text-xs text-interlink-muted">
+          <p className="mt-1 text-xs text-emerald-100/75">
             Explore the full For You stream to discover mentors, reels, and live cohorts.
           </p>
           <button
             type="button"
             onClick={() => handleSelectFilter("all")}
-            className="mt-4 rounded-full bg-interlink-forest px-5 py-2 text-xs font-semibold text-white"
+            className="mt-4 rounded-full bg-interlink-forest px-5 py-2 text-xs font-semibold text-white hover:bg-interlink-forest-hover"
           >
             Show All Updates
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
           {displayedItems.map((entry, idx) => {
             const isLiked = Boolean(likedIds[entry.feedKey]);
             const isBookmarked = Boolean(bookmarkedIds[entry.feedKey]);
-            const comments = [...entry.initialComments, ...(userComments[entry.feedKey] ?? [])];
-            const likesCount = entry.initialLikes + (isLiked ? 1 : 0);
+            const baseComments = "initialComments" in entry ? entry.initialComments : [];
+            const baseLikes = "initialLikes" in entry ? entry.initialLikes : 0;
+            const comments = [...baseComments, ...(userComments[entry.feedKey] ?? [])];
+            const likesCount = baseLikes + (isLiked ? 1 : 0);
             const commentsOpen = openCommentKey === entry.instanceKey;
 
             const showCycleDivider =
@@ -944,12 +1034,29 @@ export function PWAHomeFeedClient({
               <React.Fragment key={entry.instanceKey}>
                 {showCycleDivider && (
                   <div className="flex items-center gap-3 py-1 text-center">
-                    <div className="h-px flex-1 bg-interlink-border/60" />
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-interlink-muted">
+                    <div className="h-px flex-1 bg-white/10" />
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-emerald-200/60">
                       Keep Exploring
                     </span>
-                    <div className="h-px flex-1 bg-interlink-border/60" />
+                    <div className="h-px flex-1 bg-white/10" />
                   </div>
+                )}
+
+                {/* HORIZONTALLY SWIPEABLE MENTOR DISCOVERY ROW */}
+                {entry.kind === "mentor_carousel" && (
+                  <MentorDiscoveryCarousel mentors={entry.mentors} />
+                )}
+
+                {/* HORIZONTALLY SWIPEABLE EVENTS & PROMOTIONS ROW */}
+                {entry.kind === "events_carousel" && (
+                  <EventsPromotionsCarousel
+                    events={entry.events}
+                    registeredEventIds={registeredEventIds}
+                    onSelectInlineRsvp={(ev) => {
+                      setRsvpError(null);
+                      setRsvpTarget(ev);
+                    }}
+                  />
                 )}
 
                 {/* 0. PUBLIC COMMUNITY POST / RESOURCE CARD */}
@@ -964,13 +1071,169 @@ export function PWAHomeFeedClient({
                     timeLabel: formatDateTime(c.createdAt),
                   }));
 
+                  if (post.mediaType === "video" && post.mediaUrl) {
+                    return (
+                      <article
+                        id={`post-${post.id}`}
+                        className={`-mx-4 overflow-hidden bg-[#07130d] shadow-[0_22px_50px_rgba(0,0,0,0.45)] sm:mx-auto sm:max-w-[460px] sm:rounded-3xl ${
+                          isHighlighted ? "ring-2 ring-emerald-400/70" : ""
+                        }`}
+                      >
+                        <div
+                          ref={(el) => registerContainer(entry.instanceKey, el)}
+                          className="relative h-[calc(100dvh-148px)] min-h-[520px] max-h-[820px] w-full overflow-hidden bg-[#07130d] sm:h-[min(82dvh,760px)]"
+                        >
+                          <video
+                            ref={(el) => registerVideo(entry.instanceKey, el)}
+                            src={post.mediaUrl}
+                            controls={activeVideoKey === entry.instanceKey}
+                            playsInline
+                            muted={feedMuted}
+                            loop
+                            preload="metadata"
+                            onPlay={() => handleVideoPlay(entry.instanceKey)}
+                            onPause={(e) =>
+                              handleVideoPause(entry.instanceKey, e.currentTarget)
+                            }
+                            className="h-full w-full object-cover"
+                          />
+
+                          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/55 to-transparent" />
+
+                          {/* Top Badges + Sound Toggle */}
+                          <div className="pointer-events-none absolute left-4 right-4 top-4 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+                                <Video className="h-3 w-3 text-emerald-400" />
+                                {post.topic}
+                              </span>
+                              {!autoplayEnabled && (
+                                <span className="rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
+                                  Autoplay paused
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={toggleMute}
+                              aria-label={feedMuted ? "Unmute videos" : "Mute videos"}
+                              className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition-colors hover:bg-black/80"
+                            >
+                              {feedMuted ? (
+                                <VolumeX className="h-4 w-4" aria-hidden="true" />
+                              ) : (
+                                <Volume2 className="h-4 w-4" aria-hidden="true" />
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Center Play Trigger when paused */}
+                          {activeVideoKey !== entry.instanceKey && (
+                            <button
+                              type="button"
+                              onClick={() => triggerManualPlay(entry.instanceKey)}
+                              aria-label={`Play reel: ${post.title || post.authorName}`}
+                              className="absolute inset-0 flex items-center justify-center focus-ring"
+                            >
+                              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 text-interlink-forest shadow-2xl transition-transform hover:scale-105 active:scale-95">
+                                <Play className="ml-0.5 h-7 w-7 fill-current" />
+                              </span>
+                            </button>
+                          )}
+
+                          {/* Right Floating TikTok-style Social Rail */}
+                          <div className="absolute bottom-24 right-3.5 z-10 flex flex-col items-center gap-3.5">
+                            <button
+                              type="button"
+                              onClick={() => void toggleCommunityPostLike(post.id)}
+                              aria-label="Like reel"
+                              className="flex flex-col items-center gap-1 text-white focus-ring"
+                            >
+                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
+                                <Heart
+                                  className={`h-5 w-5 ${
+                                    post.viewerHasLiked ? "fill-rose-500 text-rose-500" : "text-white"
+                                  }`}
+                                />
+                              </span>
+                              <span className="text-[11px] font-semibold drop-shadow">
+                                {post.likesCount}
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setCommentModalInstanceKey(entry.instanceKey)}
+                              aria-label="Comment on reel"
+                              className="flex flex-col items-center gap-1 text-white focus-ring"
+                            >
+                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
+                                <MessageCircle className="h-5 w-5" />
+                              </span>
+                              <span className="text-[11px] font-semibold drop-shadow">
+                                {postComments.length}
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => toggleBookmark(entry.feedKey)}
+                              aria-label="Save reel"
+                              className="flex flex-col items-center gap-1 text-white focus-ring"
+                            >
+                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
+                                <Bookmark
+                                  className={`h-5 w-5 ${
+                                    isBookmarked ? "fill-amber-400 text-amber-400" : "text-white"
+                                  }`}
+                                />
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleShare(post.title || post.authorName, `/dashboard?post=${post.id}`)
+                              }
+                              aria-label="Share reel"
+                              className="flex flex-col items-center gap-1 text-white focus-ring"
+                            >
+                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/45 backdrop-blur-md transition-transform active:scale-90">
+                                <Share2 className="h-5 w-5" />
+                              </span>
+                            </button>
+                          </div>
+
+                          {/* Bottom Creator Overlay */}
+                          <div className="pointer-events-none absolute bottom-12 left-4 right-16 text-white sm:bottom-5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold drop-shadow">
+                                {post.authorName}
+                              </span>
+                              <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium capitalize backdrop-blur-sm">
+                                {post.postType}
+                              </span>
+                            </div>
+                            {post.title && (
+                              <h3 className="mt-1 font-display text-base font-semibold leading-snug drop-shadow">
+                                {post.title}
+                              </h3>
+                            )}
+                            <p className="mt-1 line-clamp-2 text-xs text-white/85 drop-shadow">
+                              {post.body}
+                            </p>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  }
+
                   return (
                     <article
                       id={`post-${post.id}`}
-                      className={`overflow-hidden rounded-3xl border bg-interlink-surface p-5 shadow-subtle transition-all hover:shadow-card ${
-                        isHighlighted
-                          ? "border-interlink-forest ring-2 ring-interlink-forest/40"
-                          : "border-interlink-border/80"
+                      className={`overflow-hidden rounded-3xl bg-[#10261b] p-5 shadow-[0_14px_34px_rgba(0,0,0,0.32)] transition-colors hover:bg-[#132c1f] ${
+                        isHighlighted ? "ring-2 ring-emerald-400/70" : ""
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -982,10 +1245,10 @@ export function PWAHomeFeedClient({
                             size="sm"
                           />
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-interlink-ink">
+                            <p className="truncate text-sm font-semibold text-white">
                               {post.authorName}
                             </p>
-                            <p className="text-[11px] text-interlink-muted">
+                            <p className="text-[11px] text-emerald-100/65">
                               {formatDateTime(post.createdAt)}
                             </p>
                           </div>
@@ -995,22 +1258,24 @@ export function PWAHomeFeedClient({
                           <Badge tone="forest" className="capitalize">
                             {post.postType}
                           </Badge>
-                          <Badge tone="neutral">{post.topic}</Badge>
+                          <span className="inline-flex rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-100">
+                            {post.topic}
+                          </span>
                         </div>
                       </div>
 
                       {post.title && (
-                        <h3 className="mt-3.5 font-display text-base font-semibold leading-snug text-interlink-ink">
+                        <h3 className="mt-3.5 font-display text-base font-semibold leading-snug text-white">
                           {post.title}
                         </h3>
                       )}
 
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-interlink-ink/90">
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-emerald-100/85">
                         {post.body}
                       </p>
 
                       {post.mediaUrl && (
-                        <div className="mt-3.5 overflow-hidden rounded-2xl border border-interlink-border bg-black/5 dark:bg-black/30">
+                        <div className="mt-3.5 overflow-hidden rounded-2xl bg-[#0a1911]">
                           {post.mediaType === "image" ? (
                             <button
                               type="button"
@@ -1037,7 +1302,7 @@ export function PWAHomeFeedClient({
                           ) : post.mediaType === "video" ? (
                             <div
                               ref={(el) => registerContainer(entry.instanceKey, el)}
-                              className="relative bg-black"
+                              className="relative bg-[#07130d]"
                             >
                               <video
                                 ref={(el) => registerVideo(entry.instanceKey, el)}
@@ -1076,9 +1341,9 @@ export function PWAHomeFeedClient({
                               </div>
                             </div>
                           ) : (
-                            <div className="flex flex-wrap items-center justify-between gap-3 p-3.5">
-                              <div className="flex items-center gap-2.5 text-xs font-semibold text-interlink-ink">
-                                <FileText className="h-4 w-4 text-interlink-forest" />
+                            <div className="flex flex-wrap items-center justify-between gap-3 bg-[#163425] p-3.5">
+                              <div className="flex items-center gap-2.5 text-xs font-semibold text-white">
+                                <FileText className="h-4 w-4 text-emerald-300" />
                                 <span>Attached Document</span>
                               </div>
                               <div className="flex items-center gap-2">
@@ -1091,7 +1356,7 @@ export function PWAHomeFeedClient({
                                       title: post.title || "Attached Document",
                                     })
                                   }
-                                  className="inline-flex items-center gap-1 rounded-full bg-interlink-forest/12 px-3 py-1.5 text-xs font-semibold text-interlink-forest hover:bg-interlink-forest hover:text-white"
+                                  className="inline-flex items-center gap-1 rounded-full bg-interlink-forest px-3 py-1.5 text-xs font-semibold text-white hover:bg-interlink-forest-hover"
                                 >
                                   <Eye className="h-3.5 w-3.5" />
                                   Preview
@@ -1101,7 +1366,7 @@ export function PWAHomeFeedClient({
                                   target="_blank"
                                   rel="noreferrer"
                                   aria-label="Open document in new tab"
-                                  className="inline-flex items-center gap-1 rounded-full border border-interlink-border px-2.5 py-1.5 text-xs text-interlink-muted hover:text-interlink-ink"
+                                  className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1.5 text-xs text-emerald-100 hover:bg-white/20 hover:text-white"
                                 >
                                   <ExternalLink className="h-3.5 w-3.5" />
                                 </a>
@@ -1116,20 +1381,20 @@ export function PWAHomeFeedClient({
                           href={post.externalLink}
                           target="_blank"
                           rel="noreferrer"
-                          className="mt-3 flex items-center justify-between rounded-2xl border border-interlink-border bg-interlink-app-bg/50 px-3.5 py-2.5 text-xs font-semibold text-interlink-forest transition-colors hover:border-interlink-forest"
+                          className="mt-3 flex items-center justify-between rounded-2xl bg-[#163425] px-3.5 py-2.5 text-xs font-semibold text-emerald-300 transition-colors hover:bg-[#1c412f]"
                         >
                           <span className="truncate">{post.externalLink}</span>
                           <ExternalLink className="ml-2 h-3.5 w-3.5 shrink-0" />
                         </a>
                       )}
 
-                      <div className="mt-4 flex items-center justify-between gap-2 border-t border-interlink-border/60 pt-3">
-                        <div className="flex items-center gap-4 text-interlink-muted">
+                      <div className="mt-4 flex items-center justify-between gap-2 pt-2">
+                        <div className="flex items-center gap-4 text-emerald-100/75">
                           <button
                             type="button"
                             onClick={() => void toggleCommunityPostLike(post.id)}
                             aria-label="Like post"
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-rose-500"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-rose-400"
                           >
                             <Heart
                               className={`h-4 w-4 ${post.viewerHasLiked ? "fill-rose-500 text-rose-500" : ""}`}
@@ -1142,7 +1407,7 @@ export function PWAHomeFeedClient({
                               setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
                             }
                             aria-label="Comment on post"
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-interlink-ink"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-white"
                           >
                             <MessageCircle className="h-4 w-4" />
                             <span>{post.commentsCount}</span>
@@ -1151,10 +1416,10 @@ export function PWAHomeFeedClient({
                             type="button"
                             onClick={() => toggleBookmark(entry.feedKey)}
                             aria-label="Bookmark post"
-                            className="inline-flex items-center gap-1 text-xs font-semibold hover:text-interlink-forest"
+                            className="inline-flex items-center gap-1 text-xs font-semibold hover:text-emerald-300"
                           >
                             <Bookmark
-                              className={`h-4 w-4 ${isBookmarked ? "fill-interlink-forest text-interlink-forest" : ""}`}
+                              className={`h-4 w-4 ${isBookmarked ? "fill-amber-400 text-amber-400" : ""}`}
                             />
                           </button>
                           <button
@@ -1166,7 +1431,7 @@ export function PWAHomeFeedClient({
                               )
                             }
                             aria-label="Share post"
-                            className="inline-flex items-center gap-1 text-xs font-semibold hover:text-interlink-ink"
+                            className="inline-flex items-center gap-1 text-xs font-semibold hover:text-white"
                           >
                             <Share2 className="h-4 w-4" />
                           </button>
@@ -1180,6 +1445,7 @@ export function PWAHomeFeedClient({
                             draft={commentDrafts[entry.feedKey] ?? ""}
                             currentUserId={user.id}
                             postAuthorId={post.authorId}
+                            variant="embedded"
                             onDraftChange={(val) =>
                               setCommentDrafts((prev) => ({
                                 ...prev,
@@ -1202,12 +1468,12 @@ export function PWAHomeFeedClient({
                   );
                 })()}
 
-                {/* 1. IMMERSIVE REEL CARD (TikTok / IG Reels Vertical Card) */}
+                {/* 1. IMMERSIVE REEL CARD (TikTok / IG Reels Full-Screen Vertical Card) */}
                 {entry.kind === "reel" && (
-                  <article className="overflow-hidden rounded-3xl border border-interlink-border/80 bg-interlink-surface shadow-card">
+                  <article className="-mx-4 overflow-hidden bg-[#07130d] shadow-[0_22px_50px_rgba(0,0,0,0.45)] sm:mx-auto sm:max-w-[460px] sm:rounded-3xl">
                     <div
                       ref={(el) => registerContainer(entry.instanceKey, el)}
-                      className="relative aspect-[4/5] max-h-[540px] w-full overflow-hidden bg-black"
+                      className="relative h-[calc(100dvh-148px)] min-h-[520px] max-h-[820px] w-full overflow-hidden bg-[#07130d] sm:h-[min(82dvh,760px)]"
                     >
                       <video
                         ref={(el) => registerVideo(entry.instanceKey, el)}
@@ -1225,16 +1491,22 @@ export function PWAHomeFeedClient({
                         className="h-full w-full object-cover"
                       />
 
-                      {activeVideoKey !== entry.instanceKey && (
-                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/35" />
-                      )}
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
+                      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/55 to-transparent" />
 
                       {/* Top Badges + Sound Toggle */}
                       <div className="pointer-events-none absolute left-4 right-4 top-4 flex items-center justify-between gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
-                          <Video className="h-3 w-3 text-emerald-400" />
-                          {entry.reel.topicTag}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+                            <Video className="h-3 w-3 text-emerald-400" />
+                            {entry.reel.topicTag}
+                          </span>
+                          {!autoplayEnabled && (
+                            <span className="rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
+                              Autoplay paused
+                            </span>
+                          )}
+                        </div>
                         <div className="pointer-events-auto flex items-center gap-2">
                           <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
                             {entry.reel.durationLabel}
@@ -1286,9 +1558,7 @@ export function PWAHomeFeedClient({
 
                         <button
                           type="button"
-                          onClick={() =>
-                            setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
-                          }
+                          onClick={() => setCommentModalInstanceKey(entry.instanceKey)}
                           aria-label="Comment on reel"
                           className="flex flex-col items-center gap-1 text-white focus-ring"
                         >
@@ -1324,55 +1594,40 @@ export function PWAHomeFeedClient({
                       </div>
 
                       {/* Bottom Creator Overlay */}
-                      {activeVideoKey !== entry.instanceKey && (
-                        <div className="pointer-events-none absolute bottom-0 left-0 right-14 p-4 text-white">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold">{entry.reel.mentorName}</span>
-                            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm">
-                              {entry.reel.profession}
-                            </span>
-                          </div>
-                          <h3 className="mt-1 font-display text-base font-semibold leading-snug">
-                            {entry.reel.title}
-                          </h3>
-                          <p className="mt-1 flex items-center gap-1.5 text-[11px] text-white/80">
-                            <Route className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
-                            <span className="truncate">{entry.reel.careerPath}</span>
-                          </p>
+                      <div className="pointer-events-none absolute bottom-12 left-4 right-16 text-white sm:bottom-5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-bold drop-shadow">{entry.reel.mentorName}</span>
+                          <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm">
+                            {entry.reel.profession}
+                          </span>
                         </div>
-                      )}
+                        <h3 className="mt-1 font-display text-base font-semibold leading-snug drop-shadow">
+                          {entry.reel.title}
+                        </h3>
+                        <p className="mt-1 flex items-center gap-1.5 text-[11px] text-white/85 drop-shadow">
+                          <Route className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                          <span className="truncate">{entry.reel.careerPath}</span>
+                        </p>
+                        <div className="pointer-events-auto mt-2.5 flex items-center gap-2">
+                          <Link
+                            href={entry.reel.mentorId ? `/mentors/${entry.reel.mentorId}` : "/mentors"}
+                            className="rounded-full bg-interlink-forest/90 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm transition-colors hover:bg-interlink-forest"
+                          >
+                            {entry.reel.mentorId ? "View Mentor" : "Browse Mentors"}
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setVideoError(false);
+                              setActiveReel(entry.reel);
+                            }}
+                            className="rounded-full bg-black/55 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm transition-colors hover:bg-black/75"
+                          >
+                            Takeaway
+                          </button>
+                        </div>
+                      </div>
                     </div>
-
-                    {/* Footer Action Bar */}
-                    <div className="flex items-center justify-between gap-3 px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setVideoError(false);
-                          setActiveReel(entry.reel);
-                        }}
-                        className="text-xs font-semibold text-interlink-forest hover:underline"
-                      >
-                        Full screen &amp; takeaway &rarr;
-                      </button>
-                      <Link
-                        href={entry.reel.mentorId ? `/mentors/${entry.reel.mentorId}` : "/mentors"}
-                        className="rounded-full bg-interlink-app-bg px-3.5 py-1.5 text-xs font-semibold text-interlink-ink transition-colors hover:bg-interlink-forest hover:text-white"
-                      >
-                        {entry.reel.mentorId ? "View Mentor" : "Browse Mentors"}
-                      </Link>
-                    </div>
-
-                    {commentsOpen && (
-                      <CommentDrawer
-                        comments={comments}
-                        draft={commentDrafts[entry.feedKey] ?? ""}
-                        onDraftChange={(val) =>
-                          setCommentDrafts((prev) => ({ ...prev, [entry.feedKey]: val }))
-                        }
-                        onSubmit={(e) => handleAddComment(entry.feedKey, e)}
-                      />
-                    )}
                   </article>
                 )}
 
@@ -1384,7 +1639,7 @@ export function PWAHomeFeedClient({
                     entry.mentor.activeMenteeCount >= entry.mentor.maximumMentees;
 
                   return (
-                    <article className="overflow-hidden rounded-3xl border border-interlink-border/80 bg-interlink-surface shadow-subtle transition-shadow hover:shadow-card">
+                    <article className="overflow-hidden rounded-3xl bg-[#10261b] shadow-[0_14px_34px_rgba(0,0,0,0.32)] transition-colors hover:bg-[#132c1f]">
                       {/* Post Header */}
                       <div className="flex items-center justify-between gap-3 px-4 py-3.5">
                         <Link
@@ -1399,19 +1654,19 @@ export function PWAHomeFeedClient({
                               size="md"
                             />
                             {!isFull && (
-                              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-interlink-surface bg-emerald-500" />
+                              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-400 shadow-sm" />
                             )}
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className="truncate text-sm font-semibold text-interlink-ink">
+                              <span className="truncate text-sm font-semibold text-white">
                                 {entry.mentor.firstName} {entry.mentor.lastName}
                               </span>
                               {entry.mentor.verificationStatus === "verified" && (
-                                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-interlink-forest" />
+                                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
                               )}
                             </div>
-                            <p className="truncate text-xs text-interlink-muted">
+                            <p className="truncate text-xs text-emerald-100/70">
                               {entry.mentor.currentPosition}
                               {entry.mentor.organisation ? ` · ${entry.mentor.organisation}` : ""}
                             </p>
@@ -1423,7 +1678,7 @@ export function PWAHomeFeedClient({
                           onClick={() => void toggleSaveMentor(entry.mentor)}
                           className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
                             isSavedMentor
-                              ? "border border-interlink-border bg-interlink-app-bg text-interlink-ink"
+                              ? "bg-white/10 text-emerald-100 hover:bg-white/15"
                               : "bg-interlink-forest text-white hover:bg-interlink-forest-hover"
                           }`}
                         >
@@ -1432,20 +1687,22 @@ export function PWAHomeFeedClient({
                       </div>
 
                       {/* Visual Creator Spotlight Body */}
-                      <div className="mx-4 rounded-2xl bg-gradient-to-br from-interlink-forest/[0.08] via-interlink-app-bg to-interlink-gold/[0.08] p-5">
+                      <div className="mx-4 rounded-2xl bg-[#163425] p-5">
                         <div className="flex flex-wrap items-center gap-2">
                           {typeof entry.mentor.matchScore === "number" && entry.mentor.matchScore > 0 && (
                             <Badge tone="forest">{entry.mentor.matchScore}% Match</Badge>
                           )}
                           {entry.mentor.industryName && (
-                            <Badge tone="neutral">{entry.mentor.industryName}</Badge>
+                            <span className="inline-flex rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-100">
+                              {entry.mentor.industryName}
+                            </span>
                           )}
-                          <span className="text-[11px] font-medium text-interlink-muted">
+                          <span className="text-[11px] font-medium text-emerald-100/70">
                             {entry.mentor.yearsOfExperience}+ yrs exp
                           </span>
                         </div>
 
-                        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-interlink-ink/90">
+                        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-emerald-50/90">
                           {entry.mentor.biography}
                         </p>
 
@@ -1454,7 +1711,7 @@ export function PWAHomeFeedClient({
                             {entry.mentor.expertiseTags.slice(0, 4).map((tag) => (
                               <span
                                 key={tag}
-                                className="rounded-full border border-interlink-border/80 bg-interlink-surface/80 px-2.5 py-0.5 text-[11px] font-medium text-interlink-ink"
+                                className="rounded-full bg-[#1d422f] px-2.5 py-0.5 text-[11px] font-medium text-emerald-100"
                               >
                                 #{tag}
                               </span>
@@ -1465,12 +1722,12 @@ export function PWAHomeFeedClient({
 
                       {/* Social Actions + Direct Connect */}
                       <div className="flex items-center justify-between gap-2 px-4 py-3.5">
-                        <div className="flex items-center gap-4 text-interlink-muted">
+                        <div className="flex items-center gap-4 text-emerald-100/75">
                           <button
                             type="button"
                             onClick={() => toggleLike(entry.feedKey)}
                             aria-label="Like mentor card"
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-rose-500"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-rose-400"
                           >
                             <Heart
                               className={`h-4 w-4 ${isLiked ? "fill-rose-500 text-rose-500" : ""}`}
@@ -1483,7 +1740,7 @@ export function PWAHomeFeedClient({
                               setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
                             }
                             aria-label="Discuss mentor"
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-interlink-ink"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-white"
                           >
                             <MessageCircle className="h-4 w-4" />
                             <span>{comments.length}</span>
@@ -1497,7 +1754,7 @@ export function PWAHomeFeedClient({
                               )
                             }
                             aria-label="Share mentor profile"
-                            className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:text-interlink-ink"
+                            className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:text-white"
                           >
                             <Share2 className="h-4 w-4" />
                           </button>
@@ -1506,7 +1763,7 @@ export function PWAHomeFeedClient({
                         <div className="flex items-center gap-2">
                           <Link
                             href={`/mentors/${entry.mentor.userId}`}
-                            className="rounded-full border border-interlink-border px-3.5 py-1.5 text-xs font-semibold text-interlink-ink transition-colors hover:border-interlink-forest"
+                            className="rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/20"
                           >
                             Profile
                           </Link>
@@ -1523,6 +1780,7 @@ export function PWAHomeFeedClient({
                         <CommentDrawer
                           comments={comments}
                           draft={commentDrafts[entry.feedKey] ?? ""}
+                          variant="embedded"
                           onDraftChange={(val) =>
                             setCommentDrafts((prev) => ({ ...prev, [entry.feedKey]: val }))
                           }
@@ -1538,39 +1796,69 @@ export function PWAHomeFeedClient({
                   const isRegistered = Boolean(
                     registeredEventIds[entry.event.id] || entry.event.isRegistered,
                   );
+                  const hasMore = hasExtendedEventDetails(entry.event);
 
                   return (
-                    <article className="overflow-hidden rounded-3xl border border-interlink-border/80 bg-interlink-surface shadow-subtle transition-shadow hover:shadow-card">
-                      <div className="relative aspect-[16/10] w-full overflow-hidden bg-interlink-app-bg">
-                        <Image
-                          src={entry.event.imageUrl || "/images/workshop-collaboration.jpg"}
-                          alt={entry.event.title}
-                          fill
-                          sizes="(max-width: 680px) 100vw, 680px"
-                          className="object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                        <div className="absolute left-4 right-4 top-4 flex items-center justify-between gap-2">
-                          <span className="rounded-full bg-interlink-forest/95 px-3 py-1 text-[11px] font-semibold capitalize text-white backdrop-blur-md">
-                            {entry.event.category === "opportunity" ? "Cohort" : entry.event.category}
-                          </span>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-md">
-                            <Users className="h-3 w-3 text-emerald-400" />
-                            {(entry.event.registrationCount ?? 0) + (isRegistered ? 1 : 0)} going
-                          </span>
+                    <article className="overflow-hidden rounded-3xl bg-[#10261b] shadow-[0_14px_34px_rgba(0,0,0,0.32)] transition-colors hover:bg-[#132c1f]">
+                      {hasMore ? (
+                        <Link href={`/events/${entry.event.id}`} className="group block">
+                          <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#0a1911]">
+                            <Image
+                              src={entry.event.imageUrl || "/images/workshop-collaboration.jpg"}
+                              alt={entry.event.title}
+                              fill
+                              sizes="(max-width: 680px) 100vw, 680px"
+                              className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#10261b] via-black/20 to-transparent" />
+                            <div className="absolute left-4 right-4 top-4 flex items-center justify-between gap-2">
+                              <span className="rounded-full bg-interlink-forest/95 px-3 py-1 text-[11px] font-semibold capitalize text-white backdrop-blur-md">
+                                {entry.event.category === "opportunity" ? "Cohort" : entry.event.category}
+                              </span>
+                              <span className="inline-flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-md">
+                                <Users className="h-3 w-3 text-emerald-400" />
+                                {(entry.event.registrationCount ?? 0) + (isRegistered ? 1 : 0)} going
+                              </span>
+                            </div>
+                            <div className="absolute bottom-3.5 left-4 right-4 text-white">
+                              <h3 className="font-display text-lg font-semibold leading-snug">
+                                {entry.event.title}
+                              </h3>
+                            </div>
+                          </div>
+                        </Link>
+                      ) : (
+                        <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#0a1911]">
+                          <Image
+                            src={entry.event.imageUrl || "/images/workshop-collaboration.jpg"}
+                            alt={entry.event.title}
+                            fill
+                            sizes="(max-width: 680px) 100vw, 680px"
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#10261b] via-black/20 to-transparent" />
+                          <div className="absolute left-4 right-4 top-4 flex items-center justify-between gap-2">
+                            <span className="rounded-full bg-interlink-forest/95 px-3 py-1 text-[11px] font-semibold capitalize text-white backdrop-blur-md">
+                              {entry.event.category === "opportunity" ? "Cohort" : entry.event.category}
+                            </span>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-md">
+                              <Users className="h-3 w-3 text-emerald-400" />
+                              {(entry.event.registrationCount ?? 0) + (isRegistered ? 1 : 0)} going
+                            </span>
+                          </div>
+                          <div className="absolute bottom-3.5 left-4 right-4 text-white">
+                            <h3 className="font-display text-lg font-semibold leading-snug">
+                              {entry.event.title}
+                            </h3>
+                          </div>
                         </div>
-                        <div className="absolute bottom-3.5 left-4 right-4 text-white">
-                          <h3 className="font-display text-lg font-semibold leading-snug">
-                            {entry.event.title}
-                          </h3>
-                        </div>
-                      </div>
+                      )}
 
                       <div className="p-4">
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-interlink-muted">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-emerald-100/70">
                           {entry.event.eventDate && (
                             <span className="inline-flex items-center gap-1.5">
-                              <Calendar className="h-3.5 w-3.5 text-interlink-forest" />
+                              <Calendar className="h-3.5 w-3.5 text-emerald-300" />
                               {new Date(entry.event.eventDate).toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",
@@ -1580,22 +1868,26 @@ export function PWAHomeFeedClient({
                             </span>
                           )}
                           <span className="inline-flex items-center gap-1.5">
-                            <MapPin className="h-3.5 w-3.5 text-interlink-forest" />
+                            <MapPin className="h-3.5 w-3.5 text-emerald-300" />
                             {entry.event.locationOrFormat}
                           </span>
                         </div>
 
-                        <p className="mt-2.5 line-clamp-2 text-sm leading-relaxed text-interlink-ink/85">
+                        <p
+                          className={`mt-2.5 text-sm leading-relaxed text-emerald-100/85 ${
+                            hasMore ? "line-clamp-2" : ""
+                          }`}
+                        >
                           {entry.event.summary}
                         </p>
 
-                        <div className="mt-4 flex items-center justify-between gap-2 border-t border-interlink-border/60 pt-3">
-                          <div className="flex items-center gap-4 text-interlink-muted">
+                        <div className="mt-4 flex items-center justify-between gap-2 pt-2">
+                          <div className="flex items-center gap-4 text-emerald-100/75">
                             <button
                               type="button"
                               onClick={() => toggleLike(entry.feedKey)}
                               aria-label="Like event"
-                              className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-rose-500"
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-rose-400"
                             >
                               <Heart
                                 className={`h-4 w-4 ${isLiked ? "fill-rose-500 text-rose-500" : ""}`}
@@ -1608,7 +1900,7 @@ export function PWAHomeFeedClient({
                                 setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
                               }
                               aria-label="Comment on event"
-                              className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-interlink-ink"
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-white"
                             >
                               <MessageCircle className="h-4 w-4" />
                               <span>{comments.length}</span>
@@ -1617,17 +1909,24 @@ export function PWAHomeFeedClient({
                               type="button"
                               onClick={() => handleShare(entry.event.title, "/learn")}
                               aria-label="Share event"
-                              className="inline-flex items-center gap-1 text-xs font-semibold hover:text-interlink-ink"
+                              className="inline-flex items-center gap-1 text-xs font-semibold hover:text-white"
                             >
                               <Share2 className="h-4 w-4" />
                             </button>
                           </div>
 
                           {isRegistered ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-interlink-forest/10 px-3.5 py-1.5 text-xs font-semibold text-interlink-forest">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-3.5 py-1.5 text-xs font-semibold text-emerald-300">
                               <CheckCircle2 className="h-3.5 w-3.5" />
                               Reserved
                             </span>
+                          ) : hasMore ? (
+                            <Link
+                              href={`/events/${entry.event.id}`}
+                              className="rounded-full bg-interlink-forest px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-interlink-forest-hover"
+                            >
+                              View Details
+                            </Link>
                           ) : entry.event.ctaUrl ? (
                             <Link
                               href={entry.event.ctaUrl}
@@ -1654,6 +1953,7 @@ export function PWAHomeFeedClient({
                         <CommentDrawer
                           comments={comments}
                           draft={commentDrafts[entry.feedKey] ?? ""}
+                          variant="embedded"
                           onDraftChange={(val) =>
                             setCommentDrafts((prev) => ({ ...prev, [entry.feedKey]: val }))
                           }
@@ -1666,7 +1966,7 @@ export function PWAHomeFeedClient({
 
                 {/* 4. LIVE SESSION PULSE CARD */}
                 {entry.kind === "session" && (
-                  <article className="rounded-3xl border border-interlink-forest/30 bg-gradient-to-r from-interlink-forest/[0.08] via-interlink-surface to-interlink-surface p-5 shadow-subtle">
+                  <article className="rounded-3xl bg-[#10261b] p-5 shadow-[0_14px_34px_rgba(0,0,0,0.32)]">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <UserAvatar
@@ -1676,13 +1976,13 @@ export function PWAHomeFeedClient({
                           size="md"
                         />
                         <div className="min-w-0">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-interlink-forest">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-300">
                             <Calendar className="h-3 w-3" /> Upcoming Session
                           </span>
-                          <h3 className="truncate font-display text-base font-semibold text-interlink-ink">
+                          <h3 className="truncate font-display text-base font-semibold text-white">
                             {entry.session.title}
                           </h3>
-                          <p className="truncate text-xs text-interlink-muted">
+                          <p className="truncate text-xs text-emerald-100/70">
                             with {entry.session.partnerName} &middot;{" "}
                             {new Date(entry.session.startTime).toLocaleDateString("en-US", {
                               month: "short",
@@ -1705,7 +2005,7 @@ export function PWAHomeFeedClient({
 
                 {/* 5. MENTOR INCOMING REQUEST CARD */}
                 {entry.kind === "request" && (
-                  <article className="rounded-3xl border border-interlink-gold/40 bg-gradient-to-r from-interlink-gold/10 via-interlink-surface to-interlink-surface p-5 shadow-subtle">
+                  <article className="rounded-3xl bg-[#10261b] p-5 shadow-[0_14px_34px_rgba(0,0,0,0.32)]">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <UserAvatar
@@ -1718,10 +2018,10 @@ export function PWAHomeFeedClient({
                           <span className="text-[11px] font-semibold uppercase tracking-wider text-interlink-gold">
                             Mentee Request
                           </span>
-                          <h3 className="truncate text-sm font-semibold text-interlink-ink">
+                          <h3 className="truncate text-sm font-semibold text-white">
                             {entry.request.menteeName} wants to connect
                           </h3>
-                          <p className="mt-0.5 line-clamp-2 text-xs text-interlink-muted">
+                          <p className="mt-0.5 line-clamp-2 text-xs text-emerald-100/70">
                             {entry.request.careerObjective}
                           </p>
                         </div>
@@ -1738,24 +2038,24 @@ export function PWAHomeFeedClient({
 
                 {/* 6. GOAL MILESTONE CHECK-IN CARD */}
                 {entry.kind === "goal" && (
-                  <article className="rounded-3xl border border-interlink-border/80 bg-interlink-surface p-4.5 shadow-subtle">
+                  <article className="rounded-3xl bg-[#10261b] p-5 shadow-[0_14px_34px_rgba(0,0,0,0.32)]">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-interlink-forest/10 text-interlink-forest">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-400/15 text-emerald-300">
                           <Target className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[11px] font-semibold uppercase tracking-wider text-interlink-forest">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300">
                             Active Goal
                           </p>
-                          <h3 className="truncate text-sm font-semibold text-interlink-ink">
+                          <h3 className="truncate text-sm font-semibold text-white">
                             {entry.goal.title}
                           </h3>
                         </div>
                       </div>
                       <Link
                         href={`/mentorships/${entry.goal.mentorshipId}`}
-                        className="shrink-0 rounded-full border border-interlink-border px-3.5 py-1.5 text-xs font-semibold text-interlink-ink hover:border-interlink-forest"
+                        className="shrink-0 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-white/20"
                       >
                         Track
                       </Link>
@@ -1765,36 +2065,38 @@ export function PWAHomeFeedClient({
 
                 {/* 7. COMMUNITY POST / DISCUSSION CARD (X / Threads Style) */}
                 {entry.kind === "post" && (
-                  <article className="rounded-3xl border border-interlink-border/80 bg-interlink-surface p-5 shadow-subtle transition-shadow hover:shadow-card">
+                  <article className="rounded-3xl bg-[#10261b] p-5 shadow-[0_14px_34px_rgba(0,0,0,0.32)] transition-colors hover:bg-[#132c1f]">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-interlink-forest/12 text-interlink-forest">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300">
                           <Compass className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-interlink-ink">
+                          <p className="text-sm font-semibold text-white">
                             {entry.post.authorName}
                           </p>
-                          <p className="text-[11px] text-interlink-muted">{entry.post.authorRole}</p>
+                          <p className="text-[11px] text-emerald-100/65">{entry.post.authorRole}</p>
                         </div>
                       </div>
-                      <Badge tone="neutral">{entry.post.topic}</Badge>
+                      <span className="inline-flex rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-100">
+                        {entry.post.topic}
+                      </span>
                     </div>
 
-                    <h3 className="mt-3.5 font-display text-base font-semibold leading-snug text-interlink-ink">
+                    <h3 className="mt-3.5 font-display text-base font-semibold leading-snug text-white">
                       {entry.post.title}
                     </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-interlink-muted">
+                    <p className="mt-2 text-sm leading-relaxed text-emerald-100/75">
                       {entry.post.body}
                     </p>
 
-                    <div className="mt-4 flex items-center justify-between gap-2 border-t border-interlink-border/60 pt-3">
-                      <div className="flex items-center gap-4 text-interlink-muted">
+                    <div className="mt-4 flex items-center justify-between gap-2 pt-2">
+                      <div className="flex items-center gap-4 text-emerald-100/75">
                         <button
                           type="button"
                           onClick={() => toggleLike(entry.feedKey)}
                           aria-label="Like post"
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-rose-500"
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-rose-400"
                         >
                           <Heart
                             className={`h-4 w-4 ${isLiked ? "fill-rose-500 text-rose-500" : ""}`}
@@ -1807,7 +2109,7 @@ export function PWAHomeFeedClient({
                             setOpenCommentKey(commentsOpen ? null : entry.instanceKey)
                           }
                           aria-label="Comment on post"
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-interlink-ink"
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold hover:text-white"
                         >
                           <MessageCircle className="h-4 w-4" />
                           <span>{comments.length}</span>
@@ -1816,17 +2118,17 @@ export function PWAHomeFeedClient({
                           type="button"
                           onClick={() => toggleBookmark(entry.feedKey)}
                           aria-label="Bookmark post"
-                          className="inline-flex items-center gap-1 text-xs font-semibold hover:text-interlink-forest"
+                          className="inline-flex items-center gap-1 text-xs font-semibold hover:text-emerald-300"
                         >
                           <Bookmark
-                            className={`h-4 w-4 ${isBookmarked ? "fill-interlink-forest text-interlink-forest" : ""}`}
+                            className={`h-4 w-4 ${isBookmarked ? "fill-amber-400 text-amber-400" : ""}`}
                           />
                         </button>
                         <button
                           type="button"
                           onClick={() => handleShare(entry.post.title, entry.post.href)}
                           aria-label="Share post"
-                          className="inline-flex items-center gap-1 text-xs font-semibold hover:text-interlink-ink"
+                          className="inline-flex items-center gap-1 text-xs font-semibold hover:text-white"
                         >
                           <Share2 className="h-4 w-4" />
                         </button>
@@ -1834,7 +2136,7 @@ export function PWAHomeFeedClient({
 
                       <Link
                         href={entry.post.href}
-                        className="rounded-full bg-interlink-forest/10 px-3.5 py-1.5 text-xs font-semibold text-interlink-forest transition-colors hover:bg-interlink-forest hover:text-white"
+                        className="rounded-full bg-emerald-400/15 px-3.5 py-1.5 text-xs font-semibold text-emerald-300 transition-colors hover:bg-interlink-forest hover:text-white"
                       >
                         {entry.post.ctaLabel} &rarr;
                       </Link>
@@ -1844,6 +2146,7 @@ export function PWAHomeFeedClient({
                       <CommentDrawer
                         comments={comments}
                         draft={commentDrafts[entry.feedKey] ?? ""}
+                        variant="embedded"
                         onDraftChange={(val) =>
                           setCommentDrafts((prev) => ({ ...prev, [entry.feedKey]: val }))
                         }
@@ -1861,8 +2164,8 @@ export function PWAHomeFeedClient({
       {/* Infinite Scroll Sentinel */}
       {filteredBase.length > 0 && (
         <div ref={loadMoreRef} className="flex flex-col items-center py-6 text-center">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-interlink-forest/30 border-t-interlink-forest" />
-          <p className="mt-2 text-[11px] font-medium text-interlink-muted">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-300/25 border-t-emerald-300" />
+          <p className="mt-2 text-[11px] font-medium text-emerald-100/70">
             Loading more stories &amp; opportunities...
           </p>
         </div>
@@ -1978,6 +2281,27 @@ export function PWAHomeFeedClient({
         )}
       </Modal>
 
+      {/* Floating Bottom-Right "+" Button (hidden at top, appears on scroll down) */}
+      <button
+        type="button"
+        data-floating-create="true"
+        onClick={() => setCreateModalOpen(true)}
+        aria-label="Create Post or Reel"
+        aria-hidden={!showFloatingCreate}
+        tabIndex={showFloatingCreate ? 0 : -1}
+        className={`fixed right-4 z-30 inline-flex h-12 w-12 items-center justify-center rounded-full bg-interlink-forest text-white shadow-[0_12px_28px_rgba(0,0,0,0.42)] transition-all duration-300 ease-out hover:bg-interlink-forest-hover active:scale-95 focus-ring sm:right-6 ${
+          useBottomNav
+            ? "bottom-[calc(4.75rem+env(safe-area-inset-bottom))]"
+            : "bottom-6 sm:bottom-8"
+        } ${
+          showFloatingCreate && !createModalOpen
+            ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+            : "pointer-events-none translate-y-3 scale-90 opacity-0"
+        }`}
+      >
+        <Plus className="h-6 w-6 stroke-[2.5]" aria-hidden="true" />
+      </button>
+
       {/* Create Community Post Modal */}
       <CreatePostModal
         open={createModalOpen}
@@ -2033,6 +2357,75 @@ export function PWAHomeFeedClient({
           </div>
         )}
       </Modal>
+
+      {/* Comment Drawer Sheet Modal for Full-Screen Vertical Videos */}
+      {(() => {
+        const modalEntry = commentModalInstanceKey
+          ? displayedItems.find((item) => item.instanceKey === commentModalInstanceKey)
+          : undefined;
+
+        const isCommunity = modalEntry?.kind === "community_post";
+        const isReel = modalEntry?.kind === "reel";
+        const modalComments: FeedComment[] = isCommunity
+          ? modalEntry.post.comments.map((c) => ({
+              id: c.id,
+              authorId: c.authorId,
+              author: c.authorName,
+              text: c.content,
+              timeLabel: formatDateTime(c.createdAt),
+            }))
+          : modalEntry && "initialComments" in modalEntry
+            ? [...modalEntry.initialComments, ...(userComments[modalEntry.feedKey] ?? [])]
+            : [];
+
+        const modalTitle = isCommunity
+          ? modalEntry.post.title || `Comments on ${modalEntry.post.authorName}'s post`
+          : isReel
+            ? modalEntry.reel.title
+            : "Comments";
+
+        return (
+          <Modal
+            open={Boolean(modalEntry)}
+            onClose={() => setCommentModalInstanceKey(null)}
+            title={modalTitle}
+            maxWidthClass="max-w-lg"
+          >
+            {modalEntry && (
+              <div className="-mx-5 -mb-5 mt-1">
+                <CommentDrawer
+                  comments={modalComments}
+                  draft={commentDrafts[modalEntry.feedKey] ?? ""}
+                  currentUserId={isCommunity ? user.id : undefined}
+                  postAuthorId={isCommunity ? modalEntry.post.authorId : undefined}
+                  onDraftChange={(val) =>
+                    setCommentDrafts((prev) => ({ ...prev, [modalEntry.feedKey]: val }))
+                  }
+                  onSubmit={(e) => {
+                    if (isCommunity) {
+                      void submitCommunityPostComment(modalEntry.post.id, modalEntry.feedKey, e);
+                    } else {
+                      handleAddComment(modalEntry.feedKey, e);
+                    }
+                  }}
+                  onEditComment={
+                    isCommunity
+                      ? (commentId, nextContent) =>
+                          editCommunityPostComment(modalEntry.post.id, commentId, nextContent)
+                      : undefined
+                  }
+                  onDeleteComment={
+                    isCommunity
+                      ? (commentId) =>
+                          deleteCommunityPostComment(modalEntry.post.id, commentId)
+                      : undefined
+                  }
+                />
+              </div>
+            )}
+          </Modal>
+        );
+      })()}
     </div>
   );
 }
@@ -2042,6 +2435,7 @@ function CommentDrawer({
   draft,
   currentUserId,
   postAuthorId,
+  variant = "modal",
   onDraftChange,
   onSubmit,
   onEditComment,
@@ -2051,11 +2445,13 @@ function CommentDrawer({
   draft: string;
   currentUserId?: string;
   postAuthorId?: string;
+  variant?: "modal" | "embedded";
   onDraftChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onEditComment?: (commentId: string, newContent: string) => Promise<boolean>;
   onDeleteComment?: (commentId: string) => Promise<boolean>;
 }) {
+  const isEmbedded = variant === "embedded";
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -2085,7 +2481,13 @@ function CommentDrawer({
   }
 
   return (
-    <div className="border-t border-interlink-border/60 bg-interlink-app-bg/50 px-4 py-3.5">
+    <div
+      className={
+        isEmbedded
+          ? "bg-[#0d2016] px-4 py-3.5 text-emerald-50"
+          : "border-t border-interlink-border/60 bg-interlink-app-bg/50 px-4 py-3.5"
+      }
+    >
       {comments.length > 0 ? (
         <ul className="mb-3 space-y-2.5">
           {comments.map((comment) => {
@@ -2110,7 +2512,11 @@ function CommentDrawer({
                       value={editingText}
                       onChange={(e) => setEditingText(e.target.value)}
                       aria-label="Edit comment"
-                      className="min-w-0 flex-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1.5 text-xs text-interlink-ink focus:border-interlink-forest focus:outline-none"
+                      className={
+                        isEmbedded
+                          ? "min-w-0 flex-1 rounded-full bg-[#163425] px-3 py-1.5 text-xs text-white placeholder:text-emerald-100/50 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                          : "min-w-0 flex-1 rounded-full border border-interlink-border bg-interlink-surface px-3 py-1.5 text-xs text-interlink-ink focus:border-interlink-forest focus:outline-none"
+                      }
                     />
                     <button
                       type="button"
@@ -2128,7 +2534,11 @@ function CommentDrawer({
                         setEditingText("");
                       }}
                       aria-label="Cancel comment edit"
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-interlink-border text-interlink-muted hover:text-interlink-ink"
+                      className={
+                        isEmbedded
+                          ? "inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-emerald-100 hover:text-white"
+                          : "inline-flex h-7 w-7 items-center justify-center rounded-full border border-interlink-border text-interlink-muted hover:text-interlink-ink"
+                      }
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -2136,11 +2546,23 @@ function CommentDrawer({
                 ) : (
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <span className="font-semibold text-interlink-ink">
+                      <span
+                        className={
+                          isEmbedded ? "font-semibold text-white" : "font-semibold text-interlink-ink"
+                        }
+                      >
                         {comment.author}
                       </span>{" "}
-                      <span className="text-interlink-ink/85">{comment.text}</span>
-                      <span className="ml-2 text-[10px] text-interlink-muted">
+                      <span className={isEmbedded ? "text-emerald-100/85" : "text-interlink-ink/85"}>
+                        {comment.text}
+                      </span>
+                      <span
+                        className={
+                          isEmbedded
+                            ? "ml-2 text-[10px] text-emerald-100/55"
+                            : "ml-2 text-[10px] text-interlink-muted"
+                        }
+                      >
                         {comment.timeLabel}
                       </span>
                     </div>
@@ -2156,7 +2578,11 @@ function CommentDrawer({
                               setEditingText(comment.text);
                             }}
                             aria-label="Edit comment"
-                            className="rounded p-1 text-interlink-muted hover:text-interlink-forest"
+                            className={
+                              isEmbedded
+                                ? "rounded p-1 text-emerald-100/65 hover:text-emerald-300"
+                                : "rounded p-1 text-interlink-muted hover:text-interlink-forest"
+                            }
                           >
                             <Pencil className="h-3 w-3" />
                           </button>
@@ -2167,7 +2593,11 @@ function CommentDrawer({
                             disabled={busyId === comment.id}
                             onClick={() => void removeComment(comment.id)}
                             aria-label="Delete comment"
-                            className="rounded p-1 text-interlink-muted hover:text-red-600"
+                            className={
+                              isEmbedded
+                                ? "rounded p-1 text-emerald-100/65 hover:text-rose-400"
+                                : "rounded p-1 text-interlink-muted hover:text-red-600"
+                            }
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -2181,7 +2611,7 @@ function CommentDrawer({
           })}
         </ul>
       ) : (
-        <p className="mb-3 text-xs text-interlink-muted">
+        <p className={isEmbedded ? "mb-3 text-xs text-emerald-100/65" : "mb-3 text-xs text-interlink-muted"}>
           Be the first to share a note or question.
         </p>
       )}
@@ -2193,7 +2623,11 @@ function CommentDrawer({
           onChange={(e) => onDraftChange(e.target.value)}
           placeholder="Add a comment..."
           aria-label="Add a comment"
-          className="w-full min-w-0 rounded-full border border-interlink-border bg-interlink-surface px-3.5 py-2 text-base text-interlink-ink placeholder:text-interlink-muted focus:border-interlink-forest focus:outline-none sm:text-xs"
+          className={
+            isEmbedded
+              ? "w-full min-w-0 rounded-full bg-[#163425] px-3.5 py-2 text-base text-white placeholder:text-emerald-100/50 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 sm:text-xs"
+              : "w-full min-w-0 rounded-full border border-interlink-border bg-interlink-surface px-3.5 py-2 text-base text-interlink-ink placeholder:text-interlink-muted focus:border-interlink-forest focus:outline-none sm:text-xs"
+          }
         />
         <button
           type="submit"

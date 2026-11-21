@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, LogOut, Menu, Settings, UserCircle, X } from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, UserCircle, X } from "lucide-react";
 import type { SessionUser } from "@interlink/types";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Button } from "@/components/ui/Button";
@@ -50,11 +50,6 @@ export function PublicHeader({ user }: { user: SessionUser | null }) {
       label: "My Profile",
       href: "/profile",
       icon: <UserCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
-    },
-    {
-      label: "Account & Settings",
-      href: "/account",
-      icon: <Settings className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />,
     },
     {
       label: "Sign Out",

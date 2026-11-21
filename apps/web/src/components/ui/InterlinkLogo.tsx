@@ -3,6 +3,7 @@ import React from "react";
 interface InterlinkLogoProps {
   variant?: "header" | "card" | "compact";
   className?: string;
+  inverted?: boolean;
 }
 
 export function InterlinkMark({
@@ -56,7 +57,11 @@ export function InterlinkMark({
   );
 }
 
-export function InterlinkLogo({ variant = "header", className = "" }: InterlinkLogoProps) {
+export function InterlinkLogo({
+  variant = "header",
+  className = "",
+  inverted = false,
+}: InterlinkLogoProps) {
   if (variant === "card") {
     return (
       <div className={`flex flex-col items-center text-center ${className}`}>
@@ -81,8 +86,12 @@ export function InterlinkLogo({ variant = "header", className = "" }: InterlinkL
 
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <InterlinkMark size={variant === "compact" ? 26 : 30} />
-      <span className="font-display text-lg font-light tracking-[0.18em] text-interlink-ink sm:text-[19px]">
+      <InterlinkMark size={variant === "compact" ? 26 : 30} darkCard={inverted} />
+      <span
+        className={`font-display text-lg font-light tracking-[0.18em] sm:text-[19px] ${
+          inverted ? "text-white" : "text-interlink-ink"
+        }`}
+      >
         INTERLINK
       </span>
     </span>

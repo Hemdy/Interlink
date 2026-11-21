@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ADMIN_ROLES, type SessionUser } from "@interlink/types";
+import { ADMIN_ROLES, type MembershipTier, type SessionUser } from "@interlink/types";
 import { formatDate } from "@interlink/utils";
 import {
   Bell,
@@ -12,14 +12,13 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
-  ExternalLink,
+  Crown,
   LogOut,
   Moon,
   ShieldAlert,
   ShieldCheck,
   Sun,
   Target,
-  UserCircle,
   UserX,
 } from "lucide-react";
 import { useTheme } from "@/components/theme/ThemeProvider";
@@ -29,29 +28,41 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ErrorAlert } from "@/components/ui/Feedback";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/ToastProvider";
-import { UserAvatar } from "@/components/ui/UserAvatar";
 import { resetClientSessionAndNavigate } from "@/features/auth/ui/SessionSyncGuard";
 import { PushNotificationsManager } from "@/features/notifications/ui/PushNotificationsManager";
-import { AvatarUploadCard } from "@/features/profiles/ui/AvatarUploadCard";
 import { purgeServiceWorkerAuthCache } from "@/features/pwa/ServiceWorkerRegister";
 import { isInstalledPWA, useNavigationMode } from "@/features/pwa/useNavigationMode";
 
-interface AccountLinkItem {
-  label: string;
-  description: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  badge?: number;
-}
+const TIER_META: Record<MembershipTier, { label: string; price: string; summary: string }> = {
+  free: {
+    label: "Free Plan",
+    price: "₦0/month",
+    summary: "Basic profile, community participation, and access to free mentorship.",
+  },
+  plus: {
+    label: "Interlink Plus",
+    price: "₦2,500/month",
+    summary: "Priority mentorship requests, career roadmaps, and exclusive communities.",
+  },
+  pro: {
+    label: "Interlink Pro",
+    price: "₦5,000/month",
+    summary: "All Plus benefits plus advanced career resources and priority support.",
+  },
+};
 
-export function AccountHubClient({
+export function ProfileSettingsPanel({
   user,
   blockedUsers,
   unreadNotifications = 0,
+  membershipTier = "free",
+  onOpenAvailability,
 }: {
   user: SessionUser;
   blockedUsers: Array<{ blockedUserId: string; firstName: string; lastName: string }>;
   unreadNotifications?: number;
+  membershipTier?: MembershipTier;
+  onOpenAvailability?: () => void;
 }) {
   const router = useRouter();
   const { pushToast } = useToast();
@@ -74,89 +85,65 @@ export function AccountHubClient({
   const [devVerifyUrl, setDevVerifyUrl] = useState<string | null>(null);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
 
-  const mentorshipLinks: AccountLinkItem[] = isAdmin
-    ? [
-        {
-          label: "Admin Console",
-          description: "Verifications, reports & governance",
-          href: "/admin",
-          icon: ShieldCheck,
-        },
-        {
-          label: "Sessions",
-          description: "Platform scheduled sessions",
-          href: "/sessions",
-          icon: Calendar,
-        },
-        {
-          label: "Learning Resources",
-          description: "Career paths & shared guides",
-          href: "/learn",
-          icon: BookOpen,
-        },
-        {
-          label: "Notifications",
-          description: "Activity alerts & updates",
-          href: "/notifications",
-          icon: Bell,
-          badge: unreadNotifications,
-        },
-      ]
-    : isMentor
+  const tierInfo = TIER_META[membershipTier] ?? TIER_META.free;
+
+  const updateLinks: Array<{
+    label: string;
+    description: string;
+    href?: string;
+    onClick?: () => void;
+    icon: React.ComponentType<{ className?: string }>;
+    badge?: number;
+  }> = [
+    {
+      label: "Notifications",
+      description: "Activity alerts, likes, comments & updates",
+      href: "/notifications",
+      icon: Bell,
+      badge: unreadNotifications,
+    },
+    ...(isAdmin
       ? [
           {
-            label: "Sessions",
-            description: "Manage upcoming & past calls",
-            href: "/sessions",
-            icon: Calendar,
-          },
-          {
-            label: "Availability & Capacity",
-            description: "Weekly hours & mentee slots",
-            href: "/profile#availability",
-            icon: Clock,
-          },
-          {
-            label: "Learning Resources",
-            description: "Guides, articles & tracks",
-            href: "/learn",
-            icon: BookOpen,
-          },
-          {
-            label: "Notifications",
-            description: "Activity alerts & updates",
-            href: "/notifications",
-            icon: Bell,
-            badge: unreadNotifications,
+            label: "Admin Console",
+            description: "Verifications, reports & governance",
+            href: "/admin",
+            icon: ShieldCheck,
           },
         ]
-      : [
+      : []),
+    {
+      label: "Sessions",
+      description: "Upcoming & past mentorship calls",
+      href: "/sessions",
+      icon: Calendar,
+    },
+    ...(isMentor
+      ? [
           {
-            label: "Sessions",
-            description: "Upcoming 1-on-1 calls & notes",
-            href: "/sessions",
-            icon: Calendar,
+            label: "Availability & Capacity",
+            description: "Weekly hours & mentee limits",
+            onClick: onOpenAvailability,
+            icon: Clock,
           },
-          {
-            label: "Goals & Progress",
-            description: "Track milestones & career targets",
-            href: "/goals",
-            icon: Target,
-          },
-          {
-            label: "Learning Resources",
-            description: "Career tracks & curated guides",
-            href: "/learn",
-            icon: BookOpen,
-          },
-          {
-            label: "Notifications",
-            description: "Activity alerts & updates",
-            href: "/notifications",
-            icon: Bell,
-            badge: unreadNotifications,
-          },
-        ];
+        ]
+      : !isAdmin
+        ? [
+            {
+              label: "Goals & Progress",
+              description: "Track milestones & career targets",
+              href: "/goals",
+              icon: Target,
+            },
+          ]
+        : []),
+    {
+      label: "Learning Resources",
+      description: "Career tracks & curated articles",
+      href: "/learn",
+      icon: BookOpen,
+    },
+  ];
 
   async function saveAccount(e: React.FormEvent) {
     e.preventDefault();
@@ -252,69 +239,55 @@ export function AccountHubClient({
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      {/* Compact Account Overview Card */}
-      <Card elevated className="p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3.5">
-            <UserAvatar
-              src={user.profileImage}
-              firstName={user.firstName}
-              lastName={user.lastName}
-              size="md"
-              className="shrink-0"
-            />
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="truncate font-display text-lg font-bold text-interlink-ink">
-                  {user.firstName} {user.lastName}
-                </h1>
-                <Badge tone="forest" className="capitalize">
-                  {user.primaryRole.replace("_", " ")}
-                </Badge>
-              </div>
-              <p className="truncate text-xs text-interlink-muted">{user.email}</p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/profile"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-interlink-forest px-4 text-xs font-semibold text-white shadow-subtle transition-colors hover:bg-interlink-forest-hover"
-            >
-              <UserCircle className="h-3.5 w-3.5" aria-hidden="true" />
-              My Profile
-            </Link>
-            {isMentor && (
-              <Link
-                href={`/mentors/${user.id}`}
-                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-interlink-border bg-interlink-surface px-3.5 text-xs font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
-              >
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                Public View
-              </Link>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      {/* Category 1: Mentorship, Learning & Updates */}
-      <section aria-labelledby="cat-mentorship">
+    <div className="space-y-5">
+      {/* Category 1: Membership */}
+      <section aria-labelledby="cat-membership">
         <p
-          id="cat-mentorship"
+          id="cat-membership"
           className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-interlink-muted"
         >
-          Mentorship &amp; Updates
+          Membership
+        </p>
+        <Card className="p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-interlink-gold/15 text-interlink-gold">
+                <Crown className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-interlink-ink">{tierInfo.label}</p>
+                  <Badge tone={membershipTier === "free" ? "neutral" : "gold"}>
+                    {tierInfo.price}
+                  </Badge>
+                </div>
+                <p className="mt-0.5 text-xs text-interlink-muted">{tierInfo.summary}</p>
+              </div>
+            </div>
+            <Link
+              href="/membership"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-interlink-border bg-interlink-surface px-4 text-xs font-semibold text-interlink-ink transition-colors hover:border-interlink-forest hover:text-interlink-forest"
+            >
+              Manage Plan
+              <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </div>
+        </Card>
+      </section>
+
+      {/* Category 2: Updates & Workspace Shortcuts */}
+      <section aria-labelledby="cat-updates">
+        <p
+          id="cat-updates"
+          className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-interlink-muted"
+        >
+          Updates &amp; Workspace
         </p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {mentorshipLinks.map((item) => {
+          {updateLinks.map((item) => {
             const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-interlink-border bg-interlink-surface px-4 py-3 shadow-subtle transition-colors hover:border-interlink-forest/60 hover:bg-interlink-app-bg/50"
-              >
+            const inner = (
+              <>
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-interlink-forest/10 text-interlink-forest">
                     <Icon className="h-4 w-4" aria-hidden="true" />
@@ -336,13 +309,31 @@ export function AccountHubClient({
                   )}
                   <ChevronRight className="h-4 w-4 text-interlink-muted" aria-hidden="true" />
                 </div>
+              </>
+            );
+
+            const className =
+              "flex w-full items-center justify-between gap-3 rounded-2xl border border-interlink-border bg-interlink-surface px-4 py-3 text-left shadow-subtle transition-colors hover:border-interlink-forest/60 hover:bg-interlink-app-bg/50";
+
+            return item.href ? (
+              <Link key={item.label} href={item.href} className={className}>
+                {inner}
               </Link>
+            ) : (
+              <button
+                key={item.label}
+                type="button"
+                onClick={item.onClick}
+                className={className}
+              >
+                {inner}
+              </button>
             );
           })}
         </div>
       </section>
 
-      {/* Category 2: Account & Appearance */}
+      {/* Category 3: Account & Appearance */}
       <section aria-labelledby="cat-account-appearance" className="space-y-3">
         <p
           id="cat-account-appearance"
@@ -351,8 +342,7 @@ export function AccountHubClient({
           Account &amp; Appearance
         </p>
 
-        {/* Compact Theme & Verification Rows */}
-        <Card className="divide-y divide-interlink-border/60 p-0 overflow-hidden">
+        <Card className="divide-y divide-interlink-border/60 overflow-hidden p-0">
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
             <div className="flex items-center gap-2.5">
               {theme === "dark" ? (
@@ -419,7 +409,6 @@ export function AccountHubClient({
             </div>
           )}
 
-          {/* Collapsible Personal Details & Photo Editor */}
           <div>
             <button
               type="button"
@@ -428,11 +417,9 @@ export function AccountHubClient({
               className="flex w-full items-center justify-between px-4 py-3.5 text-left transition-colors hover:bg-interlink-app-bg/40"
             >
               <div>
-                <p className="text-sm font-semibold text-interlink-ink">
-                  Personal Information &amp; Photo
-                </p>
+                <p className="text-sm font-semibold text-interlink-ink">Account Identity</p>
                 <p className="text-[11px] text-interlink-muted">
-                  Update your name, sign-in username, and profile photo
+                  Update your name, email status, and sign-in username
                 </p>
               </div>
               <ChevronDown
@@ -450,12 +437,7 @@ export function AccountHubClient({
                     <ErrorAlert message={error} />
                   </div>
                 )}
-                <form onSubmit={saveAccount} className="space-y-4">
-                  <AvatarUploadCard
-                    firstName={user.firstName}
-                    lastName={user.lastName}
-                    initialProfileImage={user.profileImage}
-                  />
+                <form onSubmit={saveAccount} className="space-y-3">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Input
                       label="First Name"
@@ -489,7 +471,7 @@ export function AccountHubClient({
         </Card>
       </section>
 
-      {/* Category 3: Push Notifications & Preferences */}
+      {/* Category 4: Notifications & Devices */}
       <section aria-labelledby="cat-notifications">
         <p
           id="cat-notifications"
@@ -500,7 +482,7 @@ export function AccountHubClient({
         <PushNotificationsManager compact />
       </section>
 
-      {/* Category 4: Privacy, Security & Session */}
+      {/* Category 5: Privacy & Session */}
       <section aria-labelledby="cat-privacy-session" className="space-y-3">
         <p
           id="cat-privacy-session"

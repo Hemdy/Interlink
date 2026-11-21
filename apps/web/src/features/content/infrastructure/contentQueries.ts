@@ -55,6 +55,36 @@ export const DEFAULT_MENTOR_REELS: MentorReelItem[] = [
     topicTag: "Product & Design",
     createdAt: "2026-11-05T10:00:00.000Z",
   },
+  {
+    id: "reel-spotlight-4",
+    mentorId: null,
+    mentorName: "Tunde Adeyemi",
+    profession: "Staff Data Scientist",
+    careerPath: "Business Analyst -> ML Engineer -> Staff Data Scientist",
+    title: "Structuring Case Studies That Prove Business Impact",
+    summary:
+      "Lead with the business metric you shifted before walking through model architecture and trade-offs.",
+    videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    posterImageUrl: "/images/networking-event.jpg",
+    durationLabel: "0:51",
+    topicTag: "Data & AI",
+    createdAt: "2026-11-07T10:00:00.000Z",
+  },
+  {
+    id: "reel-spotlight-5",
+    mentorId: null,
+    mentorName: "Ngozi Eze",
+    profession: "Head of People & Talent",
+    careerPath: "Recruiter -> Talent Partner -> Head of People",
+    title: "What Hiring Panels Actually Look For in Interviews",
+    summary:
+      "Clear storytelling around ownership, ambiguity, and how you partner across teams beats memorizing trivia.",
+    videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    posterImageUrl: "/images/network-pattern-hero.jpg",
+    durationLabel: "0:44",
+    topicTag: "Interviews",
+    createdAt: "2026-11-09T10:00:00.000Z",
+  },
 ];
 
 export const DEFAULT_PLATFORM_EVENTS: PlatformEventItem[] = [
@@ -102,10 +132,10 @@ export const DEFAULT_PLATFORM_EVENTS: PlatformEventItem[] = [
   },
   {
     id: "event-promo-4",
-    title: "Sponsored Spotlight: Emerging Tech Career Accelerator",
+    title: "Sponsored: Early-Career Tech Accelerator",
     category: "promotion",
     summary:
-      "Partner opportunity offering scholarship seats, 1-on-1 mock interviews, and verified mentorship matching for early-career talent.",
+      "Partner spotlight offering scholarship seats and 1-on-1 mock interviews for talent.",
     imageUrl: "/images/mentor-spotlight.jpg",
     eventDate: null,
     locationOrFormat: "Featured Partner Promotion",
@@ -218,4 +248,45 @@ export async function listPublishedPlatformEvents(
 
   const mapped = await getCachedPlatformEvents();
   return category ? mapped.filter((item) => item.category === category) : mapped;
+}
+
+export async function getPublishedPlatformEventById(
+  id: string,
+): Promise<PlatformEventItem | null> {
+  const all = await listPublishedPlatformEvents();
+  const cachedMatch = all.find((item) => item.id === id);
+  if (cachedMatch) return cachedMatch;
+
+  if (!isDatabaseConfigured()) return null;
+
+  try {
+    const [row] = await getDb()
+      .select()
+      .from(platformEvents)
+      .where(eq(platformEvents.id, id))
+      .limit(1);
+
+    if (!row || !row.isPublished) return null;
+
+    const [regRow] = await getDb()
+      .select({ total: sql<number>`count(*)::int` })
+      .from(eventRegistrations)
+      .where(eq(eventRegistrations.eventId, row.id));
+
+    return {
+      id: row.id,
+      title: row.title,
+      category: (row.category as EventCategory) || "workshop",
+      summary: row.summary,
+      imageUrl: row.imageUrl,
+      eventDate: row.eventDate ? row.eventDate.toISOString() : null,
+      locationOrFormat: row.locationOrFormat,
+      ctaLabel: row.ctaLabel,
+      ctaUrl: row.ctaUrl,
+      isFeatured: row.isFeatured,
+      registrationCount: Number(regRow?.total ?? 0),
+    };
+  } catch {
+    return null;
+  }
 }
